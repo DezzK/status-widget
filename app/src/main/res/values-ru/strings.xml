@@ -18,15 +18,19 @@
 <resources>
     <string name="app_name">Виджет статуса</string>
 
-    <string name="permission_title">Разрешения</string>
-    <string name="checking_permissions">Проверка разрешений…</string>
-    <string name="request_permissions">Запросить все разрешения</string>
-    <string name="all_permissions_granted">✓ Все разрешения предоставлены</string>
+    <string name="overlay_permission_required">Требуется разрешение отображения поверх всех окон</string>
     <string name="all_permissions_granted_toast">Все разрешения предоставлены!</string>
     <string name="missing_permissions_toast">Некоторые разрешения не предоставлены. Приложение может работать некорректно.</string>
-    <string name="missing_permissions">Отсутствуют: %s</string>
 
-    <string name="permission_fine_location">Точное местоположение</string>
-    <string name="permission_coarse_location">Приблизительное местоположение</string>
-    <string name="permission_draw_overlays">Рисование поверх окон</string>
+    <string name="widget_title">Настройки виджета</string>
+    <string name="enable_widget">Включить виджет</string>
+    <string name="icon_size">Размер иконок</string>
+    <string name="icon_size_value_format">%d пикс.</string>
+    <string name="show_date">Показывать дату</string>
+    <string name="show_time">Показывать время</string>
+    <string name="font_size">Рамер шрифта</string>
+    <string name="font_size_value_format">%d пикс.</string>
+    <string name="permissions_required">Требуется предоставить разрешения</string>
+    <string name="notification_channel_title">Служба виджета статуса</string>
+    <string name="notification_content">Служба виджета запущена</string>
 </resources>

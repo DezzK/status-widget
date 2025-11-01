@@ -25,23 +25,39 @@
     android:background="#00000000"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="8dp"
-    android:visibility="gone">
+    android:padding="0dp">
 
     <!-- Wi-Fi Status -->
     <ImageView
-        android:id="@+id/wifi_status"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginEnd="8dp"
+        android:id="@+id/wifiStatusIcon"
+        android:layout_width="100sp"
+        android:layout_height="100sp"
+        android:layout_marginEnd="8sp"
         android:src="@drawable/ic_wifi_off"
         tools:ignore="ContentDescription" />
 
     <!-- GNSS Status -->
     <ImageView
-        android:id="@+id/gnss_status"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:id="@+id/gnssStatusIcon"
+        android:layout_width="100sp"
+        android:layout_height="100sp"
         android:src="@drawable/ic_gps_off"
+        android:layout_marginEnd="8sp"
         tools:ignore="ContentDescription" />
+
+    <!-- Date -->
+    <TextView
+        android:id="@+id/dateTimeText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="8sp"
+        android:textSize="100sp"
+        android:textColor="@color/text_primary"
+        android:shadowColor="@android:color/darker_gray"
+        android:shadowDx="5"
+        android:shadowDy="5"
+        android:shadowRadius="4"
+        android:fontFamily="sans-serif-condensed-medium"
+        android:text="01 Nov 2025 14:19" />
 </LinearLayout>

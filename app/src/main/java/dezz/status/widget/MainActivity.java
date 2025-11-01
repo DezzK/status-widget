@@ -20,16 +20,15 @@ package dezz.status.widget;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.provider.Settings;
-import android.view.View;
-import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 
 import java.util.List;
@@ -39,10 +38,13 @@ public class MainActivity extends AppCompatActivity {
     public static final int PERMISSION_REQUEST_CODE = 1001;
     public static final int OVERLAY_PERMISSION_REQUEST_CODE = 1002;
 
-    private View permissionsSection;
-    private Button requestPermissionsButton;
-    private TextView permissionsStatusText;
-    private final Handler uiHandler = new Handler();
+    private SwitchCompat enableWidgetSwitch;
+    private SwitchCompat showDateSwitch;
+    private SwitchCompat showTimeSwitch;
+    private SeekBar iconSizeSeekBar;
+    private SeekBar fontSizeSeekBar;
+    private TextView iconSizeValueText;
+    private TextView fontSizeValueText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,10 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
         initializeViews();
 
-        // Check permissions status on startup
-        boolean allPermissionsGranted = updatePermissionsStatus();
-
-        if (allPermissionsGranted && !WidgetService.isRunning()) {
+        if (Preferences.widgetEnabled(this) && Permissions.allPermissionsGranted(this)) {
             startWidgetService();
         }
     }
@@ -64,43 +63,112 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        uiHandler.removeCallbacksAndMessages(null);
     }
 
     private void initializeViews() {
-        permissionsSection = findViewById(R.id.permissionsSection);
-        requestPermissionsButton = findViewById(R.id.requestPermissionsButton);
-        permissionsStatusText = findViewById(R.id.permissionsStatusText);
+        enableWidgetSwitch = findViewById(R.id.enableWidgetSwitch);
+        showDateSwitch = findViewById(R.id.showDateSwitch);
+        showTimeSwitch = findViewById(R.id.showTimeSwitch);
 
-        requestPermissionsButton.setOnClickListener(v -> requestPermissions());
+        iconSizeSeekBar = findViewById(R.id.iconSizeSeekBar);
+        fontSizeSeekBar = findViewById(R.id.fontSizeSeekBar);
+        iconSizeValueText = findViewById(R.id.iconSizeValueText);
+        fontSizeValueText = findViewById(R.id.fontSizeValueText);
+
+        enableWidgetSwitch.setChecked(Preferences.widgetEnabled(this));
+        showDateSwitch.setChecked(Preferences.showDate(this));
+        showTimeSwitch.setChecked(Preferences.showTime(this));
+        iconSizeSeekBar.setProgress(Preferences.iconSize(this));
+        fontSizeSeekBar.setProgress(Preferences.fontSize(this));
+
+        updateIconSizeValueText();
+        updateFontSizeValueText();
+
+        enableWidgetSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                if (Permissions.allPermissionsGranted(this)) {
+                    startWidgetService();
+                } else {
+                    requestPermissions();
+                }
+            } else {
+                stopWidgetService();
+            }
+        });
+
+        showDateSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            Preferences.saveShowDate(this, isChecked);
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
+        });
+
+        showTimeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            Preferences.saveShowTime(this, isChecked);
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
+        });
+
+        iconSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Preferences.saveIconSize(MainActivity.this, progress);
+                updateIconSizeValueText();
+                if (WidgetService.isRunning()) {
+                    WidgetService.getInstance().applyPreferences();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // Do nothing
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // Do nothing
+            }
+        });
+
+        fontSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Preferences.saveFontSize(MainActivity.this, progress);
+                updateFontSizeValueText();
+                if (WidgetService.isRunning()) {
+                    WidgetService.getInstance().applyPreferences();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // Do nothing
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // Do nothing
+            }
+        });
+    }
+
+    private void updateIconSizeValueText() {
+        iconSizeValueText.setText(String.format(getString(R.string.icon_size_value_format), iconSizeSeekBar.getProgress()));
+    }
+
+    private void updateFontSizeValueText() {
+        fontSizeValueText.setText(String.format(getString(R.string.font_size_value_format), fontSizeSeekBar.getProgress()));
     }
 
     private void startWidgetService() {
+        Preferences.saveWidgetEnabled(this, true);
         startForegroundService(new Intent(this, WidgetService.class));
     }
 
-    private boolean updatePermissionsStatus() {
-        List<String> missingPermissions = Permissions.checkForMissingPermissions(this, true);
-
-        if (!Permissions.checkOverlayPermission(this)) {
-            missingPermissions.add(getString(R.string.permission_draw_overlays));
-        }
-
-        if (missingPermissions.isEmpty()) {
-            permissionsStatusText.setText(R.string.all_permissions_granted);
-            permissionsStatusText.setTextColor(getResources().getColor(android.R.color.holo_green_light, null));
-            requestPermissionsButton.setVisibility(View.GONE);
-        } else {
-            String statusText = String.format(getString(R.string.missing_permissions), String.join(", ", missingPermissions));
-            permissionsStatusText.setText(statusText);
-            permissionsStatusText.setTextColor(getColor(android.R.color.holo_red_light));
-            requestPermissionsButton.setVisibility(View.VISIBLE);
-        }
-
-        permissionsSection.setVisibility(missingPermissions.isEmpty() ? View.GONE : View.VISIBLE);
-
-        return missingPermissions.isEmpty();
+    private void stopWidgetService() {
+        Preferences.saveWidgetEnabled(this, false);
+        stopService(new Intent(this, WidgetService.class));
     }
 
     private void requestPermissions() {
@@ -122,12 +190,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (!Permissions.checkForMissingPermissions(this).isEmpty()) {
+                enableWidgetSwitch.setChecked(false);
                 Toast.makeText(this, R.string.missing_permissions_toast, Toast.LENGTH_LONG).show();
-                updatePermissionsStatus();
             } else if (!Permissions.checkOverlayPermission(this)) {
                 requestOverlayPermission();
             } else {
                 Toast.makeText(this, R.string.all_permissions_granted_toast, Toast.LENGTH_SHORT).show();
+                startWidgetService();
             }
         }
     }
@@ -146,7 +215,8 @@ public class MainActivity extends AppCompatActivity {
             if (Permissions.checkOverlayPermission(this)) {
                 startWidgetService();
             } else {
-                Toast.makeText(this, "Overlay permission is required for the status widget",
+                enableWidgetSwitch.setChecked(false);
+                Toast.makeText(this, R.string.overlay_permission_required,
                         Toast.LENGTH_LONG).show();
             }
         }

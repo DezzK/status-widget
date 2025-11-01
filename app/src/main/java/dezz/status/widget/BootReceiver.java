@@ -34,8 +34,13 @@ public class BootReceiver extends BroadcastReceiver {
                 || ACTION_QUICKBOOT_POWERON.equals(intent.getAction())) {
             Log.d(TAG, "Device boot completed, checking if widget service should auto-start");
 
+            if (!Preferences.widgetEnabled(context)) {
+                Log.d(TAG, "Widget service is not enabled. Don't start it.");
+                return;
+            }
+
             if (WidgetService.isRunning()) {
-                Log.i(TAG, "Widget service is already running. Don't start it again.");
+                Log.d(TAG, "Widget service is already running. Don't start it again.");
                 return;
             }
 

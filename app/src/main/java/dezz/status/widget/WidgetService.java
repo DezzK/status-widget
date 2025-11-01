@@ -37,18 +37,26 @@ import android.net.NetworkRequest;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class WidgetService extends Service {
     enum GnssState {
@@ -68,13 +76,14 @@ public class WidgetService extends Service {
     private static final String CHANNEL_ID = "WidgetServiceChannel";
     private static final long GNSS_STATUS_CHECK_INTERVAL = 1000;
 
-    private static boolean running = false;
+    private static WidgetService instance;
 
     private WindowManager windowManager;
     private WindowManager.LayoutParams params;
     private View overlayView;
-    private ImageView wifiStatus;
-    private ImageView gnssStatus;
+    private ImageView wifiStatusIcon;
+    private ImageView gnssStatusIcon;
+    private TextView dateTimeText;
 
     private int initialX;
     private int initialY;
@@ -85,6 +94,14 @@ public class WidgetService extends Service {
     private LocationManager locationManager = null;
     private ConnectivityManager connectivityManager = null;
     private long lastLocationUpdateTime = 0;
+
+    private final Runnable updateDateTimeRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updateDateTime();
+            mainHandler.postDelayed(this, 1000);
+        }
+    };
 
     private final Runnable updateGnssStatusRunnable = new Runnable() {
         @Override
@@ -176,14 +193,15 @@ public class WidgetService extends Service {
     @SuppressLint({"MissingPermission", "InflateParams"})
     @Override
     public void onCreate() {
-        if (!Permissions.checkForMissingPermissions(this).isEmpty()) {
-            Toast.makeText(this, "Permissions required", Toast.LENGTH_LONG).show();
+        if (!Permissions.allPermissionsGranted(this)) {
+            Preferences.saveWidgetEnabled(this, false);
+            Toast.makeText(this, R.string.permissions_required, Toast.LENGTH_LONG).show();
             startMainActivity();
             stopSelf();
             return;
         }
 
-        running = true;
+        instance = this;
 
         windowManager = getSystemService(WindowManager.class);
         locationManager = getSystemService(LocationManager.class);
@@ -193,9 +211,12 @@ public class WidgetService extends Service {
         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_status_widget, null);
         overlayView.setVisibility(View.VISIBLE);
 
-        // Initialize status icons
-        wifiStatus = overlayView.findViewById(R.id.wifi_status);
-        gnssStatus = overlayView.findViewById(R.id.gnss_status);
+        // Initialize controls
+        wifiStatusIcon = overlayView.findViewById(R.id.wifiStatusIcon);
+        gnssStatusIcon = overlayView.findViewById(R.id.gnssStatusIcon);
+        dateTimeText = overlayView.findViewById(R.id.dateTimeText);
+
+        applyPreferences();
 
         // Set initial states
         updateWifiStatus(WiFiState.OFF);
@@ -220,7 +241,7 @@ public class WidgetService extends Service {
         try {
             windowManager.addView(overlayView, params);
         } catch (Exception e) {
-            Toast.makeText(this, "Overlay permission required", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_LONG).show();
             stopSelf();
             return;
         }
@@ -244,6 +265,44 @@ public class WidgetService extends Service {
                 .build();
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
         mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
+    }
+
+    public void applyPreferences() {
+        DisplayMetrics displayMetrics = this.getResources().getDisplayMetrics();
+
+        int scaledIconSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, (float) Preferences.iconSize(this), displayMetrics);
+
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+                scaledIconSize,
+                scaledIconSize
+        );
+        wifiStatusIcon.setLayoutParams(iconParams);
+        gnssStatusIcon.setLayoutParams(iconParams);
+        dateTimeText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.fontSize(this));
+        dateTimeText.setVisibility((Preferences.showDate(this) || Preferences.showTime(this)) ? View.VISIBLE : View.GONE);
+
+        updateDateTime();
+
+        mainHandler.removeCallbacks(updateDateTimeRunnable);
+        if (Preferences.showDate(this) || Preferences.showTime(this)) {
+            mainHandler.postDelayed(updateDateTimeRunnable, 1000);
+        }
+    }
+
+    private void updateDateTime() {
+        String content = "";
+        if (Preferences.showDate(this)) {
+            content += new SimpleDateFormat("d MMM", Locale.getDefault()).format(new Date());
+        }
+
+        if (Preferences.showTime(this)) {
+            if (!content.isEmpty()) {
+                content += " ";
+            }
+            content += new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
+        }
+        dateTimeText.setText(content);
+        overlayView.requestLayout();
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -286,7 +345,7 @@ public class WidgetService extends Service {
     }
 
     private void updateWifiStatus(WiFiState status) {
-        wifiStatus.setImageResource(switch (status) {
+        wifiStatusIcon.setImageResource(switch (status) {
             case WiFiState.OFF -> R.drawable.ic_wifi_off;
             case WiFiState.DISCONNECTED -> R.drawable.ic_wifi_disconnected;
             case WiFiState.CONNECTED -> R.drawable.ic_wifi_connected;
@@ -294,7 +353,7 @@ public class WidgetService extends Service {
     }
 
     private void updateGnssStatus(GnssState status) {
-        gnssStatus.setImageResource(switch (status) {
+        gnssStatusIcon.setImageResource(switch (status) {
             case OFF -> R.drawable.ic_gps_off;
             case BAD -> R.drawable.ic_gps_bad;
             case GOOD -> R.drawable.ic_gps_good;
@@ -304,7 +363,7 @@ public class WidgetService extends Service {
     private void createNotificationChannel() {
         NotificationChannel serviceChannel = new NotificationChannel(
                 CHANNEL_ID,
-                "Status Widget Overlay Service",
+                getString(R.string.notification_channel_title),
                 NotificationManager.IMPORTANCE_LOW
         );
         NotificationManager manager = getSystemService(NotificationManager.class);
@@ -323,8 +382,8 @@ public class WidgetService extends Service {
         );
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Status Widget")
-                .setContentText("Widget service is running")
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.notification_content))
                 .setSmallIcon(R.drawable.ic_gps_good)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
@@ -341,7 +400,7 @@ public class WidgetService extends Service {
 
     @Override
     public void onDestroy() {
-        running = false;
+        instance = null;
 
         if (overlayView != null && windowManager != null) {
             windowManager.removeView(overlayView);
@@ -363,7 +422,11 @@ public class WidgetService extends Service {
         return null;
     }
 
+    public static WidgetService getInstance() {
+        return instance;
+    }
+
     public static boolean isRunning() {
-        return running;
+        return instance != null;
     }
 }

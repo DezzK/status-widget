@@ -50,9 +50,8 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Permissions Section -->
+            <!-- Widget Configuration -->
             <LinearLayout
-                android:id="@+id/permissionsSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
@@ -65,39 +64,89 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:text="@string/permission_title"
+                    android:text="@string/widget_title"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/permissionsStatusText"
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/enableWidgetSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="@string/checking_permissions"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/mockLocationStatusText"
+                    android:textColor="@color/text_primary"
+                    android:text="@string/enable_widget" />
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/showDateSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:textColor="@android:color/holo_red_light"
-                    android:textSize="14sp"
-                    android:visibility="gone" />
-
-                <Button
-                    android:id="@+id/requestPermissionsButton"
-                    android:layout_width="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:text="@string/show_date" />
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/showTimeSwitch"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:backgroundTint="#FF9800"
-                    android:paddingVertical="12dp"
-                    android:paddingHorizontal="48dp"
-                    android:text="@string/request_permissions"
-                    android:textColor="#ffffff"
-                    android:textSize="16sp" />
+                    android:textColor="@color/text_primary"
+                    android:text="@string/show_time" />
+
+                <!-- Icon size -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:text="@string/icon_size" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <SeekBar
+                        android:id="@+id/iconSizeSeekBar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:max="100"
+                        android:min="10"
+                        android:progress="50" />
+
+                    <TextView
+                        android:id="@+id/iconSizeValueText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary"
+                        android:text="@string/icon_size_value_format" />
+                </LinearLayout>
+
+                <!-- Font Size -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:text="@string/font_size" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <SeekBar
+                        android:id="@+id/fontSizeSeekBar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:max="100"
+                        android:min="10"
+                        android:progress="50" />
+
+                    <TextView
+                        android:id="@+id/fontSizeValueText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary"
+                        android:text="@string/font_size_value_format" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
