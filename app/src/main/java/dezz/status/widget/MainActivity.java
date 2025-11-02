@@ -101,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 stopWidgetService();
+                Preferences.resetOverlayPosition(this);
             }
         });
 

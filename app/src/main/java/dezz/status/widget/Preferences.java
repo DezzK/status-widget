@@ -108,6 +108,11 @@ public class Preferences {
         getPrefs(context).edit().putInt(PREF_OVERLAY_X, x).putInt(PREF_OVERLAY_Y, y).apply();
     }
 
+    public static void resetOverlayPosition(Context context) {
+        getPrefs(context).edit().remove(PREF_OVERLAY_X).remove(PREF_OVERLAY_Y).apply();
+    }
+
+
     private static void setBoolean(Context context, String key, boolean value) {
         getPrefs(context).edit().putBoolean(key, value).apply();
     }
