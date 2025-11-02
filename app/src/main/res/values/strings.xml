@@ -16,7 +16,7 @@
   -->
 
 <resources>
-    <string name="app_name">Status Widget</string>
+    <string name="app_name">Information Widget</string>
 
     <string name="widget_title">Widget Configuration</string>
     <string name="enable_widget">Enable widget (reset position)</string>

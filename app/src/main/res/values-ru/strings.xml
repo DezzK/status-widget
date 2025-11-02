@@ -16,7 +16,7 @@
   -->
 
 <resources>
-    <string name="app_name">Виджет статуса</string>
+    <string name="app_name">Виджет информации</string>
 
     <string name="overlay_permission_required">Требуется разрешение отображения поверх всех окон</string>
     <string name="all_permissions_granted_toast">Все разрешения предоставлены!</string>
