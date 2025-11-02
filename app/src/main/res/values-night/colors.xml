@@ -16,6 +16,8 @@
   -->
 
 <resources>
+    <color name="ic_launcher_background">#000000</color>
+
     <color name="background">#121212</color>
     <color name="card_background">@android:color/background_dark</color>
     <color name="header_background">#2C2C2C</color>
