@@ -30,11 +30,12 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16sp"
         android:background="@color/header_background"
+        android:gravity="center"
         android:paddingHorizontal="24sp"
         android:paddingVertical="12sp"
         android:text="@string/app_name"
         android:textColor="@color/text_primary"
-        android:textSize="20sp"
+        android:textSize="20pt"
         android:textStyle="bold" />
 
     <ScrollView
@@ -66,46 +67,61 @@
                     android:layout_marginBottom="8sp"
                     android:text="@string/widget_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="12pt"
                     android:textStyle="bold" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/enableWidgetSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/enable_widget"
                     android:textColor="@color/text_primary"
-                    android:text="@string/enable_widget" />
+                    android:textSize="10pt" />
+
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showTimeSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/show_time"
                     android:textColor="@color/text_primary"
-                    android:text="@string/show_time" />
+                    android:textSize="10pt" />
+
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showDateSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/show_date"
                     android:textColor="@color/text_primary"
-                    android:text="@string/show_date" />
+                    android:textSize="10pt" />
+
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showDaySwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/show_day_of_the_week"
                     android:textColor="@color/text_primary"
-                    android:text="@string/show_day_of_the_week" />
+                    android:textSize="10pt" />
+
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/oneLineLayoutSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/one_line_layout"
                     android:textColor="@color/text_primary"
-                    android:text="@string/one_line_layout" />
+                    android:textSize="10pt" />
 
                 <!-- Icon Sizes -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:text="@string/icon_size"
                     android:textColor="@color/text_primary"
-                    android:text="@string/icon_size" />
+                    android:textSize="10pt" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -126,16 +142,18 @@
                         android:id="@+id/iconSizeValueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:text="@string/icon_size_value_format"
                         android:textColor="@color/text_primary"
-                        android:text="@string/icon_size_value_format" />
+                        android:textSize="10pt" />
                 </LinearLayout>
 
                 <!-- Time Font Size -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:text="@string/time_font_size"
                     android:textColor="@color/text_primary"
-                    android:text="@string/time_font_size" />
+                    android:textSize="10pt" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -156,16 +174,18 @@
                         android:id="@+id/timeFontSizeValueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:text="@string/font_size_value_format"
                         android:textColor="@color/text_primary"
-                        android:text="@string/font_size_value_format" />
+                        android:textSize="10pt" />
                 </LinearLayout>
 
                 <!-- Date Font Size -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:text="@string/date_font_size"
                     android:textColor="@color/text_primary"
-                    android:text="@string/date_font_size" />
+                    android:textSize="10pt" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -186,8 +206,9 @@
                         android:id="@+id/dateFontSizeValueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:text="@string/font_size_value_format"
                         android:textColor="@color/text_primary"
-                        android:text="@string/font_size_value_format" />
+                        android:textSize="10pt" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
