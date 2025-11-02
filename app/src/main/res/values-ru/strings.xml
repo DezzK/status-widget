@@ -28,7 +28,10 @@
     <string name="icon_size_value_format">%d пикс.</string>
     <string name="show_date">Показывать дату</string>
     <string name="show_time">Показывать время</string>
-    <string name="font_size">Рамер шрифта</string>
+    <string name="show_day_of_the_week">Показывать день недели</string>
+    <string name="one_line_layout">Однострочное расположение</string>
+    <string name="time_font_size">Рамер шрифта для отображения времени</string>
+    <string name="date_font_size">Размер шрифта для отображения даты и дня недели</string>
     <string name="font_size_value_format">%d пикс.</string>
     <string name="permissions_required">Требуется предоставить разрешения</string>
     <string name="notification_channel_title">Служба виджета статуса</string>

@@ -39,12 +39,12 @@ public class MainActivity extends AppCompatActivity {
     public static final int OVERLAY_PERMISSION_REQUEST_CODE = 1002;
 
     private SwitchCompat enableWidgetSwitch;
-    private SwitchCompat showDateSwitch;
-    private SwitchCompat showTimeSwitch;
     private SeekBar iconSizeSeekBar;
-    private SeekBar fontSizeSeekBar;
+    private SeekBar timeFontSizeSeekBar;
+    private SeekBar dateFontSizeSeekBar;
     private TextView iconSizeValueText;
-    private TextView fontSizeValueText;
+    private TextView timeFontSizeValueText;
+    private TextView dateFontSizeValueText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,22 +67,30 @@ public class MainActivity extends AppCompatActivity {
 
     private void initializeViews() {
         enableWidgetSwitch = findViewById(R.id.enableWidgetSwitch);
-        showDateSwitch = findViewById(R.id.showDateSwitch);
-        showTimeSwitch = findViewById(R.id.showTimeSwitch);
+        SwitchCompat showDateSwitch = findViewById(R.id.showDateSwitch);
+        SwitchCompat showTimeSwitch = findViewById(R.id.showTimeSwitch);
+        SwitchCompat showDayOfTheWeekSwitch = findViewById(R.id.showDaySwitch);
+        SwitchCompat oneLineLayoutSwitch = findViewById(R.id.oneLineLayoutSwitch);
 
         iconSizeSeekBar = findViewById(R.id.iconSizeSeekBar);
-        fontSizeSeekBar = findViewById(R.id.fontSizeSeekBar);
+        timeFontSizeSeekBar = findViewById(R.id.timeFontSizeSeekBar);
+        dateFontSizeSeekBar = findViewById(R.id.dateFontSizeSeekBar);
         iconSizeValueText = findViewById(R.id.iconSizeValueText);
-        fontSizeValueText = findViewById(R.id.fontSizeValueText);
+        timeFontSizeValueText = findViewById(R.id.timeFontSizeValueText);
+        dateFontSizeValueText = findViewById(R.id.dateFontSizeValueText);
 
         enableWidgetSwitch.setChecked(Preferences.widgetEnabled(this));
         showDateSwitch.setChecked(Preferences.showDate(this));
         showTimeSwitch.setChecked(Preferences.showTime(this));
+        showDayOfTheWeekSwitch.setChecked(Preferences.showDayOfTheWeek(this));
+        oneLineLayoutSwitch.setChecked(Preferences.oneLineLayout(this));
         iconSizeSeekBar.setProgress(Preferences.iconSize(this));
-        fontSizeSeekBar.setProgress(Preferences.fontSize(this));
+        timeFontSizeSeekBar.setProgress(Preferences.timeFontSize(this));
+        dateFontSizeSeekBar.setProgress(Preferences.dateFontSize(this));
 
         updateIconSizeValueText();
-        updateFontSizeValueText();
+        updateTimeFontSizeValueText();
+        updateDateFontSizeValueText();
 
         enableWidgetSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
@@ -110,6 +118,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        showDayOfTheWeekSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            Preferences.saveShowDayOfTheWeek(this, isChecked);
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
+        });
+
+        oneLineLayoutSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            Preferences.saveOneLineLayout(this, isChecked);
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
+        });
+
         iconSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -131,11 +153,32 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        fontSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        timeFontSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                Preferences.saveFontSize(MainActivity.this, progress);
-                updateFontSizeValueText();
+                Preferences.saveTimeFontSize(MainActivity.this, progress);
+                updateTimeFontSizeValueText();
+                if (WidgetService.isRunning()) {
+                    WidgetService.getInstance().applyPreferences();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // Do nothing
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // Do nothing
+            }
+        });
+
+        dateFontSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Preferences.saveDateFontSize(MainActivity.this, progress);
+                updateDateFontSizeValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
                 }
@@ -157,8 +200,12 @@ public class MainActivity extends AppCompatActivity {
         iconSizeValueText.setText(String.format(getString(R.string.icon_size_value_format), iconSizeSeekBar.getProgress()));
     }
 
-    private void updateFontSizeValueText() {
-        fontSizeValueText.setText(String.format(getString(R.string.font_size_value_format), fontSizeSeekBar.getProgress()));
+    private void updateTimeFontSizeValueText() {
+        timeFontSizeValueText.setText(String.format(getString(R.string.font_size_value_format), timeFontSizeSeekBar.getProgress()));
+    }
+
+    private void updateDateFontSizeValueText() {
+        dateFontSizeValueText.setText(String.format(getString(R.string.font_size_value_format), dateFontSizeSeekBar.getProgress()));
     }
 
     private void startWidgetService() {

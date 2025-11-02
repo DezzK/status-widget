@@ -19,12 +19,15 @@
     <string name="app_name">Status Widget</string>
 
     <string name="widget_title">Widget Configuration</string>
-    <string name="enable_widget">Enable Widget</string>
-    <string name="icon_size">Icon Sizes</string>
+    <string name="enable_widget">Enable widget</string>
+    <string name="icon_size">Icon sizes</string>
     <string name="icon_size_value_format">%d pixels</string>
-    <string name="show_date">Show Date</string>
-    <string name="show_time">Show Time</string>
-    <string name="font_size">Font Size</string>
+    <string name="show_date">Show date</string>
+    <string name="show_time">Show time</string>
+    <string name="show_day_of_the_week">Show day of the week</string>
+    <string name="one_line_layout">One line layout</string>
+    <string name="time_font_size">Time font size</string>
+    <string name="date_font_size">Date and day of the week font size</string>
     <string name="font_size_value_format">%d pixels</string>
     <string name="permissions_required">Permissions required</string>
     <string name="overlay_permission_required">Overlay permission required</string>

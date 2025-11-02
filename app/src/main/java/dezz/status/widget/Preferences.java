@@ -24,9 +24,12 @@ import android.graphics.Point;
 public class Preferences {
     private static final String PREF_WIDGET_ENABLED = "enabled";
     private static final String PREF_ICON_SIZE = "iconSize";
-    private static final String PREF_FONT_SIZE = "fontSize";
+    private static final String PREF_TIME_FONT_SIZE = "timeFontSize";
+    private static final String PREF_DATE_FONT_SIZE = "dateFontSize";
     private static final String PREF_SHOW_DATE = "showDate";
     private static final String PREF_SHOW_TIME = "showTime";
+    private static final String PREF_SHOW_DAY_OF_THE_WEEK = "showDayOfTheWeek";
+    private static final String PREF_ONE_LINE_LAYOUT = "oneLineLayout";
     private static final String PREF_OVERLAY_X = "overlayX";
     private static final String PREF_OVERLAY_Y = "overlayY";
 
@@ -54,26 +57,50 @@ public class Preferences {
         setBoolean(context, PREF_SHOW_TIME, value);
     }
 
+    public static boolean showDayOfTheWeek(Context context) {
+        return getPrefs(context).getBoolean(PREF_SHOW_DAY_OF_THE_WEEK, false);
+    }
+
+    public static void saveShowDayOfTheWeek(Context context, boolean value) {
+        setBoolean(context, PREF_SHOW_DAY_OF_THE_WEEK, value);
+    }
+
+    public static boolean oneLineLayout(Context context) {
+        return getPrefs(context).getBoolean(PREF_ONE_LINE_LAYOUT, false);
+    }
+
+    public static void saveOneLineLayout(Context context, boolean value) {
+        setBoolean(context, PREF_ONE_LINE_LAYOUT, value);
+    }
+
     public static int iconSize(Context context) {
-        return getPrefs(context).getInt(PREF_ICON_SIZE, 50);
+        return getPrefs(context).getInt(PREF_ICON_SIZE, 70);
     }
 
     public static void saveIconSize(Context context, int value) {
         getPrefs(context).edit().putInt(PREF_ICON_SIZE, value).apply();
     }
 
-    public static int fontSize(Context context) {
-        return getPrefs(context).getInt(PREF_FONT_SIZE, 36);
+    public static int timeFontSize(Context context) {
+        return getPrefs(context).getInt(PREF_TIME_FONT_SIZE, 60);
     }
 
-    public static void saveFontSize(Context context, int value) {
-        getPrefs(context).edit().putInt(PREF_FONT_SIZE, value).apply();
+    public static void saveTimeFontSize(Context context, int value) {
+        getPrefs(context).edit().putInt(PREF_TIME_FONT_SIZE, value).apply();
+    }
+
+    public static int dateFontSize(Context context) {
+        return getPrefs(context).getInt(PREF_DATE_FONT_SIZE, 20);
+    }
+
+    public static void saveDateFontSize(Context context, int value) {
+        getPrefs(context).edit().putInt(PREF_DATE_FONT_SIZE, value).apply();
     }
 
     public static Point overlayPosition(Context context) {
         SharedPreferences prefs = getPrefs(context);
         int x = prefs.getInt(PREF_OVERLAY_X, 0);
-        int y = prefs.getInt(PREF_OVERLAY_Y, 100);
+        int y = prefs.getInt(PREF_OVERLAY_Y, 0);
         return new Point(x, y);
     }
 
