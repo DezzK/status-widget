@@ -24,6 +24,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.location.GnssStatus;
@@ -210,6 +211,30 @@ public class WidgetService extends Service {
         locationManager = getSystemService(LocationManager.class);
         connectivityManager = getSystemService(ConnectivityManager.class);
 
+        createOverlayView();
+
+        createNotificationChannel();
+        startForeground(NOTIFICATION_ID, createNotification());
+
+        // Register status receivers
+        locationManager.registerGnssStatusCallback(gnssStatusCallback, mainHandler);
+
+        locationManager.requestLocationUpdates(
+                LocationManager.PASSIVE_PROVIDER,
+                3000,
+                0,
+                locationListener,
+                Looper.getMainLooper()
+        );
+
+        NetworkRequest networkRequest = new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .build();
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+        mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
+    }
+
+    private void createOverlayView() {
         // Create the overlay view
         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_status_widget, null);
         overlayView.setVisibility(View.VISIBLE);
@@ -249,28 +274,16 @@ public class WidgetService extends Service {
         } catch (Exception e) {
             Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_LONG).show();
             stopSelf();
-            return;
         }
+    }
 
-        createNotificationChannel();
-        startForeground(NOTIFICATION_ID, createNotification());
-
-        // Register status receivers
-        locationManager.registerGnssStatusCallback(gnssStatusCallback, mainHandler);
-
-        locationManager.requestLocationUpdates(
-                LocationManager.PASSIVE_PROVIDER,
-                3000,
-                0,
-                locationListener,
-                Looper.getMainLooper()
-        );
-
-        NetworkRequest networkRequest = new NetworkRequest.Builder()
-                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                .build();
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
-        mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (overlayView != null) {
+            windowManager.removeView(overlayView);
+            createOverlayView();
+        }
     }
 
     public void applyPreferences() {
