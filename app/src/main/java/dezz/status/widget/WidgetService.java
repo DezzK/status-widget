@@ -290,17 +290,10 @@ public class WidgetService extends Service {
     }
 
     private void updateDateTime() {
-        String content = "";
-        if (Preferences.showTime(this)) {
-            content += new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
-        }
-        if (Preferences.showDate(this)) {
-            if (!content.isEmpty()) {
-                content += ", ";
-            }
-            content += new SimpleDateFormat("d MMM", Locale.getDefault()).format(new Date());
-        }
-        dateTimeText.setText(content);
+        boolean showDate = Preferences.showDate(this);
+        boolean showTime = Preferences.showTime(this);
+        String format = (showTime ? "HH:mm" + (showDate ? ", " : "") : "") + (showDate ? "d MMM" : "");
+        dateTimeText.setText(new SimpleDateFormat(format, Locale.getDefault()).format(new Date()));
         dateTimeText.requestLayout();
     }
 
