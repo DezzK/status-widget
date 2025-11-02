@@ -291,18 +291,17 @@ public class WidgetService extends Service {
 
     private void updateDateTime() {
         String content = "";
-        if (Preferences.showDate(this)) {
-            content += new SimpleDateFormat("d MMM", Locale.getDefault()).format(new Date());
-        }
-
         if (Preferences.showTime(this)) {
-            if (!content.isEmpty()) {
-                content += " ";
-            }
             content += new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
         }
+        if (Preferences.showDate(this)) {
+            if (!content.isEmpty()) {
+                content += ", ";
+            }
+            content += new SimpleDateFormat("d MMM", Locale.getDefault()).format(new Date());
+        }
         dateTimeText.setText(content);
-        overlayView.requestLayout();
+        dateTimeText.requestLayout();
     }
 
     @SuppressLint("ClickableViewAccessibility")
