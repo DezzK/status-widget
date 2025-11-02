@@ -279,6 +279,7 @@ public class WidgetService extends Service {
         wifiStatusIcon.setLayoutParams(iconParams);
         gnssStatusIcon.setLayoutParams(iconParams);
         dateTimeText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.fontSize(this));
+        dateTimeText.setLastBaselineToBottomHeight((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, ((float) Preferences.fontSize(this)) / 2, displayMetrics));
         dateTimeText.setVisibility((Preferences.showDate(this) || Preferences.showTime(this)) ? View.VISIBLE : View.GONE);
 
         updateDateTime();

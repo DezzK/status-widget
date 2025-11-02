@@ -32,16 +32,17 @@
         android:id="@+id/dateTimeText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:layout_marginEnd="8sp"
-        android:textSize="100sp"
-        android:textColor="@color/text_primary"
+        android:layout_weight="1"
+        android:fontFamily="sans-serif-condensed-medium"
         android:shadowColor="@android:color/darker_gray"
         android:shadowDx="5"
         android:shadowDy="5"
         android:shadowRadius="4"
-        android:fontFamily="sans-serif-condensed-medium"
-        android:text="01 Nov 2025 14:19" />
+        android:text="time, date"
+        android:textColor="@color/text_primary"
+        android:textSize="100sp"
+        tools:ignore="HardcodedText" />
 
     <!-- Wi-Fi Status -->
     <ImageView
@@ -49,6 +50,7 @@
         android:layout_width="100sp"
         android:layout_height="100sp"
         android:layout_marginEnd="8sp"
+        android:layout_marginTop="10sp"
         android:src="@drawable/ic_wifi_off"
         tools:ignore="ContentDescription" />
 
@@ -57,7 +59,8 @@
         android:id="@+id/gnssStatusIcon"
         android:layout_width="100sp"
         android:layout_height="100sp"
-        android:src="@drawable/ic_gps_off"
         android:layout_marginEnd="8sp"
+        android:layout_marginTop="10sp"
+        android:src="@drawable/ic_gps_off"
         tools:ignore="ContentDescription" />
 </LinearLayout>
