@@ -25,7 +25,7 @@
     android:background="#00000000"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="0dp">
+    android:padding="5sp">
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -41,9 +41,9 @@
             android:fontFamily="sans-serif-condensed-medium"
             android:maxLines="1"
             android:shadowColor="@color/text_shadow"
-            android:shadowDx="5"
-            android:shadowDy="5"
-            android:shadowRadius="4"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="8"
             android:text="10:00"
             android:textColor="@color/text_primary"
             android:textSize="100sp"
@@ -53,8 +53,8 @@
             android:id="@+id/dateContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center">
+            android:layout_gravity="center"
+            android:orientation="horizontal">
 
             <!-- Day of the Week -->
             <TextView
@@ -63,9 +63,9 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-condensed-medium"
                 android:shadowColor="@color/text_shadow"
-                android:shadowDx="5"
-                android:shadowDy="5"
-                android:shadowRadius="4"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="8"
                 android:text="Tue, "
                 android:textColor="@color/text_primary"
                 android:textSize="20sp"
@@ -78,9 +78,9 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-condensed-medium"
                 android:shadowColor="@color/text_shadow"
-                android:shadowDx="5"
-                android:shadowDy="5"
-                android:shadowRadius="4"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="8"
                 android:text="10 Nov"
                 android:textColor="@color/text_primary"
                 android:textSize="20sp"
