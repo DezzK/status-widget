@@ -23,7 +23,7 @@
     <string name="missing_permissions_toast">Некоторые разрешения не предоставлены. Приложение может работать некорректно.</string>
 
     <string name="widget_title">Настройки виджета</string>
-    <string name="enable_widget">Включить виджет</string>
+    <string name="enable_widget">Включить виджет (сбросить позицию)</string>
     <string name="icon_size">Размер иконок</string>
     <string name="icon_size_value_format">%d пикс.</string>
     <string name="show_date">Показывать дату</string>
