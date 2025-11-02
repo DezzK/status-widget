@@ -35,7 +35,7 @@
         android:layout_marginEnd="8sp"
         android:layout_weight="1"
         android:fontFamily="sans-serif-condensed-medium"
-        android:shadowColor="@android:color/darker_gray"
+        android:shadowColor="@color/text_shadow"
         android:shadowDx="5"
         android:shadowDy="5"
         android:shadowRadius="4"
