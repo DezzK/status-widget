@@ -93,6 +93,8 @@ public class WidgetService extends Service {
     private int initialY;
     private float initialTouchX;
     private float initialTouchY;
+    private GnssState gnssState = GnssState.OFF;
+    private WiFiState wifiState = WiFiState.OFF;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private LocationManager locationManager = null;
@@ -111,9 +113,9 @@ public class WidgetService extends Service {
         @Override
         public void run() {
             if (System.currentTimeMillis() - lastLocationUpdateTime > 10000) {
-                updateGnssStatus(GnssState.OFF);
+                setGnssStatus(GnssState.OFF);
             } else if (System.currentTimeMillis() - lastLocationUpdateTime > 5000) {
-                updateGnssStatus(GnssState.BAD);
+                setGnssStatus(GnssState.BAD);
             }
 
             mainHandler.postDelayed(this, GNSS_STATUS_CHECK_INTERVAL);
@@ -124,19 +126,19 @@ public class WidgetService extends Service {
         @Override
         public void onStarted() {
             Log.d(TAG, "GNSS is started");
-            updateGnssStatus(GnssState.BAD);
+            setGnssStatus(GnssState.BAD);
         }
 
         @Override
         public void onStopped() {
             Log.d(TAG, "GNSS is stopped");
-            updateGnssStatus(GnssState.OFF);
+            setGnssStatus(GnssState.OFF);
         }
 
         @Override
         public void onFirstFix(int ttffMillis) {
             Log.d(TAG, "GNSS has first fix");
-            updateGnssStatus(GnssState.BAD);
+            setGnssStatus(GnssState.BAD);
         }
     };
 
@@ -146,9 +148,9 @@ public class WidgetService extends Service {
             Log.d(TAG, "Location changed: " + location);
             lastLocationUpdateTime = System.currentTimeMillis();
             if (location.hasAccuracy() && location.getAccuracy() < 5.0) {
-                updateGnssStatus(GnssState.GOOD);
+                setGnssStatus(GnssState.GOOD);
             } else {
-                updateGnssStatus(GnssState.BAD);
+                setGnssStatus(GnssState.BAD);
             }
         }
 
@@ -168,13 +170,13 @@ public class WidgetService extends Service {
         public void onAvailable(@NonNull Network network) {
             Log.d(TAG, "Wi-Fi is connected");
             // TODO: Change this to use the actual state of the Wi-Fi connection
-            updateWifiStatus(WiFiState.DISCONNECTED);
+            setWifiStatus(WiFiState.DISCONNECTED);
         }
 
         @Override
         public void onLost(@NonNull Network network) {
             Log.d(TAG, "Wi-Fi is lost");
-            updateWifiStatus(WiFiState.OFF);
+            setWifiStatus(WiFiState.OFF);
         }
 
         @Override
@@ -184,9 +186,9 @@ public class WidgetService extends Service {
 
                 // TODO: Change this to use the actual state of the Wi-Fi connection
                 if (hasInternet) {
-                    updateWifiStatus(WiFiState.CONNECTED);
+                    setWifiStatus(WiFiState.CONNECTED);
                 } else {
-                    updateWifiStatus(WiFiState.DISCONNECTED);
+                    setWifiStatus(WiFiState.DISCONNECTED);
                 }
 
                 Log.d(TAG, "Wi-Fi capabilities changed, has internet = " + hasInternet);
@@ -249,9 +251,8 @@ public class WidgetService extends Service {
 
         applyPreferences();
 
-        // Set initial states
-        updateWifiStatus(WiFiState.OFF);
-        updateGnssStatus(GnssState.OFF);
+        updateWifiStatus();
+        updateGnssStatus();
 
         // Set up drag listener
         setupDragListener();
@@ -365,16 +366,26 @@ public class WidgetService extends Service {
         startActivity(startIntent);
     }
 
-    private void updateWifiStatus(WiFiState status) {
-        wifiStatusIcon.setImageResource(switch (status) {
+    private void setWifiStatus(WiFiState newState) {
+        wifiState = newState;
+        updateWifiStatus();
+    }
+
+    private void updateWifiStatus() {
+        wifiStatusIcon.setImageResource(switch (wifiState) {
             case WiFiState.OFF -> R.drawable.ic_wifi_off;
             case WiFiState.DISCONNECTED -> R.drawable.ic_wifi_disconnected;
             case WiFiState.CONNECTED -> R.drawable.ic_wifi_connected;
         });
     }
 
-    private void updateGnssStatus(GnssState status) {
-        gnssStatusIcon.setImageResource(switch (status) {
+    private void setGnssStatus(GnssState newState) {
+        gnssState = newState;
+        updateGnssStatus();
+    }
+
+    private void updateGnssStatus() {
+        gnssStatusIcon.setImageResource(switch (gnssState) {
             case OFF -> R.drawable.ic_gps_off;
             case BAD -> R.drawable.ic_gps_bad;
             case GOOD -> R.drawable.ic_gps_good;
