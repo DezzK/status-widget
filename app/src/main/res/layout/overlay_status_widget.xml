@@ -93,6 +93,7 @@
         android:id="@+id/wifiStatusIcon"
         android:layout_width="100sp"
         android:layout_height="100sp"
+        android:paddingHorizontal="4sp"
         android:src="@drawable/ic_wifi_off"
         tools:ignore="ContentDescription" />
 
@@ -101,6 +102,7 @@
         android:id="@+id/gnssStatusIcon"
         android:layout_width="100sp"
         android:layout_height="100sp"
+        android:paddingHorizontal="4sp"
         android:src="@drawable/ic_gps_off"
         tools:ignore="ContentDescription" />
 </LinearLayout>
