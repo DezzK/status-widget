@@ -21,14 +21,13 @@
     <string name="widget_title">Widget Configuration</string>
     <string name="enable_widget">Enable widget (reset position)</string>
     <string name="icon_size">Icon sizes</string>
-    <string name="icon_size_value_format">%d pixels</string>
     <string name="show_date">Show date</string>
     <string name="show_time">Show time</string>
     <string name="show_day_of_the_week">Show day of the week</string>
     <string name="one_line_layout">One line layout</string>
     <string name="time_font_size">Time font size</string>
     <string name="date_font_size">Date and day of the week font size</string>
-    <string name="font_size_value_format">%d pixels</string>
+    <string name="size_value_format">%d pixels</string>
     <string name="permissions_required">Permissions required</string>
     <string name="overlay_permission_required">Overlay permission required</string>
     <string name="all_permissions_granted_toast">All permissions granted!</string>
@@ -37,4 +36,8 @@
     <string name="notification_content">Widget service is running</string>
 
     <string name="copyright_notice" translatable="false">© 2025 Dezz (Telegram: <a href="https://t.me/DezzK">DezzK</a>)</string>
+    <string name="show_full_day_and_month">Show full day-of-the-week and month names</string>
+    <string name="show_wifi">Show WiFi icon</string>
+    <string name="show_gnss">Show GNSS icon</string>
+    <string name="spacing_between_text_and_icons_size">Spacing between texts and icons</string>
 </resources>

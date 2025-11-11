@@ -77,7 +77,8 @@
                     android:layout_marginVertical="8sp"
                     android:text="@string/enable_widget"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showTimeSwitch"
@@ -86,7 +87,8 @@
                     android:layout_marginVertical="8sp"
                     android:text="@string/show_time"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showDateSwitch"
@@ -95,7 +97,8 @@
                     android:layout_marginVertical="8sp"
                     android:text="@string/show_date"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showDaySwitch"
@@ -104,7 +107,38 @@
                     android:layout_marginVertical="8sp"
                     android:text="@string/show_day_of_the_week"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/showFullDayAndMonthSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/show_full_day_and_month"
+                    android:textColor="@color/text_primary"
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/showWiFiSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/show_wifi"
+                    android:textColor="@color/text_primary"
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/showGnssSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/show_gnss"
+                    android:textColor="@color/text_primary"
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/oneLineLayoutSwitch"
@@ -113,15 +147,18 @@
                     android:layout_marginVertical="8sp"
                     android:text="@string/one_line_layout"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
 
                 <!-- Icon Sizes -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="20sp"
                     android:text="@string/icon_size"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -134,15 +171,18 @@
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8sp"
                         android:layout_weight="1"
+                        android:layout_gravity="center_vertical"
                         android:max="100"
                         android:min="10"
-                        android:progress="50" />
+                        android:progress="50"
+                        android:minHeight="48sp" />
 
                     <TextView
                         android:id="@+id/iconSizeValueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/icon_size_value_format"
+                        android:layout_gravity="center_vertical"
+                        android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
                         android:textSize="24sp" />
                 </LinearLayout>
@@ -166,15 +206,18 @@
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8sp"
                         android:layout_weight="1"
+                        android:layout_gravity="center_vertical"
                         android:max="100"
                         android:min="10"
-                        android:progress="50" />
+                        android:progress="50"
+                        android:minHeight="48sp" />
 
                     <TextView
                         android:id="@+id/timeFontSizeValueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/font_size_value_format"
+                        android:layout_gravity="center_vertical"
+                        android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
                         android:textSize="24sp" />
                 </LinearLayout>
@@ -198,15 +241,52 @@
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8sp"
                         android:layout_weight="1"
+                        android:layout_gravity="center_vertical"
                         android:max="100"
                         android:min="10"
-                        android:progress="50" />
+                        android:progress="50"
+                        android:minHeight="48sp" />
 
                     <TextView
                         android:id="@+id/dateFontSizeValueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/font_size_value_format"
+                        android:text="@string/size_value_format"
+                        android:textColor="@color/text_primary"
+                        android:textSize="24sp" />
+                </LinearLayout>
+
+                <!-- Spacing Between Text and Icons -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/spacing_between_text_and_icons_size"
+                    android:textColor="@color/text_primary"
+                    android:textSize="24sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <SeekBar
+                        android:id="@+id/spacingBetweenTextsAndIconsSeekBar"
+                        android:layout_width="0sp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8sp"
+                        android:layout_weight="1"
+                        android:layout_gravity="center_vertical"
+                        android:max="30"
+                        android:min="0"
+                        android:progress="50"
+                        android:minHeight="48sp" />
+
+                    <TextView
+                        android:id="@+id/spacingBetweenTextsAndIconsValueText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
                         android:textSize="24sp" />
                 </LinearLayout>

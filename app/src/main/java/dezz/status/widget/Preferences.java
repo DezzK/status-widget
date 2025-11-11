@@ -23,13 +23,17 @@ import android.graphics.Point;
 
 public class Preferences {
     private static final String PREF_WIDGET_ENABLED = "enabled";
-    private static final String PREF_ICON_SIZE = "iconSize";
-    private static final String PREF_TIME_FONT_SIZE = "timeFontSize";
-    private static final String PREF_DATE_FONT_SIZE = "dateFontSize";
     private static final String PREF_SHOW_DATE = "showDate";
     private static final String PREF_SHOW_TIME = "showTime";
     private static final String PREF_SHOW_DAY_OF_THE_WEEK = "showDayOfTheWeek";
+    private static final String PREF_SHOW_WIFI_ICON = "showWifiIcon";
+    private static final String PREF_SHOW_GNSS_ICON = "showGnssIcon";
+    private static final String PREF_SHOW_FULL_DAY_AND_MONTH = "showFullDayAndMonth";
     private static final String PREF_ONE_LINE_LAYOUT = "oneLineLayout";
+    private static final String PREF_ICON_SIZE = "iconSize";
+    private static final String PREF_TIME_FONT_SIZE = "timeFontSize";
+    private static final String PREF_DATE_FONT_SIZE = "dateFontSize";
+    private static final String PREF_SPACING_BETWEEN_TEXTS_AND_ICONS = "spacingBetweenTextsAndIcons";
     private static final String PREF_OVERLAY_X = "overlayX";
     private static final String PREF_OVERLAY_Y = "overlayY";
 
@@ -65,6 +69,30 @@ public class Preferences {
         setBoolean(context, PREF_SHOW_DAY_OF_THE_WEEK, value);
     }
 
+    public static boolean showWifiIcon(Context context) {
+        return getPrefs(context).getBoolean(PREF_SHOW_WIFI_ICON, true);
+    }
+
+    public static void saveShowWifiIcon(Context context, boolean value) {
+        setBoolean(context, PREF_SHOW_WIFI_ICON, value);
+    }
+
+    public static boolean showGnssIcon(Context context) {
+        return getPrefs(context).getBoolean(PREF_SHOW_GNSS_ICON, true);
+    }
+
+    public static void saveShowGnssIcon(Context context, boolean value) {
+        setBoolean(context, PREF_SHOW_GNSS_ICON, value);
+    }
+
+    public static boolean showFullDayAndMonth(Context context) {
+        return getPrefs(context).getBoolean(PREF_SHOW_FULL_DAY_AND_MONTH, false);
+    }
+
+    public static void saveShowFullDayAndMonth(Context context, boolean value) {
+        setBoolean(context, PREF_SHOW_FULL_DAY_AND_MONTH, value);
+    }
+
     public static boolean oneLineLayout(Context context) {
         return getPrefs(context).getBoolean(PREF_ONE_LINE_LAYOUT, false);
     }
@@ -95,6 +123,14 @@ public class Preferences {
 
     public static void saveDateFontSize(Context context, int value) {
         getPrefs(context).edit().putInt(PREF_DATE_FONT_SIZE, value).apply();
+    }
+
+    public static int spacingBetweenTextsAndIcons(Context context) {
+        return getPrefs(context).getInt(PREF_SPACING_BETWEEN_TEXTS_AND_ICONS, 0);
+    }
+
+    public static void saveSpacingBetweenTextsAndIcons(Context context, int value) {
+        getPrefs(context).edit().putInt(PREF_SPACING_BETWEEN_TEXTS_AND_ICONS, value).apply();
     }
 
     public static Point overlayPosition(Context context) {

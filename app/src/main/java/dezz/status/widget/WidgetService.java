@@ -25,6 +25,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.location.GnssStatus;
@@ -48,12 +49,12 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -84,10 +85,11 @@ public class WidgetService extends Service {
     private View overlayView;
     private ImageView wifiStatusIcon;
     private ImageView gnssStatusIcon;
-    private TextView timeText;
     private LinearLayout dateContainer;
-    private TextView dateText;
-    private TextView dayText;
+    private LinearLayout dateTimeContainer;
+    private OutlineTextView timeText;
+    private OutlineTextView dateText;
+    private OutlineTextView dayText;
 
     private int initialX;
     private int initialY;
@@ -196,7 +198,7 @@ public class WidgetService extends Service {
         }
     };
 
-    @SuppressLint({"MissingPermission", "InflateParams"})
+    @SuppressLint({"InflateParams"})
     @Override
     public void onCreate() {
         if (!Permissions.allPermissionsGranted(this)) {
@@ -210,30 +212,11 @@ public class WidgetService extends Service {
         instance = this;
 
         windowManager = getSystemService(WindowManager.class);
-        locationManager = getSystemService(LocationManager.class);
-        connectivityManager = getSystemService(ConnectivityManager.class);
 
         createOverlayView();
 
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, createNotification());
-
-        // Register status receivers
-        locationManager.registerGnssStatusCallback(gnssStatusCallback, mainHandler);
-
-        locationManager.requestLocationUpdates(
-                LocationManager.PASSIVE_PROVIDER,
-                3000,
-                0,
-                locationListener,
-                Looper.getMainLooper()
-        );
-
-        NetworkRequest networkRequest = new NetworkRequest.Builder()
-                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                .build();
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
-        mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
     }
 
     private void createOverlayView() {
@@ -244,8 +227,9 @@ public class WidgetService extends Service {
         // Initialize controls
         wifiStatusIcon = overlayView.findViewById(R.id.wifiStatusIcon);
         gnssStatusIcon = overlayView.findViewById(R.id.gnssStatusIcon);
-        timeText = overlayView.findViewById(R.id.timeText);
         dateContainer = overlayView.findViewById(R.id.dateContainer);
+        dateTimeContainer = overlayView.findViewById(R.id.dateTimeContainer);
+        timeText = overlayView.findViewById(R.id.timeText);
         dateText = overlayView.findViewById(R.id.dateText);
         dayText = overlayView.findViewById(R.id.dayOfTheWeekText);
 
@@ -287,6 +271,7 @@ public class WidgetService extends Service {
         }
     }
 
+    @SuppressLint("MissingPermission")
     public void applyPreferences() {
         DisplayMetrics displayMetrics = this.getResources().getDisplayMetrics();
 
@@ -300,6 +285,17 @@ public class WidgetService extends Service {
         );
         wifiStatusIcon.setLayoutParams(iconParams);
         gnssStatusIcon.setLayoutParams(iconParams);
+
+        float timeOutlineWidth = Math.max(1F, Preferences.timeFontSize(this) / 10F);
+        float dateOutlineWidth = Math.max(1F, Preferences.dateFontSize(this) / 10F);
+        int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
+        timeText.setOutlineColor(outlineColor);
+        timeText.setOutlineWidth(timeOutlineWidth);
+        dateText.setOutlineColor(outlineColor);
+        dateText.setOutlineWidth(dateOutlineWidth);
+        dayText.setOutlineColor(outlineColor);
+        dayText.setOutlineWidth(dateOutlineWidth);
+
         timeText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.timeFontSize(this));
         dateText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.dateFontSize(this));
         dayText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.dateFontSize(this));
@@ -307,6 +303,9 @@ public class WidgetService extends Service {
         timeText.setVisibility(Preferences.showTime(this) ? View.VISIBLE : View.GONE);
         dateText.setVisibility(Preferences.showDate(this) ? View.VISIBLE : View.GONE);
         dayText.setVisibility(Preferences.showDayOfTheWeek(this) ? View.VISIBLE : View.GONE);
+        wifiStatusIcon.setVisibility(Preferences.showWifiIcon(this) ? View.VISIBLE : View.GONE);
+        gnssStatusIcon.setVisibility(Preferences.showGnssIcon(this) ? View.VISIBLE : View.GONE);
+        dateTimeContainer.setPadding(0, 0, Preferences.spacingBetweenTextsAndIcons(this), 0);
 
         updateDateTime();
 
@@ -314,15 +313,53 @@ public class WidgetService extends Service {
         if (Preferences.showDate(this) || Preferences.showTime(this)) {
             mainHandler.postDelayed(updateDateTimeRunnable, 1000);
         }
+
+        if (Preferences.showWifiIcon(this)) {
+            if (connectivityManager == null) {
+                connectivityManager = getSystemService(ConnectivityManager.class);
+
+                NetworkRequest networkRequest = new NetworkRequest.Builder()
+                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                        .build();
+                connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+            }
+        } else if (connectivityManager != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+            connectivityManager = null;
+        }
+
+        if (Preferences.showGnssIcon(this)) {
+            if (locationManager == null) {
+                locationManager = getSystemService(LocationManager.class);
+
+                locationManager.registerGnssStatusCallback(gnssStatusCallback, mainHandler);
+                locationManager.requestLocationUpdates(
+                        LocationManager.PASSIVE_PROVIDER,
+                        1000,
+                        0,
+                        locationListener,
+                        Looper.getMainLooper()
+                );
+                mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
+            }
+        } else if (locationManager != null) {
+            mainHandler.removeCallbacks(updateGnssStatusRunnable);
+            locationManager.removeUpdates(locationListener);
+            locationManager.unregisterGnssStatusCallback(gnssStatusCallback);
+            locationManager = null;
+        }
     }
 
     private void updateDateTime() {
         boolean putDivider = Preferences.showDate(this) && Preferences.oneLineLayout(this);
+        boolean showFullDayAndMonth = Preferences.showFullDayAndMonth(this);
+        String dayOfTheWeekFormatStr = showFullDayAndMonth ? "EEEE" : "EEE";
+        String dateFormatStr = showFullDayAndMonth ? "d MMMM" : "d MMM";
 
         Date now = new Date();
         timeText.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now));
-        dayText.setText(new SimpleDateFormat("EEE" + (putDivider ? ", " : ""), Locale.getDefault()).format(now));
-        dateText.setText(new SimpleDateFormat("d MMM", Locale.getDefault()).format(now));
+        dayText.setText(new SimpleDateFormat(dayOfTheWeekFormatStr + (putDivider ? ", " : ""), Locale.getDefault()).format(now));
+        dateText.setText(new SimpleDateFormat(dateFormatStr, Locale.getDefault()).format(now));
 
 //        dateTimeText.requestLayout();
     }
@@ -433,6 +470,9 @@ public class WidgetService extends Service {
     @Override
     public void onDestroy() {
         instance = null;
+
+        mainHandler.removeCallbacks(updateGnssStatusRunnable);
+        mainHandler.removeCallbacks(updateDateTimeRunnable);
 
         if (overlayView != null && windowManager != null) {
             windowManager.removeView(overlayView);

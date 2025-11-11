@@ -28,22 +28,19 @@
     android:padding="5sp">
 
     <LinearLayout
+        android:id="@+id/dateTimeContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
         <!-- Time -->
-        <TextView
+        <dezz.status.widget.OutlineTextView
             android:id="@+id/timeText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8sp"
             android:fontFamily="@font/roboto_condensed_medium"
             android:maxLines="1"
-            android:shadowColor="@color/text_shadow"
-            android:shadowDx="0"
-            android:shadowDy="0"
-            android:shadowRadius="8"
             android:text="10:00"
             android:textColor="@color/text_primary"
             android:textSize="100sp"
@@ -57,30 +54,22 @@
             android:orientation="horizontal">
 
             <!-- Day of the Week -->
-            <TextView
+            <dezz.status.widget.OutlineTextView
                 android:id="@+id/dayOfTheWeekText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/roboto_condensed_medium"
-                android:shadowColor="@color/text_shadow"
-                android:shadowDx="0"
-                android:shadowDy="0"
-                android:shadowRadius="8"
                 android:text="Tue, "
                 android:textColor="@color/text_primary"
                 android:textSize="20sp"
                 tools:ignore="HardcodedText" />
 
             <!-- Date -->
-            <TextView
+            <dezz.status.widget.OutlineTextView
                 android:id="@+id/dateText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/roboto_condensed_medium"
-                android:shadowColor="@color/text_shadow"
-                android:shadowDx="0"
-                android:shadowDy="0"
-                android:shadowRadius="8"
                 android:text="10 Nov"
                 android:textColor="@color/text_primary"
                 android:textSize="20sp"
