@@ -21,6 +21,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.method.LinkMovementMethod;
+import android.text.method.MovementMethod;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -86,6 +88,9 @@ public class MainActivity extends AppCompatActivity {
         timeFontSizeValueText = findViewById(R.id.timeFontSizeValueText);
         dateFontSizeValueText = findViewById(R.id.dateFontSizeValueText);
         spacingBetweenTextsAndIconsValueText = findViewById(R.id.spacingBetweenTextsAndIconsValueText);
+
+        TextView copyrightNoticeText = findViewById(R.id.copyrightNoticeText);
+        copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
 
         enableWidgetSwitch.setChecked(Preferences.widgetEnabled(this));
         showDateSwitch.setChecked(Preferences.showDate(this));

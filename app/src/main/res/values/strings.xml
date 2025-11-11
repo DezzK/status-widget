@@ -35,9 +35,10 @@
     <string name="notification_channel_title">Status Widget Overlay Service</string>
     <string name="notification_content">Widget service is running</string>
 
-    <string name="copyright_notice" translatable="false">© 2025 Dezz (Telegram: <a href="https://t.me/DezzK">DezzK</a>)</string>
     <string name="show_full_day_and_month">Show full day-of-the-week and month names</string>
     <string name="show_wifi">Show WiFi icon</string>
     <string name="show_gnss">Show GNSS icon</string>
     <string name="spacing_between_text_and_icons_size">Spacing between texts and icons</string>
+
+    <string name="copyright_notice" translatable="false">© 2025 Dezz (Telegram: <a href="https://t.me/DezzK">DezzK</a>), S.Ramazanov (Telegram: <a href="https://t.me/RamazanovS">RamazanovS</a>)</string>
 </resources>
