@@ -25,7 +25,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.location.GnssStatus;
@@ -69,8 +68,8 @@ public class WidgetService extends Service {
 
     enum WiFiState {
         OFF,
-        DISCONNECTED,
-        CONNECTED
+        NO_INTERNET,
+        INTERNET
     }
 
     private static final String TAG = "WidgetService";
@@ -149,7 +148,7 @@ public class WidgetService extends Service {
         public void onLocationChanged(@NonNull Location location) {
             Log.d(TAG, "Location changed: " + location);
             lastLocationUpdateTime = System.currentTimeMillis();
-            if (location.hasAccuracy() && location.getAccuracy() < 5.0) {
+            if (location.hasAccuracy() && location.getAccuracy() < 10.0) {
                 setGnssStatus(GnssState.GOOD);
             } else {
                 setGnssStatus(GnssState.BAD);
@@ -171,8 +170,7 @@ public class WidgetService extends Service {
         @Override
         public void onAvailable(@NonNull Network network) {
             Log.d(TAG, "Wi-Fi is connected");
-            // TODO: Change this to use the actual state of the Wi-Fi connection
-            setWifiStatus(WiFiState.DISCONNECTED);
+            setWifiStatus(WiFiState.NO_INTERNET);
         }
 
         @Override
@@ -186,11 +184,10 @@ public class WidgetService extends Service {
             if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 boolean hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
 
-                // TODO: Change this to use the actual state of the Wi-Fi connection
                 if (hasInternet) {
-                    setWifiStatus(WiFiState.CONNECTED);
+                    setWifiStatus(WiFiState.INTERNET);
                 } else {
-                    setWifiStatus(WiFiState.DISCONNECTED);
+                    setWifiStatus(WiFiState.NO_INTERNET);
                 }
 
                 Log.d(TAG, "Wi-Fi capabilities changed, has internet = " + hasInternet);
@@ -334,7 +331,7 @@ public class WidgetService extends Service {
 
                 locationManager.registerGnssStatusCallback(gnssStatusCallback, mainHandler);
                 locationManager.requestLocationUpdates(
-                        LocationManager.PASSIVE_PROVIDER,
+                        LocationManager.GPS_PROVIDER,
                         1000,
                         0,
                         locationListener,
@@ -411,8 +408,8 @@ public class WidgetService extends Service {
     private void updateWifiStatus() {
         wifiStatusIcon.setImageResource(switch (wifiState) {
             case WiFiState.OFF -> R.drawable.ic_wifi_off;
-            case WiFiState.DISCONNECTED -> R.drawable.ic_wifi_disconnected;
-            case WiFiState.CONNECTED -> R.drawable.ic_wifi_connected;
+            case WiFiState.NO_INTERNET -> R.drawable.ic_wifi_no_internet;
+            case WiFiState.INTERNET -> R.drawable.ic_wifi_internet;
         });
     }
 
