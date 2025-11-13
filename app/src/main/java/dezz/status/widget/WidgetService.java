@@ -283,8 +283,8 @@ public class WidgetService extends Service {
         wifiStatusIcon.setLayoutParams(iconParams);
         gnssStatusIcon.setLayoutParams(iconParams);
 
-        float timeOutlineWidth = Math.max(1F, Preferences.timeFontSize(this) / 10F);
-        float dateOutlineWidth = Math.max(1F, Preferences.dateFontSize(this) / 10F);
+        float timeOutlineWidth = Math.max(2F, Preferences.timeFontSize(this) / 10F);
+        float dateOutlineWidth = Math.max(2F, Preferences.dateFontSize(this) / 10F);
         int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
         timeText.setOutlineColor(outlineColor);
         timeText.setOutlineWidth(timeOutlineWidth);
@@ -351,11 +351,12 @@ public class WidgetService extends Service {
         boolean putDivider = Preferences.showDate(this) && Preferences.oneLineLayout(this);
         boolean showFullDayAndMonth = Preferences.showFullDayAndMonth(this);
         String dayOfTheWeekFormatStr = showFullDayAndMonth ? "EEEE" : "EEE";
-        String dateFormatStr = showFullDayAndMonth ? "d MMMM" : "d MMM";
+        // We add spaces at the end to avoid outline cropping by canvas which is not ready for the outline
+        String dateFormatStr = showFullDayAndMonth ? "d MMMM " : "d MMM ";
 
         Date now = new Date();
         timeText.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now));
-        dayText.setText(new SimpleDateFormat(dayOfTheWeekFormatStr + (putDivider ? ", " : ""), Locale.getDefault()).format(now));
+        dayText.setText(new SimpleDateFormat(dayOfTheWeekFormatStr + (putDivider ? ", " : " "), Locale.getDefault()).format(now));
         dateText.setText(new SimpleDateFormat(dateFormatStr, Locale.getDefault()).format(now));
 
 //        dateTimeText.requestLayout();
