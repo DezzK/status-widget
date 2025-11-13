@@ -16,4 +16,4 @@
  */
 
 include ':app'
-rootProject.name = "Status Floating Widget"
+rootProject.name = "Information Widget"
