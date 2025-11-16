@@ -48,6 +48,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -61,15 +62,11 @@ import java.util.Locale;
 
 public class WidgetService extends Service {
     enum GnssState {
-        OFF,
-        BAD,
-        GOOD
+        OFF, BAD, GOOD
     }
 
     enum WiFiState {
-        OFF,
-        NO_INTERNET,
-        INTERNET
+        OFF, NO_INTERNET, INTERNET
     }
 
     private static final String TAG = "WidgetService";
@@ -82,13 +79,11 @@ public class WidgetService extends Service {
     private WindowManager windowManager;
     private WindowManager.LayoutParams params;
     private View overlayView;
-    private ImageView wifiStatusIcon;
-    private ImageView gnssStatusIcon;
-    private LinearLayout dateContainer;
-    private LinearLayout dateTimeContainer;
     private OutlineTextView timeText;
     private OutlineTextView dateText;
-    private OutlineTextView dayText;
+    private TextView spacingBetweenTextsAndIcons;
+    private ImageView wifiStatusIcon;
+    private ImageView gnssStatusIcon;
 
     private int initialX;
     private int initialY;
@@ -222,13 +217,11 @@ public class WidgetService extends Service {
         overlayView.setVisibility(View.VISIBLE);
 
         // Initialize controls
-        wifiStatusIcon = overlayView.findViewById(R.id.wifiStatusIcon);
-        gnssStatusIcon = overlayView.findViewById(R.id.gnssStatusIcon);
-        dateContainer = overlayView.findViewById(R.id.dateContainer);
-        dateTimeContainer = overlayView.findViewById(R.id.dateTimeContainer);
         timeText = overlayView.findViewById(R.id.timeText);
         dateText = overlayView.findViewById(R.id.dateText);
-        dayText = overlayView.findViewById(R.id.dayOfTheWeekText);
+        spacingBetweenTextsAndIcons = overlayView.findViewById(R.id.spacingBetweenTextsAndIcons);
+        wifiStatusIcon = overlayView.findViewById(R.id.wifiStatusIcon);
+        gnssStatusIcon = overlayView.findViewById(R.id.gnssStatusIcon);
 
         applyPreferences();
 
@@ -240,13 +233,7 @@ public class WidgetService extends Service {
 
         // Add the view to the window
         Point position = Preferences.overlayPosition(this);
-        params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                PixelFormat.TRANSLUCENT
-        );
+        params = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, PixelFormat.TRANSLUCENT);
         params.gravity = Gravity.TOP | Gravity.START;
         params.x = position.x;
         params.y = position.y;
@@ -272,37 +259,29 @@ public class WidgetService extends Service {
     public void applyPreferences() {
         DisplayMetrics displayMetrics = this.getResources().getDisplayMetrics();
 
-        dateContainer.setOrientation(Preferences.oneLineLayout(this) ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
-
         int scaledIconSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, (float) Preferences.iconSize(this), displayMetrics);
 
-        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
-                scaledIconSize,
-                scaledIconSize
-        );
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(scaledIconSize, scaledIconSize);
         wifiStatusIcon.setLayoutParams(iconParams);
         gnssStatusIcon.setLayoutParams(iconParams);
 
-        float timeOutlineWidth = Math.max(2F, Preferences.timeFontSize(this) / 10F);
-        float dateOutlineWidth = Math.max(2F, Preferences.dateFontSize(this) / 10F);
+        float timeOutlineWidth = Math.max(4F, Preferences.timeFontSize(this) / 16F);
+        float dateOutlineWidth = Math.max(4F, Preferences.dateFontSize(this) / 16F);
         int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
         timeText.setOutlineColor(outlineColor);
         timeText.setOutlineWidth(timeOutlineWidth);
         dateText.setOutlineColor(outlineColor);
         dateText.setOutlineWidth(dateOutlineWidth);
-        dayText.setOutlineColor(outlineColor);
-        dayText.setOutlineWidth(dateOutlineWidth);
 
         timeText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.timeFontSize(this));
         dateText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.dateFontSize(this));
-        dayText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.dateFontSize(this));
-//        dateTimeText.setLastBaselineToBottomHeight((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, ((float) Preferences.fontSize(this)) / 2, displayMetrics));
         timeText.setVisibility(Preferences.showTime(this) ? View.VISIBLE : View.GONE);
-        dateText.setVisibility(Preferences.showDate(this) ? View.VISIBLE : View.GONE);
-        dayText.setVisibility(Preferences.showDayOfTheWeek(this) ? View.VISIBLE : View.GONE);
+        dateText.setVisibility(Preferences.showDate(this) || Preferences.showDayOfTheWeek(this) ? View.VISIBLE : View.GONE);
         wifiStatusIcon.setVisibility(Preferences.showWifiIcon(this) ? View.VISIBLE : View.GONE);
         gnssStatusIcon.setVisibility(Preferences.showGnssIcon(this) ? View.VISIBLE : View.GONE);
-        dateTimeContainer.setPadding(0, 0, Preferences.spacingBetweenTextsAndIcons(this), 0);
+        spacingBetweenTextsAndIcons.setWidth(Preferences.spacingBetweenTextsAndIcons(this));
+        timeText.setTranslationY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Preferences.adjustTimeY(this), displayMetrics));
+        dateText.setTranslationY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Preferences.adjustDateY(this), displayMetrics));
 
         updateDateTime();
 
@@ -315,9 +294,7 @@ public class WidgetService extends Service {
             if (connectivityManager == null) {
                 connectivityManager = getSystemService(ConnectivityManager.class);
 
-                NetworkRequest networkRequest = new NetworkRequest.Builder()
-                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                        .build();
+                NetworkRequest networkRequest = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build();
                 connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
             }
         } else if (connectivityManager != null) {
@@ -330,13 +307,7 @@ public class WidgetService extends Service {
                 locationManager = getSystemService(LocationManager.class);
 
                 locationManager.registerGnssStatusCallback(gnssStatusCallback, mainHandler);
-                locationManager.requestLocationUpdates(
-                        LocationManager.GPS_PROVIDER,
-                        1000,
-                        0,
-                        locationListener,
-                        Looper.getMainLooper()
-                );
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener, Looper.getMainLooper());
                 mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
             }
         } else if (locationManager != null) {
@@ -348,18 +319,30 @@ public class WidgetService extends Service {
     }
 
     private void updateDateTime() {
-        boolean putDivider = Preferences.showDate(this) && Preferences.oneLineLayout(this);
+        boolean showTime = Preferences.showTime(this);
+        boolean showDate = Preferences.showDate(this);
+        boolean showDayOfTheWeek = Preferences.showDayOfTheWeek(this);
+
+        if (!showTime && !showDate && !showDayOfTheWeek) {
+            return;
+        }
+
         boolean showFullDayAndMonth = Preferences.showFullDayAndMonth(this);
+
+        String divider = (showDate && showDayOfTheWeek) ? (Preferences.oneLineLayout(this) ? "," : " \n") : "";
         String dayOfTheWeekFormatStr = showFullDayAndMonth ? "EEEE" : "EEE";
-        // We add spaces at the end to avoid outline cropping by canvas which is not ready for the outline
-        String dateFormatStr = showFullDayAndMonth ? "d MMMM " : "d MMM ";
+        String dateFormatStr = showFullDayAndMonth ? "d MMMM" : "d MMM";
+
+        // We add spaces at the start/end to avoid outline cropping by canvas which is not ready for the outline
+        String fullFormatStr = (showDayOfTheWeek ? " " + dayOfTheWeekFormatStr + divider : "") + (showDate ? " " + dateFormatStr : "") + " ";
 
         Date now = new Date();
-        timeText.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now));
-        dayText.setText(new SimpleDateFormat(dayOfTheWeekFormatStr + (putDivider ? ", " : " "), Locale.getDefault()).format(now));
-        dateText.setText(new SimpleDateFormat(dateFormatStr, Locale.getDefault()).format(now));
-
-//        dateTimeText.requestLayout();
+        if (showTime) {
+            timeText.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now));
+        }
+        if (showDate || showDayOfTheWeek) {
+            dateText.setText(new SimpleDateFormat(fullFormatStr, Locale.getDefault()).format(now));
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -385,8 +368,7 @@ public class WidgetService extends Service {
                     savePosition();
 
                     // Handle click if needed
-                    if (Math.abs(event.getRawX() - initialTouchX) < 5 &&
-                            Math.abs(event.getRawY() - initialTouchY) < 5) {
+                    if (Math.abs(event.getRawX() - initialTouchX) < 5 && Math.abs(event.getRawY() - initialTouchY) < 5) {
                         startMainActivity();
                     }
                     return true;
@@ -428,11 +410,7 @@ public class WidgetService extends Service {
     }
 
     private void createNotificationChannel() {
-        NotificationChannel serviceChannel = new NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.notification_channel_title),
-                NotificationManager.IMPORTANCE_LOW
-        );
+        NotificationChannel serviceChannel = new NotificationChannel(CHANNEL_ID, getString(R.string.notification_channel_title), NotificationManager.IMPORTANCE_LOW);
         NotificationManager manager = getSystemService(NotificationManager.class);
         if (manager != null) {
             manager.createNotificationChannel(serviceChannel);
@@ -441,20 +419,9 @@ public class WidgetService extends Service {
 
     private Notification createNotification() {
         Intent notificationIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this,
-                0,
-                notificationIntent,
-                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-        );
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(getString(R.string.app_name))
-                .setContentText(getString(R.string.notification_content))
-                .setSmallIcon(R.drawable.ic_gps_good)
-                .setContentIntent(pendingIntent)
-                .setOngoing(true)
-                .build();
+        return new NotificationCompat.Builder(this, CHANNEL_ID).setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.notification_content)).setSmallIcon(R.drawable.ic_gps_good).setContentIntent(pendingIntent).setOngoing(true).build();
     }
 
     // Add this method to save position

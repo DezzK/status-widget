@@ -34,6 +34,8 @@ public class Preferences {
     private static final String PREF_TIME_FONT_SIZE = "timeFontSize";
     private static final String PREF_DATE_FONT_SIZE = "dateFontSize";
     private static final String PREF_SPACING_BETWEEN_TEXTS_AND_ICONS = "spacingBetweenTextsAndIcons";
+    private static final String PREF_ADJUST_TIME_Y = "adjustTimeY";
+    private static final String PREF_ADJUST_DATE_Y = "adjustDateY";
     private static final String PREF_OVERLAY_X = "overlayX";
     private static final String PREF_OVERLAY_Y = "overlayY";
 
@@ -131,6 +133,22 @@ public class Preferences {
 
     public static void saveSpacingBetweenTextsAndIcons(Context context, int value) {
         getPrefs(context).edit().putInt(PREF_SPACING_BETWEEN_TEXTS_AND_ICONS, value).apply();
+    }
+
+    public static int adjustTimeY(Context context) {
+        return getPrefs(context).getInt(PREF_ADJUST_TIME_Y, 0);
+    }
+
+    public static void saveAdjustTimeY(Context context, int value) {
+        getPrefs(context).edit().putInt(PREF_ADJUST_TIME_Y, value).apply();
+    }
+
+    public static int adjustDateY(Context context) {
+        return getPrefs(context).getInt(PREF_ADJUST_DATE_Y, 0);
+    }
+
+    public static void saveAdjustDateY(Context context, int value) {
+        getPrefs(context).edit().putInt(PREF_ADJUST_DATE_Y, value).apply();
     }
 
     public static Point overlayPosition(Context context) {

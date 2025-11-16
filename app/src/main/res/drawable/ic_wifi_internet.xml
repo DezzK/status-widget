@@ -7,6 +7,6 @@
       android:pathData="m109,429 l-85,-85q92,-89 210,-136.5T480,160q128,0 246,47.5T936,344l-85,85q-75,-72 -171,-110.5T480,280q-104,0 -200,38.5T109,429ZM278,598 L194,514q59,-55 132.5,-84.5T480,400q80,0 153.5,29.5T766,514l-84,84q-42,-38 -93.5,-58T480,520q-57,0 -108.5,20T278,598ZM480,800q-33,0 -56.5,-23.5T400,720q0,-33 23.5,-56.5T480,640q33,0 56.5,23.5T560,720q0,33 -23.5,56.5T480,800Z"
       android:antialias="true"
       android:strokeColor="@color/text_outline"
-      android:strokeWidth="32"
+      android:strokeWidth="20"
       android:fillColor="@color/text_primary"/>
 </vector>

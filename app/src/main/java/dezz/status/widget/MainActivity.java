@@ -22,7 +22,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
-import android.text.method.MovementMethod;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,10 +44,14 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar timeFontSizeSeekBar;
     private SeekBar dateFontSizeSeekBar;
     private SeekBar spacingBetweenTextsAndIconsSeekBar;
+    private SeekBar adjustTimeYSeekBar;
+    private SeekBar adjustDateYSeekBar;
     private TextView iconSizeValueText;
     private TextView timeFontSizeValueText;
     private TextView dateFontSizeValueText;
     private TextView spacingBetweenTextsAndIconsValueText;
+    private TextView adjustTimeYValueText;
+    private TextView adjustDateYValueText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,11 +86,15 @@ public class MainActivity extends AppCompatActivity {
         timeFontSizeSeekBar = findViewById(R.id.timeFontSizeSeekBar);
         dateFontSizeSeekBar = findViewById(R.id.dateFontSizeSeekBar);
         spacingBetweenTextsAndIconsSeekBar = findViewById(R.id.spacingBetweenTextsAndIconsSeekBar);
+        adjustTimeYSeekBar = findViewById(R.id.adjustTimeYSeekBar);
+        adjustDateYSeekBar = findViewById(R.id.adjustDateYSeekBar);
 
         iconSizeValueText = findViewById(R.id.iconSizeValueText);
         timeFontSizeValueText = findViewById(R.id.timeFontSizeValueText);
         dateFontSizeValueText = findViewById(R.id.dateFontSizeValueText);
         spacingBetweenTextsAndIconsValueText = findViewById(R.id.spacingBetweenTextsAndIconsValueText);
+        adjustTimeYValueText = findViewById(R.id.adjustTimeYValueText);
+        adjustDateYValueText = findViewById(R.id.adjustDateYValueText);
 
         TextView copyrightNoticeText = findViewById(R.id.copyrightNoticeText);
         copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
@@ -104,11 +111,15 @@ public class MainActivity extends AppCompatActivity {
         timeFontSizeSeekBar.setProgress(Preferences.timeFontSize(this));
         dateFontSizeSeekBar.setProgress(Preferences.dateFontSize(this));
         spacingBetweenTextsAndIconsSeekBar.setProgress(Preferences.spacingBetweenTextsAndIcons(this));
+        adjustTimeYSeekBar.setProgress(Preferences.adjustTimeY(this));
+        adjustDateYSeekBar.setProgress(Preferences.adjustDateY(this));
 
         updateIconSizeValueText();
         updateTimeFontSizeValueText();
         updateDateFontSizeValueText();
         updateSpacingBetweenTextsAndIconsValueText();
+        updateAdjustTimeYValueText();
+        updateAdjustDateYValueText();
 
         enableWidgetSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
@@ -239,6 +250,40 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
+
+        adjustTimeYSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Preferences.saveAdjustTimeY(MainActivity.this, progress);
+                updateAdjustTimeYValueText();
+                if (WidgetService.isRunning()) {
+                    WidgetService.getInstance().applyPreferences();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        adjustDateYSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Preferences.saveAdjustDateY(MainActivity.this, progress);
+                updateAdjustDateYValueText();
+                if (WidgetService.isRunning()) {
+                    WidgetService.getInstance().applyPreferences();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
     }
 
     private void updateIconSizeValueText() {
@@ -255,6 +300,16 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateSpacingBetweenTextsAndIconsValueText() {
         spacingBetweenTextsAndIconsValueText.setText(String.format(getString(R.string.size_value_format), spacingBetweenTextsAndIconsSeekBar.getProgress()));
+    }
+
+    private void updateAdjustTimeYValueText() {
+        int value = adjustTimeYSeekBar.getProgress();
+        adjustTimeYValueText.setText(String.format((value > 0 ? "+" : "") + getString(R.string.size_value_format), value));
+    }
+
+    private void updateAdjustDateYValueText() {
+        int value = adjustDateYSeekBar.getProgress();
+        adjustDateYValueText.setText(String.format((value > 0 ? "+" : "") + getString(R.string.size_value_format), value));
     }
 
     private void startWidgetService() {
