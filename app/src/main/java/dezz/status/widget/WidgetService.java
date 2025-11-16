@@ -24,9 +24,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
@@ -38,6 +40,7 @@ import android.net.NetworkRequest;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -369,6 +372,24 @@ public class WidgetService extends Service {
 
                     // Handle click if needed
                     if (Math.abs(event.getRawX() - initialTouchX) < 5 && Math.abs(event.getRawY() - initialTouchY) < 5) {
+                        if (getBounds(wifiStatusIcon).contains((int) event.getRawX(), (int) event.getRawY())) {
+                            Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+
+                            return true;
+                        }
+                        if (getBounds(gnssStatusIcon).contains((int) event.getRawX(), (int) event.getRawY())) {
+                            Intent intent = getPackageManager().getLaunchIntentForPackage("dezz.gnssshare.client");
+                            if (intent == null) {
+                                intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                            }
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+
+                            return true;
+                        }
+
                         startMainActivity();
                     }
                     return true;
@@ -465,5 +486,9 @@ public class WidgetService extends Service {
 
     public static boolean isRunning() {
         return instance != null;
+    }
+
+    private static Rect getBounds(View view) {
+        return new Rect(view.getLeft(), view.getTop(), view.getRight(), view.getBottom());
     }
 }
