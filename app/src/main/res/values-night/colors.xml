@@ -21,5 +21,5 @@
     <color name="header_background">#2C2C2C</color>
     <color name="text_primary">@android:color/primary_text_dark</color>
     <color name="text_secondary">@android:color/secondary_text_dark</color>
-    <color name="text_outline">@android:color/background_dark</color>
+    <color name="text_outline">#AA000000</color>
 </resources>
