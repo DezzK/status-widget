@@ -40,7 +40,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -260,34 +259,31 @@ public class WidgetService extends Service {
     public void applyPreferences() {
         updateDateTime();
 
-        DisplayMetrics displayMetrics = this.getResources().getDisplayMetrics();
-
-        int scaledIconSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, (float) Preferences.iconSize(this), displayMetrics);
-
-        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(scaledIconSize, scaledIconSize);
+        int iconSize = Preferences.iconSize(this);
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(iconSize, iconSize);
         wifiStatusIcon.setLayoutParams(iconParams);
         gnssStatusIcon.setLayoutParams(iconParams);
 
-        float timeOutlineWidth = Math.max(4F, Preferences.timeFontSize(this) / 16F);
-        float dateOutlineWidth = Math.max(4F, Preferences.dateFontSize(this) / 16F);
+        float timeOutlineWidth = Math.max(2F, Preferences.timeFontSize(this) / 32F);
+        float dateOutlineWidth = Math.max(2F, Preferences.dateFontSize(this) / 32F);
         int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
         timeText.setOutlineColor(outlineColor);
         timeText.setOutlineWidth(timeOutlineWidth);
         dateText.setOutlineColor(outlineColor);
         dateText.setOutlineWidth(dateOutlineWidth);
 
-        timeText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.timeFontSize(this));
-        dateText.setTextSize(TypedValue.COMPLEX_UNIT_SP, Preferences.dateFontSize(this));
+        timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, Preferences.timeFontSize(this));
+        dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, Preferences.dateFontSize(this));
         timeText.setVisibility(Preferences.showTime(this) ? View.VISIBLE : View.GONE);
         dateText.setVisibility(Preferences.showDate(this) || Preferences.showDayOfTheWeek(this) ? View.VISIBLE : View.GONE);
         wifiStatusIcon.setVisibility(Preferences.showWifiIcon(this) ? View.VISIBLE : View.GONE);
         gnssStatusIcon.setVisibility(Preferences.showGnssIcon(this) ? View.VISIBLE : View.GONE);
 
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) dateTimeContainer.getLayoutParams();
-        lp.setMargins(0, 0, Preferences.spacingBetweenTextsAndIcons(this), 0);
+        LinearLayout.LayoutParams dateTimeLayoutParams = (LinearLayout.LayoutParams) dateTimeContainer.getLayoutParams();
+        dateTimeLayoutParams.setMargins(0, 0, Preferences.spacingBetweenTextsAndIcons(this), 0);
 
-        timeText.setTranslationY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Preferences.adjustTimeY(this), displayMetrics));
-        dateText.setTranslationY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Preferences.adjustDateY(this), displayMetrics));
+        timeText.setTranslationY(Preferences.adjustTimeY(this));
+        dateText.setTranslationY(Preferences.adjustDateY(this));
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         if (Preferences.showDate(this) || Preferences.showTime(this)) {
