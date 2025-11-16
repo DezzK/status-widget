@@ -50,7 +50,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -81,9 +80,9 @@ public class WidgetService extends Service {
     private WindowManager windowManager;
     private WindowManager.LayoutParams params;
     private View overlayView;
+    private LinearLayout dateTimeContainer;
     private OutlineTextView timeText;
     private OutlineTextView dateText;
-    private TextView spacingBetweenTextsAndIcons;
     private ImageView wifiStatusIcon;
     private ImageView gnssStatusIcon;
 
@@ -221,7 +220,7 @@ public class WidgetService extends Service {
         // Initialize controls
         timeText = overlayView.findViewById(R.id.timeText);
         dateText = overlayView.findViewById(R.id.dateText);
-        spacingBetweenTextsAndIcons = overlayView.findViewById(R.id.spacingBetweenTextsAndIcons);
+        dateTimeContainer = overlayView.findViewById(R.id.dateTimeContainer);
         wifiStatusIcon = overlayView.findViewById(R.id.wifiStatusIcon);
         gnssStatusIcon = overlayView.findViewById(R.id.gnssStatusIcon);
 
@@ -259,6 +258,8 @@ public class WidgetService extends Service {
 
     @SuppressLint("MissingPermission")
     public void applyPreferences() {
+        updateDateTime();
+
         DisplayMetrics displayMetrics = this.getResources().getDisplayMetrics();
 
         int scaledIconSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, (float) Preferences.iconSize(this), displayMetrics);
@@ -281,11 +282,12 @@ public class WidgetService extends Service {
         dateText.setVisibility(Preferences.showDate(this) || Preferences.showDayOfTheWeek(this) ? View.VISIBLE : View.GONE);
         wifiStatusIcon.setVisibility(Preferences.showWifiIcon(this) ? View.VISIBLE : View.GONE);
         gnssStatusIcon.setVisibility(Preferences.showGnssIcon(this) ? View.VISIBLE : View.GONE);
-        spacingBetweenTextsAndIcons.setWidth(Preferences.spacingBetweenTextsAndIcons(this));
+
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) dateTimeContainer.getLayoutParams();
+        lp.setMargins(0, 0, Preferences.spacingBetweenTextsAndIcons(this), 0);
+
         timeText.setTranslationY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Preferences.adjustTimeY(this), displayMetrics));
         dateText.setTranslationY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Preferences.adjustDateY(this), displayMetrics));
-
-        updateDateTime();
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         if (Preferences.showDate(this) || Preferences.showTime(this)) {
@@ -339,11 +341,13 @@ public class WidgetService extends Service {
         String fullFormatStr = (showDayOfTheWeek ? " " + dayOfTheWeekFormatStr + divider : "") + (showDate ? " " + dateFormatStr : "") + " ";
 
         Date now = new Date();
-        if (showTime) {
-            timeText.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now));
+        String timeStr = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now);
+        String dateStr = new SimpleDateFormat(fullFormatStr, Locale.getDefault()).format(now);
+        if (showTime && !timeStr.contentEquals(timeText.getText())) {
+            timeText.setText(timeStr);
         }
-        if (showDate || showDayOfTheWeek) {
-            dateText.setText(new SimpleDateFormat(fullFormatStr, Locale.getDefault()).format(now));
+        if ((showDate || showDayOfTheWeek) && !dateStr.contentEquals(dateText.getText())) {
+            dateText.setText(dateStr);
         }
     }
 
