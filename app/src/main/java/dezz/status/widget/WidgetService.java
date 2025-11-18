@@ -100,6 +100,8 @@ public class WidgetService extends Service {
 
     private static WidgetService instance;
 
+    private Preferences prefs;
+    
     private WindowManager windowManager;
     private WindowManager.LayoutParams params;
     private View overlayView;
@@ -217,8 +219,9 @@ public class WidgetService extends Service {
     @SuppressLint({"InflateParams"})
     @Override
     public void onCreate() {
+        prefs = new Preferences(this);
         if (!Permissions.allPermissionsGranted(this)) {
-            Preferences.saveWidgetEnabled(this, false);
+            prefs.saveWidgetEnabled(false);
             Toast.makeText(this, R.string.permissions_required, Toast.LENGTH_LONG).show();
             startMainActivity();
             stopSelf();
@@ -256,7 +259,7 @@ public class WidgetService extends Service {
         setupDragListener();
 
         // Add the view to the window
-        Point position = Preferences.overlayPosition(this);
+        Point position = prefs.overlayPosition();
         params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -293,7 +296,7 @@ public class WidgetService extends Service {
     public void applyPreferences() {
         updateDateTime();
 
-        int iconSize = Preferences.iconSize(this);
+        int iconSize = prefs.iconSize();
 
         ViewGroup.LayoutParams iconParams = wifiStatusIcon.getLayoutParams();
         iconParams.width = iconSize;
@@ -305,34 +308,34 @@ public class WidgetService extends Service {
         iconParams.height = iconSize;
         gnssStatusIcon.setLayoutParams(iconParams);
 
-        float timeOutlineWidth = Math.max(2F, Preferences.timeFontSize(this) / 32F);
-        float dateOutlineWidth = Math.max(2F, Preferences.dateFontSize(this) / 32F);
+        float timeOutlineWidth = Math.max(2F, prefs.timeFontSize() / 32F);
+        float dateOutlineWidth = Math.max(2F, prefs.dateFontSize() / 32F);
         int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
         timeText.setOutlineColor(outlineColor);
         timeText.setOutlineWidth(timeOutlineWidth);
         dateText.setOutlineColor(outlineColor);
         dateText.setOutlineWidth(dateOutlineWidth);
 
-        timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, Preferences.timeFontSize(this));
-        dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, Preferences.dateFontSize(this));
-        timeText.setVisibility(Preferences.showTime(this) ? View.VISIBLE : View.GONE);
-        dateText.setVisibility(Preferences.showDate(this) || Preferences.showDayOfTheWeek(this) ? View.VISIBLE : View.GONE);
-        wifiStatusIcon.setVisibility(Preferences.showWifiIcon(this) ? View.VISIBLE : View.GONE);
-        gnssStatusIcon.setVisibility(Preferences.showGnssIcon(this) ? View.VISIBLE : View.GONE);
+        timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize());
+        dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize());
+        timeText.setVisibility(prefs.showTime() ? View.VISIBLE : View.GONE);
+        dateText.setVisibility(prefs.showDate() || prefs.showDayOfTheWeek() ? View.VISIBLE : View.GONE);
+        wifiStatusIcon.setVisibility(prefs.showWifiIcon() ? View.VISIBLE : View.GONE);
+        gnssStatusIcon.setVisibility(prefs.showGnssIcon() ? View.VISIBLE : View.GONE);
 
         LinearLayout.LayoutParams dateTimeLayoutParams = (LinearLayout.LayoutParams) dateTimeContainer.getLayoutParams();
-        dateTimeLayoutParams.setMargins(0, 0, Preferences.spacingBetweenTextsAndIcons(this), 0);
+        dateTimeLayoutParams.setMargins(0, 0, prefs.spacingBetweenTextsAndIcons(), 0);
         dateTimeContainer.setLayoutParams(dateTimeLayoutParams);
 
-        timeText.setTranslationY(Preferences.adjustTimeY(this));
-        dateText.setTranslationY(Preferences.adjustDateY(this));
+        timeText.setTranslationY(prefs.adjustTimeY());
+        dateText.setTranslationY(prefs.adjustDateY());
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
-        if (Preferences.showDate(this) || Preferences.showTime(this)) {
+        if (prefs.showDate() || prefs.showTime()) {
             mainHandler.postDelayed(updateDateTimeRunnable, 1000);
         }
 
-        if (Preferences.showWifiIcon(this)) {
+        if (prefs.showWifiIcon()) {
             if (connectivityManager == null) {
                 connectivityManager = getSystemService(ConnectivityManager.class);
 
@@ -345,7 +348,7 @@ public class WidgetService extends Service {
             connectivityManager = null;
         }
 
-        if (Preferences.showGnssIcon(this)) {
+        if (prefs.showGnssIcon()) {
             if (locationManager == null) {
                 locationManager = getSystemService(LocationManager.class);
 
@@ -363,17 +366,17 @@ public class WidgetService extends Service {
     }
 
     private void updateDateTime() {
-        boolean showTime = Preferences.showTime(this);
-        boolean showDate = Preferences.showDate(this);
-        boolean showDayOfTheWeek = Preferences.showDayOfTheWeek(this);
+        boolean showTime = prefs.showTime();
+        boolean showDate = prefs.showDate();
+        boolean showDayOfTheWeek = prefs.showDayOfTheWeek();
 
         if (!showTime && !showDate && !showDayOfTheWeek) {
             return;
         }
 
-        boolean showFullDayAndMonth = Preferences.showFullDayAndMonth(this);
+        boolean showFullDayAndMonth = prefs.showFullDayAndMonth();
 
-        String divider = (showDate && showDayOfTheWeek) ? (Preferences.oneLineLayout(this) ? "," : " \n") : "";
+        String divider = (showDate && showDayOfTheWeek) ? (prefs.oneLineLayout() ? "," : " \n") : "";
         String dayOfTheWeekFormatStr = showFullDayAndMonth ? "EEEE" : "EEE";
         String dateFormatStr = showFullDayAndMonth ? "d MMMM" : "d MMM";
 
@@ -466,7 +469,7 @@ public class WidgetService extends Service {
     }
 
     private void updateIconStatus(int[] monoResources, int[] colorResources, ImageView icon, int state) {
-        if (Preferences.useColorIcons(this)) {
+        if (prefs.useColorIcons()) {
             icon.setImageResource(colorResources[state]);
         } else {
             icon.setImageResource(monoResources[state]);
@@ -491,7 +494,7 @@ public class WidgetService extends Service {
     // Add this method to save position
     private void savePosition() {
         if (params != null) {
-            Preferences.saveOverlayPosition(this, params.x, params.y);
+            prefs.saveOverlayPosition(params.x, params.y);
         }
     }
 

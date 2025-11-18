@@ -39,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
     public static final int PERMISSION_REQUEST_CODE = 1001;
     public static final int OVERLAY_PERMISSION_REQUEST_CODE = 1002;
 
+    private Preferences prefs;
+
     private SwitchCompat enableWidgetSwitch;
     private SeekBar iconSizeSeekBar;
     private SeekBar timeFontSizeSeekBar;
@@ -57,12 +59,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        prefs = new Preferences(this);
+
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         setContentView(R.layout.activity_main);
 
         initializeViews();
 
-        if (Preferences.widgetEnabled(this) && Permissions.allPermissionsGranted(this)) {
+        if (prefs.widgetEnabled() && Permissions.allPermissionsGranted(this)) {
             startWidgetService();
         }
     }
@@ -100,21 +104,21 @@ public class MainActivity extends AppCompatActivity {
         TextView copyrightNoticeText = findViewById(R.id.copyrightNoticeText);
         copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
 
-        enableWidgetSwitch.setChecked(Preferences.widgetEnabled(this));
-        useColorIconsSwitch.setChecked(Preferences.useColorIcons(this));
-        showDateSwitch.setChecked(Preferences.showDate(this));
-        showTimeSwitch.setChecked(Preferences.showTime(this));
-        showDayOfTheWeekSwitch.setChecked(Preferences.showDayOfTheWeek(this));
-        showWifiIconSwitch.setChecked(Preferences.showWifiIcon(this));
-        showGnssIconSwitch.setChecked(Preferences.showGnssIcon(this));
-        showFullDayAndMonthSwitch.setChecked(Preferences.showFullDayAndMonth(this));
-        oneLineLayoutSwitch.setChecked(Preferences.oneLineLayout(this));
-        iconSizeSeekBar.setProgress(Preferences.iconSize(this));
-        timeFontSizeSeekBar.setProgress(Preferences.timeFontSize(this));
-        dateFontSizeSeekBar.setProgress(Preferences.dateFontSize(this));
-        spacingBetweenTextsAndIconsSeekBar.setProgress(Preferences.spacingBetweenTextsAndIcons(this));
-        adjustTimeYSeekBar.setProgress(Preferences.adjustTimeY(this));
-        adjustDateYSeekBar.setProgress(Preferences.adjustDateY(this));
+        enableWidgetSwitch.setChecked(prefs.widgetEnabled());
+        useColorIconsSwitch.setChecked(prefs.useColorIcons());
+        showDateSwitch.setChecked(prefs.showDate());
+        showTimeSwitch.setChecked(prefs.showTime());
+        showDayOfTheWeekSwitch.setChecked(prefs.showDayOfTheWeek());
+        showWifiIconSwitch.setChecked(prefs.showWifiIcon());
+        showGnssIconSwitch.setChecked(prefs.showGnssIcon());
+        showFullDayAndMonthSwitch.setChecked(prefs.showFullDayAndMonth());
+        oneLineLayoutSwitch.setChecked(prefs.oneLineLayout());
+        iconSizeSeekBar.setProgress(prefs.iconSize());
+        timeFontSizeSeekBar.setProgress(prefs.timeFontSize());
+        dateFontSizeSeekBar.setProgress(prefs.dateFontSize());
+        spacingBetweenTextsAndIconsSeekBar.setProgress(prefs.spacingBetweenTextsAndIcons());
+        adjustTimeYSeekBar.setProgress(prefs.adjustTimeY());
+        adjustDateYSeekBar.setProgress(prefs.adjustDateY());
 
         updateIconSizeValueText();
         updateTimeFontSizeValueText();
@@ -132,61 +136,61 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 stopWidgetService();
-                Preferences.resetOverlayPosition(this);
+                prefs.resetOverlayPosition();
             }
         });
 
         useColorIconsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Preferences.saveUseColorIcons(this, isChecked);
+            prefs.saveUseColorIcons(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showDateSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Preferences.saveShowDate(this, isChecked);
+            prefs.saveShowDate(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showTimeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Preferences.saveShowTime(this, isChecked);
+            prefs.saveShowTime(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showDayOfTheWeekSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Preferences.saveShowDayOfTheWeek(this, isChecked);
+            prefs.saveShowDayOfTheWeek(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showWifiIconSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Preferences.saveShowWifiIcon(this, isChecked);
+            prefs.saveShowWifiIcon(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showGnssIconSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Preferences.saveShowGnssIcon(this, isChecked);
+            prefs.saveShowGnssIcon(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showFullDayAndMonthSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Preferences.saveShowFullDayAndMonth(this, isChecked);
+            prefs.saveShowFullDayAndMonth(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         oneLineLayoutSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Preferences.saveOneLineLayout(this, isChecked);
+            prefs.saveOneLineLayout(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
@@ -195,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
         iconSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                Preferences.saveIconSize(MainActivity.this, progress);
+                prefs.saveIconSize(progress);
                 updateIconSizeValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -212,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
         timeFontSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                Preferences.saveTimeFontSize(MainActivity.this, progress);
+                prefs.saveTimeFontSize(progress);
                 updateTimeFontSizeValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -229,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         dateFontSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                Preferences.saveDateFontSize(MainActivity.this, progress);
+                prefs.saveDateFontSize(progress);
                 updateDateFontSizeValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -246,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
         spacingBetweenTextsAndIconsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                Preferences.saveSpacingBetweenTextsAndIcons(MainActivity.this, progress);
+                prefs.saveSpacingBetweenTextsAndIcons(progress);
                 updateSpacingBetweenTextsAndIconsValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -263,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
         adjustTimeYSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                Preferences.saveAdjustTimeY(MainActivity.this, progress);
+                prefs.saveAdjustTimeY(progress);
                 updateAdjustTimeYValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -280,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
         adjustDateYSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                Preferences.saveAdjustDateY(MainActivity.this, progress);
+                prefs.saveAdjustDateY(progress);
                 updateAdjustDateYValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -322,12 +326,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startWidgetService() {
-        Preferences.saveWidgetEnabled(this, true);
+        prefs.saveWidgetEnabled(true);
         startForegroundService(new Intent(this, WidgetService.class));
     }
 
     private void stopWidgetService() {
-        Preferences.saveWidgetEnabled(this, false);
+        prefs.saveWidgetEnabled(false);
         stopService(new Intent(this, WidgetService.class));
     }
 
