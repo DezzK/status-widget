@@ -26,7 +26,6 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.location.GnssStatus;
 import android.location.Location;
@@ -61,6 +60,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
+
 public class WidgetService extends Service {
     enum GnssState {
         OFF, BAD, GOOD
@@ -70,7 +71,7 @@ public class WidgetService extends Service {
         OFF, NO_INTERNET, INTERNET
     }
 
-    // Resource array for GNSS/WiFi icons for different states and mono/colors
+    // Resource array for GNSS/Wi-Fi icons for different states and mono/colors
     private static final int[] GNSS_ICONS_MONO = {
         R.drawable.ic_mono_gps_off,
         R.drawable.ic_mono_gps_bad,
@@ -104,12 +105,8 @@ public class WidgetService extends Service {
     
     private WindowManager windowManager;
     private WindowManager.LayoutParams params;
-    private View overlayView;
-    private LinearLayout dateTimeContainer;
-    private OutlineTextView timeText;
-    private OutlineTextView dateText;
-    private ImageView wifiStatusIcon;
-    private ImageView gnssStatusIcon;
+
+    private OverlayStatusWidgetBinding binding;
 
     private int initialX;
     private int initialY;
@@ -240,15 +237,9 @@ public class WidgetService extends Service {
 
     private void createOverlayView() {
         // Create the overlay view
-        overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_status_widget, null);
-        overlayView.setVisibility(View.VISIBLE);
-
-        // Initialize controls
-        timeText = overlayView.findViewById(R.id.timeText);
-        dateText = overlayView.findViewById(R.id.dateText);
-        dateTimeContainer = overlayView.findViewById(R.id.dateTimeContainer);
-        wifiStatusIcon = overlayView.findViewById(R.id.wifiStatusIcon);
-        gnssStatusIcon = overlayView.findViewById(R.id.gnssStatusIcon);
+        LayoutInflater layoutInflater = LayoutInflater.from(this);
+        binding = OverlayStatusWidgetBinding.inflate(layoutInflater);
+        binding.getRoot().setVisibility(View.VISIBLE);
 
         applyPreferences();
 
@@ -275,7 +266,7 @@ public class WidgetService extends Service {
         params.y = prefs.overlayY.get();
 
         try {
-            windowManager.addView(overlayView, params);
+            windowManager.addView(binding.getRoot(), params);
         } catch (Exception e) {
             Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_LONG).show();
             stopSelf();
@@ -285,8 +276,8 @@ public class WidgetService extends Service {
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        if (overlayView != null) {
-            windowManager.removeView(overlayView);
+        if (binding != null) {
+            windowManager.removeView(binding.getRoot());
             createOverlayView();
         }
     }
@@ -297,37 +288,37 @@ public class WidgetService extends Service {
 
         int iconSize = prefs.iconSize.get();
 
-        ViewGroup.LayoutParams iconParams = wifiStatusIcon.getLayoutParams();
+        ViewGroup.LayoutParams iconParams = binding.wifiStatusIcon.getLayoutParams();
         iconParams.width = iconSize;
         iconParams.height = iconSize;
-        wifiStatusIcon.setLayoutParams(iconParams);
+        binding.wifiStatusIcon.setLayoutParams(iconParams);
 
-        iconParams = gnssStatusIcon.getLayoutParams();
+        iconParams = binding.gnssStatusIcon.getLayoutParams();
         iconParams.width = iconSize;
         iconParams.height = iconSize;
-        gnssStatusIcon.setLayoutParams(iconParams);
+        binding.gnssStatusIcon.setLayoutParams(iconParams);
 
         float timeOutlineWidth = Math.max(2F, prefs.timeFontSize.get() / 32F);
         float dateOutlineWidth = Math.max(2F, prefs.dateFontSize.get() / 32F);
         int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
-        timeText.setOutlineColor(outlineColor);
-        timeText.setOutlineWidth(timeOutlineWidth);
-        dateText.setOutlineColor(outlineColor);
-        dateText.setOutlineWidth(dateOutlineWidth);
+        binding.timeText.setOutlineColor(outlineColor);
+        binding.timeText.setOutlineWidth(timeOutlineWidth);
+        binding.dateText.setOutlineColor(outlineColor);
+        binding.dateText.setOutlineWidth(dateOutlineWidth);
 
-        timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize.get());
-        dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
-        timeText.setVisibility(prefs.showTime.get() ? View.VISIBLE : View.GONE);
-        dateText.setVisibility(prefs.showDate.get() || prefs.showDayOfTheWeek.get() ? View.VISIBLE : View.GONE);
-        wifiStatusIcon.setVisibility(prefs.showWifiIcon.get() ? View.VISIBLE : View.GONE);
-        gnssStatusIcon.setVisibility(prefs.showGnssIcon.get() ? View.VISIBLE : View.GONE);
+        binding.timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize.get());
+        binding.dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
+        binding.timeText.setVisibility(prefs.showTime.get() ? View.VISIBLE : View.GONE);
+        binding.dateText.setVisibility(prefs.showDate.get() || prefs.showDayOfTheWeek.get() ? View.VISIBLE : View.GONE);
+        binding.wifiStatusIcon.setVisibility(prefs.showWifiIcon.get() ? View.VISIBLE : View.GONE);
+        binding.gnssStatusIcon.setVisibility(prefs.showGnssIcon.get() ? View.VISIBLE : View.GONE);
 
-        LinearLayout.LayoutParams dateTimeLayoutParams = (LinearLayout.LayoutParams) dateTimeContainer.getLayoutParams();
+        LinearLayout.LayoutParams dateTimeLayoutParams = (LinearLayout.LayoutParams) binding.dateTimeContainer.getLayoutParams();
         dateTimeLayoutParams.setMargins(0, 0, prefs.spacingBetweenTextsAndIcons.get(), 0);
-        dateTimeContainer.setLayoutParams(dateTimeLayoutParams);
+        binding.dateTimeContainer.setLayoutParams(dateTimeLayoutParams);
 
-        timeText.setTranslationY(prefs.adjustTimeY.get());
-        dateText.setTranslationY(prefs.adjustDateY.get());
+        binding.timeText.setTranslationY(prefs.adjustTimeY.get());
+        binding.dateText.setTranslationY(prefs.adjustDateY.get());
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         if (prefs.showDate.get() || prefs.showTime.get()) {
@@ -385,18 +376,18 @@ public class WidgetService extends Service {
         Date now = new Date();
         String timeStr = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now);
         String dateStr = new SimpleDateFormat(fullFormatStr, Locale.getDefault()).format(now);
-        if (showTime && !timeStr.contentEquals(timeText.getText())) {
-            timeText.setText(timeStr);
+        if (showTime && !timeStr.contentEquals(binding.timeText.getText())) {
+            binding.timeText.setText(timeStr);
         }
-        if ((showDate || showDayOfTheWeek) && !dateStr.contentEquals(dateText.getText())) {
-            dateText.setText(dateStr);
+        if ((showDate || showDayOfTheWeek) && !dateStr.contentEquals(binding.dateText.getText())) {
+            binding.dateText.setText(dateStr);
         }
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private void setupDragListener() {
-        overlayView.setOnTouchListener((v, event) -> {
-            WindowManager.LayoutParams params = (WindowManager.LayoutParams) overlayView.getLayoutParams();
+        binding.getRoot().setOnTouchListener((v, event) -> {
+            WindowManager.LayoutParams params = (WindowManager.LayoutParams) binding.getRoot().getLayoutParams();
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
@@ -409,7 +400,7 @@ public class WidgetService extends Service {
                 case MotionEvent.ACTION_MOVE:
                     params.x = initialX + (int) (event.getRawX() - initialTouchX);
                     params.y = initialY + (int) (event.getRawY() - initialTouchY);
-                    windowManager.updateViewLayout(overlayView, params);
+                    windowManager.updateViewLayout(binding.getRoot(), params);
                     return true;
 
                 case MotionEvent.ACTION_UP:
@@ -417,14 +408,14 @@ public class WidgetService extends Service {
 
                     // Handle click if needed
                     if (Math.abs(event.getRawX() - initialTouchX) < 5 && Math.abs(event.getRawY() - initialTouchY) < 5) {
-                        if (getBounds(wifiStatusIcon).contains((int) event.getX(), (int) event.getY())) {
+                        if (getBounds(binding.wifiStatusIcon).contains((int) event.getX(), (int) event.getY())) {
                             Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(intent);
 
                             return true;
                         }
-                        if (getBounds(gnssStatusIcon).contains((int) event.getX(), (int) event.getY())) {
+                        if (getBounds(binding.gnssStatusIcon).contains((int) event.getX(), (int) event.getY())) {
                             Intent intent = getPackageManager().getLaunchIntentForPackage("dezz.gnssshare.client");
                             if (intent == null) {
                                 intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
@@ -455,7 +446,7 @@ public class WidgetService extends Service {
     }
 
     private void updateWifiStatus() {
-        updateIconStatus(WIFI_ICONS_MONO, WIFI_ICONS_COLOR, wifiStatusIcon, wifiState.ordinal());
+        updateIconStatus(WIFI_ICONS_MONO, WIFI_ICONS_COLOR, binding.wifiStatusIcon, wifiState.ordinal());
     }
 
     private void setGnssStatus(GnssState newState) {
@@ -464,7 +455,7 @@ public class WidgetService extends Service {
     }
 
     private void updateGnssStatus() {
-        updateIconStatus(GNSS_ICONS_MONO, GNSS_ICONS_COLOR, gnssStatusIcon, gnssState.ordinal());
+        updateIconStatus(GNSS_ICONS_MONO, GNSS_ICONS_COLOR, binding.gnssStatusIcon, gnssState.ordinal());
     }
 
     private void updateIconStatus(int[] monoResources, int[] colorResources, ImageView icon, int state) {
@@ -506,8 +497,8 @@ public class WidgetService extends Service {
         mainHandler.removeCallbacks(updateGnssStatusRunnable);
         mainHandler.removeCallbacks(updateDateTimeRunnable);
 
-        if (overlayView != null && windowManager != null) {
-            windowManager.removeView(overlayView);
+        if (binding != null && windowManager != null) {
+            windowManager.removeView(binding.getRoot());
         }
 
         if (locationManager != null) {
