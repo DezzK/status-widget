@@ -35,7 +35,7 @@ public class BootReceiver extends BroadcastReceiver {
             Log.d(TAG, "Device boot completed, checking if widget service should auto-start");
 
             final Preferences prefs = new Preferences(context);
-            if (!prefs.widgetEnabled()) {
+            if (!prefs.widgetEnabled.get()) {
                 Log.d(TAG, "Widget service is not enabled. Don't start it.");
                 return;
             }

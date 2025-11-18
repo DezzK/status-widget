@@ -221,7 +221,7 @@ public class WidgetService extends Service {
     public void onCreate() {
         prefs = new Preferences(this);
         if (!Permissions.allPermissionsGranted(this)) {
-            prefs.saveWidgetEnabled(false);
+            prefs.widgetEnabled.set(false);
             Toast.makeText(this, R.string.permissions_required, Toast.LENGTH_LONG).show();
             startMainActivity();
             stopSelf();
@@ -259,7 +259,7 @@ public class WidgetService extends Service {
         setupDragListener();
 
         // Add the view to the window
-        Point position = prefs.overlayPosition();
+        Point position = prefs.overlayPosition.get();
         params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -296,7 +296,7 @@ public class WidgetService extends Service {
     public void applyPreferences() {
         updateDateTime();
 
-        int iconSize = prefs.iconSize();
+        int iconSize = prefs.iconSize.get();
 
         ViewGroup.LayoutParams iconParams = wifiStatusIcon.getLayoutParams();
         iconParams.width = iconSize;
@@ -308,34 +308,34 @@ public class WidgetService extends Service {
         iconParams.height = iconSize;
         gnssStatusIcon.setLayoutParams(iconParams);
 
-        float timeOutlineWidth = Math.max(2F, prefs.timeFontSize() / 32F);
-        float dateOutlineWidth = Math.max(2F, prefs.dateFontSize() / 32F);
+        float timeOutlineWidth = Math.max(2F, prefs.timeFontSize.get() / 32F);
+        float dateOutlineWidth = Math.max(2F, prefs.dateFontSize.get() / 32F);
         int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
         timeText.setOutlineColor(outlineColor);
         timeText.setOutlineWidth(timeOutlineWidth);
         dateText.setOutlineColor(outlineColor);
         dateText.setOutlineWidth(dateOutlineWidth);
 
-        timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize());
-        dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize());
-        timeText.setVisibility(prefs.showTime() ? View.VISIBLE : View.GONE);
-        dateText.setVisibility(prefs.showDate() || prefs.showDayOfTheWeek() ? View.VISIBLE : View.GONE);
-        wifiStatusIcon.setVisibility(prefs.showWifiIcon() ? View.VISIBLE : View.GONE);
-        gnssStatusIcon.setVisibility(prefs.showGnssIcon() ? View.VISIBLE : View.GONE);
+        timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize.get());
+        dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
+        timeText.setVisibility(prefs.showTime.get() ? View.VISIBLE : View.GONE);
+        dateText.setVisibility(prefs.showDate.get() || prefs.showDayOfTheWeek.get() ? View.VISIBLE : View.GONE);
+        wifiStatusIcon.setVisibility(prefs.showWifiIcon.get() ? View.VISIBLE : View.GONE);
+        gnssStatusIcon.setVisibility(prefs.showGnssIcon.get() ? View.VISIBLE : View.GONE);
 
         LinearLayout.LayoutParams dateTimeLayoutParams = (LinearLayout.LayoutParams) dateTimeContainer.getLayoutParams();
-        dateTimeLayoutParams.setMargins(0, 0, prefs.spacingBetweenTextsAndIcons(), 0);
+        dateTimeLayoutParams.setMargins(0, 0, prefs.spacingBetweenTextsAndIcons.get(), 0);
         dateTimeContainer.setLayoutParams(dateTimeLayoutParams);
 
-        timeText.setTranslationY(prefs.adjustTimeY());
-        dateText.setTranslationY(prefs.adjustDateY());
+        timeText.setTranslationY(prefs.adjustTimeY.get());
+        dateText.setTranslationY(prefs.adjustDateY.get());
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
-        if (prefs.showDate() || prefs.showTime()) {
+        if (prefs.showDate.get() || prefs.showTime.get()) {
             mainHandler.postDelayed(updateDateTimeRunnable, 1000);
         }
 
-        if (prefs.showWifiIcon()) {
+        if (prefs.showWifiIcon.get()) {
             if (connectivityManager == null) {
                 connectivityManager = getSystemService(ConnectivityManager.class);
 
@@ -348,7 +348,7 @@ public class WidgetService extends Service {
             connectivityManager = null;
         }
 
-        if (prefs.showGnssIcon()) {
+        if (prefs.showGnssIcon.get()) {
             if (locationManager == null) {
                 locationManager = getSystemService(LocationManager.class);
 
@@ -366,17 +366,17 @@ public class WidgetService extends Service {
     }
 
     private void updateDateTime() {
-        boolean showTime = prefs.showTime();
-        boolean showDate = prefs.showDate();
-        boolean showDayOfTheWeek = prefs.showDayOfTheWeek();
+        boolean showTime = prefs.showTime.get();
+        boolean showDate = prefs.showDate.get();
+        boolean showDayOfTheWeek = prefs.showDayOfTheWeek.get();
 
         if (!showTime && !showDate && !showDayOfTheWeek) {
             return;
         }
 
-        boolean showFullDayAndMonth = prefs.showFullDayAndMonth();
+        boolean showFullDayAndMonth = prefs.showFullDayAndMonth.get();
 
-        String divider = (showDate && showDayOfTheWeek) ? (prefs.oneLineLayout() ? "," : " \n") : "";
+        String divider = (showDate && showDayOfTheWeek) ? (prefs.oneLineLayout.get() ? "," : " \n") : "";
         String dayOfTheWeekFormatStr = showFullDayAndMonth ? "EEEE" : "EEE";
         String dateFormatStr = showFullDayAndMonth ? "d MMMM" : "d MMM";
 
@@ -469,7 +469,7 @@ public class WidgetService extends Service {
     }
 
     private void updateIconStatus(int[] monoResources, int[] colorResources, ImageView icon, int state) {
-        if (prefs.useColorIcons()) {
+        if (prefs.useColorIcons.get()) {
             icon.setImageResource(colorResources[state]);
         } else {
             icon.setImageResource(monoResources[state]);
@@ -494,7 +494,7 @@ public class WidgetService extends Service {
     // Add this method to save position
     private void savePosition() {
         if (params != null) {
-            prefs.saveOverlayPosition(params.x, params.y);
+            prefs.overlayPosition.set(params.x, params.y);
         }
     }
 

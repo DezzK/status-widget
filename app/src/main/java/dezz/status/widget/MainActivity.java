@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
         initializeViews();
 
-        if (prefs.widgetEnabled() && Permissions.allPermissionsGranted(this)) {
+        if (prefs.widgetEnabled.get() && Permissions.allPermissionsGranted(this)) {
             startWidgetService();
         }
     }
@@ -104,21 +104,21 @@ public class MainActivity extends AppCompatActivity {
         TextView copyrightNoticeText = findViewById(R.id.copyrightNoticeText);
         copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
 
-        enableWidgetSwitch.setChecked(prefs.widgetEnabled());
-        useColorIconsSwitch.setChecked(prefs.useColorIcons());
-        showDateSwitch.setChecked(prefs.showDate());
-        showTimeSwitch.setChecked(prefs.showTime());
-        showDayOfTheWeekSwitch.setChecked(prefs.showDayOfTheWeek());
-        showWifiIconSwitch.setChecked(prefs.showWifiIcon());
-        showGnssIconSwitch.setChecked(prefs.showGnssIcon());
-        showFullDayAndMonthSwitch.setChecked(prefs.showFullDayAndMonth());
-        oneLineLayoutSwitch.setChecked(prefs.oneLineLayout());
-        iconSizeSeekBar.setProgress(prefs.iconSize());
-        timeFontSizeSeekBar.setProgress(prefs.timeFontSize());
-        dateFontSizeSeekBar.setProgress(prefs.dateFontSize());
-        spacingBetweenTextsAndIconsSeekBar.setProgress(prefs.spacingBetweenTextsAndIcons());
-        adjustTimeYSeekBar.setProgress(prefs.adjustTimeY());
-        adjustDateYSeekBar.setProgress(prefs.adjustDateY());
+        enableWidgetSwitch.setChecked(prefs.widgetEnabled.get());
+        useColorIconsSwitch.setChecked(prefs.useColorIcons.get());
+        showDateSwitch.setChecked(prefs.showDate.get());
+        showTimeSwitch.setChecked(prefs.showTime.get());
+        showDayOfTheWeekSwitch.setChecked(prefs.showDayOfTheWeek.get());
+        showWifiIconSwitch.setChecked(prefs.showWifiIcon.get());
+        showGnssIconSwitch.setChecked(prefs.showGnssIcon.get());
+        showFullDayAndMonthSwitch.setChecked(prefs.showFullDayAndMonth.get());
+        oneLineLayoutSwitch.setChecked(prefs.oneLineLayout.get());
+        iconSizeSeekBar.setProgress(prefs.iconSize.get());
+        timeFontSizeSeekBar.setProgress(prefs.timeFontSize.get());
+        dateFontSizeSeekBar.setProgress(prefs.dateFontSize.get());
+        spacingBetweenTextsAndIconsSeekBar.setProgress(prefs.spacingBetweenTextsAndIcons.get());
+        adjustTimeYSeekBar.setProgress(prefs.adjustTimeY.get());
+        adjustDateYSeekBar.setProgress(prefs.adjustDateY.get());
 
         updateIconSizeValueText();
         updateTimeFontSizeValueText();
@@ -136,61 +136,61 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 stopWidgetService();
-                prefs.resetOverlayPosition();
+                prefs.overlayPosition.reset();
             }
         });
 
         useColorIconsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.saveUseColorIcons(isChecked);
+            prefs.useColorIcons.set(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showDateSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.saveShowDate(isChecked);
+            prefs.showDate.set(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showTimeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.saveShowTime(isChecked);
+            prefs.showTime.set(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showDayOfTheWeekSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.saveShowDayOfTheWeek(isChecked);
+            prefs.showDayOfTheWeek.set(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showWifiIconSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.saveShowWifiIcon(isChecked);
+            prefs.showWifiIcon.set(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showGnssIconSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.saveShowGnssIcon(isChecked);
+            prefs.showGnssIcon.set(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         showFullDayAndMonthSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.saveShowFullDayAndMonth(isChecked);
+            prefs.showFullDayAndMonth.set(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
 
         oneLineLayoutSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.saveOneLineLayout(isChecked);
+            prefs.oneLineLayout.set(isChecked);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
@@ -199,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
         iconSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                prefs.saveIconSize(progress);
+                prefs.iconSize.set(progress);
                 updateIconSizeValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -216,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
         timeFontSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                prefs.saveTimeFontSize(progress);
+                prefs.timeFontSize.set(progress);
                 updateTimeFontSizeValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -233,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         dateFontSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                prefs.saveDateFontSize(progress);
+                prefs.dateFontSize.set(progress);
                 updateDateFontSizeValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
         spacingBetweenTextsAndIconsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                prefs.saveSpacingBetweenTextsAndIcons(progress);
+                prefs.spacingBetweenTextsAndIcons.set(progress);
                 updateSpacingBetweenTextsAndIconsValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -267,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
         adjustTimeYSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                prefs.saveAdjustTimeY(progress);
+                prefs.adjustTimeY.set(progress);
                 updateAdjustTimeYValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -284,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
         adjustDateYSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                prefs.saveAdjustDateY(progress);
+                prefs.adjustDateY.set(progress);
                 updateAdjustDateYValueText();
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
@@ -326,12 +326,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startWidgetService() {
-        prefs.saveWidgetEnabled(true);
+        prefs.widgetEnabled.set(true);
         startForegroundService(new Intent(this, WidgetService.class));
     }
 
     private void stopWidgetService() {
-        prefs.saveWidgetEnabled(false);
+        prefs.widgetEnabled.set(false);
         stopService(new Intent(this, WidgetService.class));
     }
 
