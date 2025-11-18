@@ -19,17 +19,27 @@ package dezz.status.widget;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Point;
 
 public class Preferences {
-    public static final class BooleanPreference {
-        private final Preferences preferences;
-        private final String key;
-        private final boolean defaultValue;
+    public static abstract class Preference {
+        final Preferences preferences;
+        final String key;
 
-        public BooleanPreference(Preferences preferences, String key, boolean defaultValue) {
+        public Preference(Preferences preferences, String key) {
             this.preferences = preferences;
             this.key = key;
+        }
+
+        public void reset() {
+            preferences.prefs.edit().remove(key).apply();
+        }
+    }
+
+    public static final class Bool extends Preference {
+        private final boolean defaultValue;
+
+        public Bool(Preferences preferences, String key, boolean defaultValue) {
+            super(preferences, key);
             this.defaultValue = defaultValue;
         }
 
@@ -42,14 +52,11 @@ public class Preferences {
         }
     }
 
-    public static final class IntPreference {
-        private final Preferences preferences;
-        private final String key;
+    public static final class Int extends Preference {
         private final int defaultValue;
 
-        public IntPreference(Preferences preferences, String key, int defaultValue) {
-            this.preferences = preferences;
-            this.key = key;
+        public Int(Preferences preferences, String key, int defaultValue) {
+            super(preferences, key);
             this.defaultValue = defaultValue;
         }
 
@@ -62,51 +69,26 @@ public class Preferences {
         }
     }
 
-    public static final class PointPreference {
-        private final Preferences preferences;
-        private final String keyX;
-        private final String keyY;
-
-        public PointPreference(Preferences preferences, String keyX, String keyY) {
-            this.preferences = preferences;
-            this.keyX = keyX;
-            this.keyY = keyY;
-        }
-
-        public Point get() {
-            int x = preferences.prefs.getInt(keyX, 0);
-            int y = preferences.prefs.getInt(keyY, 0);
-            return new Point(x, y);
-        }
-
-        public void set(int x, int y) {
-            preferences.prefs.edit().putInt(keyX, x).putInt(keyY, y).apply();
-        }
-
-        public void reset() {
-            preferences.prefs.edit().remove(keyX).remove(keyY).apply();
-        }
-    }
-
-    public final BooleanPreference widgetEnabled = new BooleanPreference(this, "enabled", false);
-    public final BooleanPreference useColorIcons = new BooleanPreference(this, "useColorIcons", false);
-    public final BooleanPreference showDate = new BooleanPreference(this, "showDate", false);
-    public final BooleanPreference showTime = new BooleanPreference(this, "showTime", false);
-    public final BooleanPreference showDayOfTheWeek = new BooleanPreference(this, "showDayOfTheWeek", false);
-    public final BooleanPreference showWifiIcon = new BooleanPreference(this, "showWifiIcon", true);
-    public final BooleanPreference showGnssIcon = new BooleanPreference(this, "showGnssIcon", true);
-    public final BooleanPreference showFullDayAndMonth = new BooleanPreference(this, "showFullDayAndMonth", false);
-    public final BooleanPreference oneLineLayout = new BooleanPreference(this, "oneLineLayout", false);
-    public final IntPreference iconSize = new IntPreference(this, "iconSize", 70);
-    public final IntPreference timeFontSize = new IntPreference(this, "timeFontSize", 60);
-    public final IntPreference dateFontSize = new IntPreference(this, "dateFontSize", 20);
-    public final IntPreference spacingBetweenTextsAndIcons = new IntPreference(this, "spacingBetweenTextsAndIcons", 0);
-    public final IntPreference adjustTimeY = new IntPreference(this, "adjustTimeY", 0);
-    public final IntPreference adjustDateY = new IntPreference(this, "adjustDateY", 0);
-    public final PointPreference overlayPosition = new PointPreference(this, "overlayX", "overlayY");
-
     private final SharedPreferences prefs;
-    
+
+    public final Bool widgetEnabled = new Bool(this, "enabled", false);
+    public final Bool useColorIcons = new Bool(this, "useColorIcons", false);
+    public final Bool showDate = new Bool(this, "showDate", false);
+    public final Bool showTime = new Bool(this, "showTime", false);
+    public final Bool showDayOfTheWeek = new Bool(this, "showDayOfTheWeek", false);
+    public final Bool showWifiIcon = new Bool(this, "showWifiIcon", true);
+    public final Bool showGnssIcon = new Bool(this, "showGnssIcon", true);
+    public final Bool showFullDayAndMonth = new Bool(this, "showFullDayAndMonth", false);
+    public final Bool oneLineLayout = new Bool(this, "oneLineLayout", false);
+    public final Int iconSize = new Int(this, "iconSize", 70);
+    public final Int timeFontSize = new Int(this, "timeFontSize", 60);
+    public final Int dateFontSize = new Int(this, "dateFontSize", 20);
+    public final Int spacingBetweenTextsAndIcons = new Int(this, "spacingBetweenTextsAndIcons", 0);
+    public final Int adjustTimeY = new Int(this, "adjustTimeY", 0);
+    public final Int adjustDateY = new Int(this, "adjustDateY", 0);
+    public final Int overlayX = new Int(this, "overlayX", 0);
+    public final Int overlayY = new Int(this, "overlayY", 0);
+
     public Preferences(Context context) {
         final Context deviceContext = context.getApplicationContext().createDeviceProtectedStorageContext();
         prefs = deviceContext.getSharedPreferences(context.getPackageName() + "_preferences", Context.MODE_PRIVATE);

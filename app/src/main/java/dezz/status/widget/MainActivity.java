@@ -136,7 +136,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 stopWidgetService();
-                prefs.overlayPosition.reset();
+                prefs.overlayX.reset();
+                prefs.overlayY.reset();
             }
         });
 

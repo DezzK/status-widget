@@ -259,7 +259,6 @@ public class WidgetService extends Service {
         setupDragListener();
 
         // Add the view to the window
-        Point position = prefs.overlayPosition.get();
         params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -272,8 +271,8 @@ public class WidgetService extends Service {
                 PixelFormat.TRANSLUCENT
         );
         params.gravity = Gravity.TOP | Gravity.START;
-        params.x = position.x;
-        params.y = position.y;
+        params.x = prefs.overlayX.get();
+        params.y = prefs.overlayY.get();
 
         try {
             windowManager.addView(overlayView, params);
@@ -494,7 +493,8 @@ public class WidgetService extends Service {
     // Add this method to save position
     private void savePosition() {
         if (params != null) {
-            prefs.overlayPosition.set(params.x, params.y);
+            prefs.overlayX.set(params.x);
+            prefs.overlayY.set(params.y);
         }
     }
 
