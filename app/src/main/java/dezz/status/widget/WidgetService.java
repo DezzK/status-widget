@@ -371,14 +371,14 @@ public class WidgetService extends Service {
 
                     // Handle click if needed
                     if (Math.abs(event.getRawX() - initialTouchX) < 5 && Math.abs(event.getRawY() - initialTouchY) < 5) {
-                        if (getBounds(wifiStatusIcon).contains((int) event.getRawX(), (int) event.getRawY())) {
+                        if (getBounds(wifiStatusIcon).contains((int) event.getX(), (int) event.getY())) {
                             Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(intent);
 
                             return true;
                         }
-                        if (getBounds(gnssStatusIcon).contains((int) event.getRawX(), (int) event.getRawY())) {
+                        if (getBounds(gnssStatusIcon).contains((int) event.getX(), (int) event.getY())) {
                             Intent intent = getPackageManager().getLaunchIntentForPackage("dezz.gnssshare.client");
                             if (intent == null) {
                                 intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
