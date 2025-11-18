@@ -84,6 +84,16 @@
                     android:minHeight="48sp" />
 
                 <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/useColorIconsSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="8sp"
+                    android:text="@string/use_color_icons"
+                    android:textColor="@color/text_primary"
+                    android:textSize="24sp"
+                    android:minHeight="48sp" />
+
+                <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showTimeSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

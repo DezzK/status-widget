@@ -23,6 +23,7 @@ import android.graphics.Point;
 
 public class Preferences {
     private static final String PREF_WIDGET_ENABLED = "enabled";
+    private static final String PREF_USE_COLOR_ICONS = "useColorIcons";
     private static final String PREF_SHOW_DATE = "showDate";
     private static final String PREF_SHOW_TIME = "showTime";
     private static final String PREF_SHOW_DAY_OF_THE_WEEK = "showDayOfTheWeek";
@@ -45,6 +46,14 @@ public class Preferences {
 
     public static void saveWidgetEnabled(Context context, boolean value) {
         setBoolean(context, PREF_WIDGET_ENABLED, value);
+    }
+
+    public static boolean useColorIcons(Context context) {
+        return getPrefs(context).getBoolean(PREF_USE_COLOR_ICONS, false);
+    }
+
+    public static void saveUseColorIcons(Context context, boolean value) {
+        setBoolean(context, PREF_USE_COLOR_ICONS, value);
     }
 
     public static boolean showDate(Context context) {

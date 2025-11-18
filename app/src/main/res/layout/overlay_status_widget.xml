@@ -68,7 +68,7 @@
         android:layout_height="100sp"
         android:layout_gravity="center_vertical"
         android:paddingHorizontal="4sp"
-        android:src="@drawable/ic_wifi_off"
+        android:src="@drawable/ic_mono_wifi_off"
         tools:ignore="ContentDescription" />
 
     <!-- GNSS Status -->
@@ -78,6 +78,6 @@
         android:layout_height="100sp"
         android:layout_gravity="center_vertical"
         android:paddingHorizontal="4sp"
-        android:src="@drawable/ic_gps_off"
+        android:src="@drawable/ic_mono_gps_off"
         tools:ignore="ContentDescription" />
 </LinearLayout>

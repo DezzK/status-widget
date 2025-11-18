@@ -74,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initializeViews() {
         enableWidgetSwitch = findViewById(R.id.enableWidgetSwitch);
+        SwitchCompat useColorIconsSwitch = findViewById(R.id.useColorIconsSwitch);
         SwitchCompat showDateSwitch = findViewById(R.id.showDateSwitch);
         SwitchCompat showTimeSwitch = findViewById(R.id.showTimeSwitch);
         SwitchCompat showDayOfTheWeekSwitch = findViewById(R.id.showDaySwitch);
@@ -100,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
         copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
 
         enableWidgetSwitch.setChecked(Preferences.widgetEnabled(this));
+        useColorIconsSwitch.setChecked(Preferences.useColorIcons(this));
         showDateSwitch.setChecked(Preferences.showDate(this));
         showTimeSwitch.setChecked(Preferences.showTime(this));
         showDayOfTheWeekSwitch.setChecked(Preferences.showDayOfTheWeek(this));
@@ -131,6 +133,13 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 stopWidgetService();
                 Preferences.resetOverlayPosition(this);
+            }
+        });
+
+        useColorIconsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            Preferences.saveUseColorIcons(this, isChecked);
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
             }
         });
 

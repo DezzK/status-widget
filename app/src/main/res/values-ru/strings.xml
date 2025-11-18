@@ -24,6 +24,7 @@
 
     <string name="widget_title">Настройки виджета</string>
     <string name="enable_widget">Включить виджет (сбросить позицию)</string>
+    <string name="use_color_icons">Цветные иконки</string>
     <string name="icon_size">Размер иконок</string>
     <string name="show_date">Показывать дату</string>
     <string name="show_time">Показывать время</string>

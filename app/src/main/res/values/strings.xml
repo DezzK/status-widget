@@ -20,6 +20,7 @@
 
     <string name="widget_title">Widget Configuration</string>
     <string name="enable_widget">Enable widget (reset position)</string>
+    <string name="use_color_icons">Use color icons</string>
     <string name="icon_size">Icon sizes</string>
     <string name="show_date">Show date</string>
     <string name="show_time">Show time</string>

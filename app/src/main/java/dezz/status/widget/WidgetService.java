@@ -70,6 +70,29 @@ public class WidgetService extends Service {
         OFF, NO_INTERNET, INTERNET
     }
 
+    // Resource array for GNSS/WiFi icons for different states and mono/colors
+    private static final int[] GNSS_ICONS_MONO = {
+        R.drawable.ic_mono_gps_off,
+        R.drawable.ic_mono_gps_bad,
+        R.drawable.ic_mono_gps_good
+    };
+    private static final int[] WIFI_ICONS_MONO = {
+        R.drawable.ic_mono_wifi_off,
+        R.drawable.ic_mono_wifi_no_internet,
+        R.drawable.ic_mono_wifi_internet
+    };
+
+    private static final int[] GNSS_ICONS_COLOR = {
+        R.drawable.ic_color_gps_off,
+        R.drawable.ic_color_gps_bad,
+        R.drawable.ic_color_gps_good
+    };
+    private static final int[] WIFI_ICONS_COLOR = {
+        R.drawable.ic_color_wifi_off,
+        R.drawable.ic_color_wifi_no_internet,
+        R.drawable.ic_color_wifi_internet
+    };
+
     private static final String TAG = "WidgetService";
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "WidgetServiceChannel";
@@ -316,6 +339,7 @@ public class WidgetService extends Service {
                 NetworkRequest networkRequest = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build();
                 connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
             }
+            updateWifiStatus();
         } else if (connectivityManager != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
             connectivityManager = null;
@@ -329,6 +353,7 @@ public class WidgetService extends Service {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener, Looper.getMainLooper());
                 mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
             }
+            updateGnssStatus();
         } else if (locationManager != null) {
             mainHandler.removeCallbacks(updateGnssStatusRunnable);
             locationManager.removeUpdates(locationListener);
@@ -428,11 +453,7 @@ public class WidgetService extends Service {
     }
 
     private void updateWifiStatus() {
-        wifiStatusIcon.setImageResource(switch (wifiState) {
-            case WiFiState.OFF -> R.drawable.ic_wifi_off;
-            case WiFiState.NO_INTERNET -> R.drawable.ic_wifi_no_internet;
-            case WiFiState.INTERNET -> R.drawable.ic_wifi_internet;
-        });
+        updateIconStatus(WIFI_ICONS_MONO, WIFI_ICONS_COLOR, wifiStatusIcon, wifiState.ordinal());
     }
 
     private void setGnssStatus(GnssState newState) {
@@ -441,11 +462,15 @@ public class WidgetService extends Service {
     }
 
     private void updateGnssStatus() {
-        gnssStatusIcon.setImageResource(switch (gnssState) {
-            case OFF -> R.drawable.ic_gps_off;
-            case BAD -> R.drawable.ic_gps_bad;
-            case GOOD -> R.drawable.ic_gps_good;
-        });
+        updateIconStatus(GNSS_ICONS_MONO, GNSS_ICONS_COLOR, gnssStatusIcon, gnssState.ordinal());
+    }
+
+    private void updateIconStatus(int[] monoResources, int[] colorResources, ImageView icon, int state) {
+        if (Preferences.useColorIcons(this)) {
+            icon.setImageResource(colorResources[state]);
+        } else {
+            icon.setImageResource(monoResources[state]);
+        }
     }
 
     private void createNotificationChannel() {
@@ -460,7 +485,7 @@ public class WidgetService extends Service {
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        return new NotificationCompat.Builder(this, CHANNEL_ID).setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.notification_content)).setSmallIcon(R.drawable.ic_gps_good).setContentIntent(pendingIntent).setOngoing(true).build();
+        return new NotificationCompat.Builder(this, CHANNEL_ID).setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.notification_content)).setSmallIcon(R.drawable.ic_mono_gps_good).setContentIntent(pendingIntent).setOngoing(true).build();
     }
 
     // Add this method to save position
