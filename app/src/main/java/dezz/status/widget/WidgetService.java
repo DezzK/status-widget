@@ -46,6 +46,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -233,7 +234,17 @@ public class WidgetService extends Service {
 
         // Add the view to the window
         Point position = Preferences.overlayPosition(this);
-        params = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, PixelFormat.TRANSLUCENT);
+        params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_OVERSCAN |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_ATTACHED_IN_DECOR
+                ,
+                PixelFormat.TRANSLUCENT
+        );
         params.gravity = Gravity.TOP | Gravity.START;
         params.x = position.x;
         params.y = position.y;
@@ -260,8 +271,15 @@ public class WidgetService extends Service {
         updateDateTime();
 
         int iconSize = Preferences.iconSize(this);
-        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(iconSize, iconSize);
+
+        ViewGroup.LayoutParams iconParams = wifiStatusIcon.getLayoutParams();
+        iconParams.width = iconSize;
+        iconParams.height = iconSize;
         wifiStatusIcon.setLayoutParams(iconParams);
+
+        iconParams = gnssStatusIcon.getLayoutParams();
+        iconParams.width = iconSize;
+        iconParams.height = iconSize;
         gnssStatusIcon.setLayoutParams(iconParams);
 
         float timeOutlineWidth = Math.max(2F, Preferences.timeFontSize(this) / 32F);
@@ -281,6 +299,7 @@ public class WidgetService extends Service {
 
         LinearLayout.LayoutParams dateTimeLayoutParams = (LinearLayout.LayoutParams) dateTimeContainer.getLayoutParams();
         dateTimeLayoutParams.setMargins(0, 0, Preferences.spacingBetweenTextsAndIcons(this), 0);
+        dateTimeContainer.setLayoutParams(dateTimeLayoutParams);
 
         timeText.setTranslationY(Preferences.adjustTimeY(this));
         dateText.setTranslationY(Preferences.adjustDateY(this));
