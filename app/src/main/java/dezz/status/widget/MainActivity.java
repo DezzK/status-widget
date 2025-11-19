@@ -65,8 +65,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeViews() {
-        TextView copyrightNoticeText = findViewById(R.id.copyrightNoticeText);
-        copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
+        final String appVersion = VersionGetter.getAppVersionName(this);
+        if (appVersion != null) {
+            binding.headerText.setText(String.format("%s %s", getString(R.string.app_name), appVersion));
+        }
+        binding.copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
 
         binding.enableWidgetSwitch.setChecked(prefs.widgetEnabled.get());
         binding.enableWidgetSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
