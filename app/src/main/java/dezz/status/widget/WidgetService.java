@@ -406,16 +406,18 @@ public class WidgetService extends Service {
                 case MotionEvent.ACTION_UP:
                     savePosition();
 
-                    // Handle click if needed
+                    // Handle click
                     if (Math.abs(event.getRawX() - initialTouchX) < 5 && Math.abs(event.getRawY() - initialTouchY) < 5) {
-                        if (getBounds(binding.wifiStatusIcon).contains((int) event.getX(), (int) event.getY())) {
+                        if (binding.wifiStatusIcon.getVisibility() == View.VISIBLE &&
+                                getBounds(binding.wifiStatusIcon).contains((int) event.getX(), (int) event.getY())) {
                             Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(intent);
 
                             return true;
                         }
-                        if (getBounds(binding.gnssStatusIcon).contains((int) event.getX(), (int) event.getY())) {
+                        if (binding.gnssStatusIcon.getVisibility() == View.VISIBLE &&
+                                getBounds(binding.gnssStatusIcon).contains((int) event.getX(), (int) event.getY())) {
                             Intent intent = getPackageManager().getLaunchIntentForPackage("dezz.gnssshare.client");
                             if (intent == null) {
                                 intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
