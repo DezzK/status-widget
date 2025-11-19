@@ -253,8 +253,7 @@ public class WidgetService extends Service {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                         WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
-                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_OVERSCAN |
-                        WindowManager.LayoutParams.FLAG_LAYOUT_ATTACHED_IN_DECOR
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                 ,
                 PixelFormat.TRANSLUCENT
         );
