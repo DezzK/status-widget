@@ -32,6 +32,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
+import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
@@ -71,7 +72,6 @@ public class WidgetService extends Service {
         OFF, NO_INTERNET, INTERNET
     }
 
-    // Resource array for GNSS/Wi-Fi icons for different states and mono/colors
     private static final int[] GNSS_ICONS_MONO = {
         R.drawable.ic_mono_gps_off,
         R.drawable.ic_mono_gps_bad,
@@ -188,7 +188,9 @@ public class WidgetService extends Service {
         @Override
         public void onAvailable(@NonNull Network network) {
             Log.d(TAG, "Wi-Fi is connected");
-            setWifiStatus(WiFiState.NO_INTERNET);
+            if (wifiState == WiFiState.OFF) {
+                setWifiStatus(WiFiState.NO_INTERNET);
+            }
         }
 
         @Override
@@ -201,19 +203,14 @@ public class WidgetService extends Service {
         public void onCapabilitiesChanged(@NonNull Network network, NetworkCapabilities networkCapabilities) {
             if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 boolean hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
-
-                if (hasInternet) {
-                    setWifiStatus(WiFiState.INTERNET);
-                } else {
-                    setWifiStatus(WiFiState.NO_INTERNET);
-                }
-
                 Log.d(TAG, "Wi-Fi capabilities changed, has internet = " + hasInternet);
+                setWifiStatus(hasInternet ? WiFiState.INTERNET : WiFiState.NO_INTERNET);
+            } else {
+                setWifiStatus(WiFiState.OFF);
             }
         }
     };
 
-    @SuppressLint({"InflateParams"})
     @Override
     public void onCreate() {
         prefs = new Preferences(this);
@@ -328,6 +325,15 @@ public class WidgetService extends Service {
         if (prefs.showWifiIcon.get()) {
             if (connectivityManager == null) {
                 connectivityManager = getSystemService(ConnectivityManager.class);
+
+                for (Network net : connectivityManager.getAllNetworks()) {
+                    NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(net);
+                    if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                        boolean hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+                        setWifiStatus(hasInternet ? WiFiState.INTERNET : WiFiState.NO_INTERNET);
+                        break;
+                    }
+                }
 
                 NetworkRequest networkRequest = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build();
                 connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
