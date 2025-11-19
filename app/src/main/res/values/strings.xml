@@ -43,5 +43,5 @@
     <string name="notification_channel_title">Status Widget Overlay Service</string>
     <string name="notification_content">Widget service is running</string>
 
-    <string name="copyright_notice" translatable="false">© 2025 Dezz (Telegram: <a href="https://t.me/DezzK">DezzK</a>), S.Ramazanov (Telegram: <a href="https://t.me/RamazanovS">RamazanovS</a>)</string>
+    <string name="copyright_notice" translatable="false">© 2025 Dezz (tg: <a href="https://t.me/DezzK">DezzK</a>), S.Ramazanov (tg: <a href="https://t.me/RamazanovS">RamazanovS</a>)</string>
 </resources>
