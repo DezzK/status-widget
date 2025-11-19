@@ -83,15 +83,26 @@
                     android:textSize="24sp"
                     android:minHeight="48sp" />
 
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/useColorIconsSwitch"
+                <!-- Icon style -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="8sp"
-                    android:text="@string/use_color_icons"
-                    android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/icon_style"
+                        android:textColor="@color/text_primary"
+                        android:textSize="24sp"
+                        android:minHeight="48sp" />
+                    <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/iconStyleSpinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary"
+                        android:minHeight="48sp" />
+                </LinearLayout>
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showTimeSwitch"

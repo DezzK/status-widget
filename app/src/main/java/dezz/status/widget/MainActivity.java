@@ -22,7 +22,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
-import android.widget.TextView;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -86,9 +88,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        ArrayAdapter<String> iconStylesAdapter = new ArrayAdapter<>(
+                this,
+                R.layout.spinner_dropdown_item,
+                getResources().getStringArray(R.array.icon_styles)
+        );
+        iconStylesAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        binding.iconStyleSpinner.setAdapter(iconStylesAdapter);
+        binding.iconStyleSpinner.setSelection(prefs.iconStyle.get());
+        binding.iconStyleSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.iconStyle.set(position);
+                if (WidgetService.isRunning()) {
+                    WidgetService.getInstance().applyPreferences();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
         ViewBinder binder = new ViewBinder(this);
 
-        binder.bindCheckbox(binding.useColorIconsSwitch, prefs.useColorIcons);
         binder.bindCheckbox(binding.showDateSwitch, prefs.showDate);
         binder.bindCheckbox(binding.showTimeSwitch, prefs.showTime);
         binder.bindCheckbox(binding.showDaySwitch, prefs.showDayOfTheWeek);

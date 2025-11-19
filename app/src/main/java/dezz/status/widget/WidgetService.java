@@ -94,6 +94,17 @@ public class WidgetService extends Service {
         R.drawable.ic_color_wifi_internet
     };
 
+    private static final int[] GNSS_ICONS_MONOCOLOR = {
+            R.drawable.ic_monocolor_gps_off,
+            R.drawable.ic_monocolor_gps_bad,
+            R.drawable.ic_monocolor_gps_good
+    };
+    private static final int[] WIFI_ICONS_MONOCOLOR = {
+            R.drawable.ic_monocolor_wifi_off,
+            R.drawable.ic_monocolor_wifi_no_internet,
+            R.drawable.ic_monocolor_wifi_internet
+    };
+
     private static final String TAG = "WidgetService";
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "WidgetServiceChannel";
@@ -453,7 +464,7 @@ public class WidgetService extends Service {
     }
 
     private void updateWifiStatus() {
-        updateIconStatus(WIFI_ICONS_MONO, WIFI_ICONS_COLOR, binding.wifiStatusIcon, wifiState.ordinal());
+        updateIconStatus(WIFI_ICONS_MONO, WIFI_ICONS_COLOR, WIFI_ICONS_MONOCOLOR, binding.wifiStatusIcon, wifiState.ordinal());
     }
 
     private void setGnssStatus(GnssState newState) {
@@ -462,14 +473,14 @@ public class WidgetService extends Service {
     }
 
     private void updateGnssStatus() {
-        updateIconStatus(GNSS_ICONS_MONO, GNSS_ICONS_COLOR, binding.gnssStatusIcon, gnssState.ordinal());
+        updateIconStatus(GNSS_ICONS_MONO, GNSS_ICONS_COLOR, GNSS_ICONS_MONOCOLOR, binding.gnssStatusIcon, gnssState.ordinal());
     }
 
-    private void updateIconStatus(int[] monoResources, int[] colorResources, ImageView icon, int state) {
-        if (prefs.useColorIcons.get()) {
-            icon.setImageResource(colorResources[state]);
-        } else {
-            icon.setImageResource(monoResources[state]);
+    private void updateIconStatus(int[] monoResources, int[] colorResources, int[] monocolorResources, ImageView icon, int state) {
+        switch (prefs.iconStyle.get()) {
+            case 0 -> icon.setImageResource(monoResources[state]);
+            case 1 -> icon.setImageResource(colorResources[state]);
+            case 2 -> icon.setImageResource(monocolorResources[state]);
         }
     }
 
