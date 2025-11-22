@@ -87,8 +87,8 @@ public class Preferences {
     public final Int spacingBetweenTextsAndIcons = new Int(this, "spacingBetweenTextsAndIcons", 0);
     public final Int adjustTimeY = new Int(this, "adjustTimeY", 0);
     public final Int adjustDateY = new Int(this, "adjustDateY", 0);
-    public final Int overlayX = new Int(this, "overlayX", 0);
-    public final Int overlayY = new Int(this, "overlayY", 0);
+    public final Int overlayX = new Int(this, "overlayX", 200);
+    public final Int overlayY = new Int(this, "overlayY", 300);
 
     public Preferences(Context context) {
         final Context deviceContext = context.getApplicationContext().createDeviceProtectedStorageContext();
