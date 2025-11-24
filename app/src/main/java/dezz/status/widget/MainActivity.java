@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
 
         prefs = new Preferences(this);
 
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         binding = ActivityMainBinding.inflate(this.getLayoutInflater());
         setContentView(binding.getRoot());
 
