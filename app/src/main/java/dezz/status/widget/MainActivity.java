@@ -110,6 +110,29 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        /* Выбор выравнивания даты */
+        ArrayAdapter<String> calendarAlignAdapter = new ArrayAdapter<>(
+                this,
+                R.layout.spinner_dropdown_item,
+                getResources().getStringArray(R.array.calendar_align_types)
+        );
+        calendarAlignAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        binding.calendarAlignSpinner.setAdapter(calendarAlignAdapter);
+        binding.calendarAlignSpinner.setSelection(prefs.calendarAlign.get());
+        binding.calendarAlignSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                prefs.calendarAlign.set(position);
+                if (WidgetService.isRunning()) {
+                    WidgetService.getInstance().applyPreferences();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
         ViewBinder binder = new ViewBinder(this);
 
         binder.bindCheckbox(binding.showDateSwitch, prefs.showDate);

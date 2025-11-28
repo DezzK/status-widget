@@ -28,14 +28,14 @@
         android:id="@+id/headerText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16sp"
+        android:layout_marginBottom="@dimen/optionsMargin"
         android:background="@color/header_background"
         android:gravity="start"
-        android:paddingHorizontal="24sp"
-        android:paddingVertical="12sp"
+        android:paddingHorizontal="@dimen/optionsPaddingHorizontal"
+        android:paddingVertical="@dimen/optionsPaddingVertical"
         android:text="@string/app_name"
         android:textColor="@color/text_primary"
-        android:textSize="32sp"
+        android:textSize="@dimen/optionsTextSizeHeader"
         android:textStyle="bold" />
 
     <ScrollView
@@ -44,7 +44,7 @@
         android:layout_weight="1"
         android:orientation="vertical"
         android:scrollbars="vertical"
-        android:scrollbarSize="8sp"
+        android:scrollbarSize="@dimen/optionsScrollbarSize"
         android:scrollbarAlwaysDrawVerticalTrack="true">
 
         <LinearLayout
@@ -52,36 +52,36 @@
             android:layout_height="wrap_content"
             android:background="@color/background"
             android:orientation="vertical"
-            android:padding="16sp">
+            android:padding="@dimen/optionsMargin">
 
             <!-- Widget Configuration -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12sp"
+                android:layout_marginBottom="@dimen/optionsMarginMedium"
                 android:background="@color/card_background"
-                android:elevation="2sp"
+                android:elevation="@dimen/optionsElevation"
                 android:orientation="vertical"
-                android:padding="16sp">
+                android:padding="@dimen/optionsMargin">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8sp"
+                    android:layout_marginBottom="@dimen/optionsMarginSmall"
                     android:text="@string/widget_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="26sp"
+                    android:textSize="@dimen/optionsTextSizeBlock"
                     android:textStyle="bold" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/enableWidgetSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="8sp"
+                    android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/enable_widget"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
 
                 <!-- Icon style -->
                 <LinearLayout
@@ -94,86 +94,107 @@
                         android:layout_weight="1"
                         android:text="@string/icon_style"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp"
-                        android:minHeight="48sp" />
+                        android:textSize="@dimen/optionsTextSizeLabel"
+                        android:minHeight="@dimen/optionsLineHeight" />
                     <androidx.appcompat.widget.AppCompatSpinner
                         android:id="@+id/iconStyleSpinner"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="@color/text_primary"
-                        android:minHeight="48sp" />
+                        android:minHeight="@dimen/optionsLineHeight" />
                 </LinearLayout>
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showTimeSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="8sp"
+                    android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_time"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showDateSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="8sp"
+                    android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_date"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showDaySwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="8sp"
+                    android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_day_of_the_week"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showFullDayAndMonthSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="8sp"
+                    android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_full_day_and_month"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
+
+                <!-- Calendar Align -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/calendar_align"
+                        android:textColor="@color/text_primary"
+                        android:textSize="@dimen/optionsTextSizeLabel"
+                        android:minHeight="@dimen/optionsLineHeight" />
+                    <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/calendarAlignSpinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary"
+                        android:minHeight="@dimen/optionsLineHeight" />
+                </LinearLayout>
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showWiFiSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="8sp"
+                    android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_wifi"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/showGnssSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="8sp"
+                    android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_gnss"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/oneLineLayoutSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8sp"
-                    android:layout_marginBottom="20sp"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:layout_marginBottom="@dimen/optionsMarginBig"
                     android:text="@string/one_line_layout"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
 
                 <!-- Time Font Size -->
                 <TextView
@@ -181,7 +202,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/time_font_size"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -192,13 +213,13 @@
                         android:id="@+id/timeFontSizeSeekBar"
                         android:layout_width="0sp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8sp"
+                        android:layout_marginEnd="@dimen/optionsMarginSmall"
                         android:layout_weight="1"
                         android:layout_gravity="center_vertical"
                         android:max="500"
                         android:min="10"
                         android:progress="50"
-                        android:minHeight="48sp" />
+                        android:minHeight="@dimen/optionsLineHeight" />
 
                     <TextView
                         android:id="@+id/timeFontSizeValueText"
@@ -207,7 +228,7 @@
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
                 <!-- Date Font Size -->
@@ -216,7 +237,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/date_font_size"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -227,13 +248,13 @@
                         android:id="@+id/dateFontSizeSeekBar"
                         android:layout_width="0sp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8sp"
+                        android:layout_marginEnd="@dimen/optionsMarginSmall"
                         android:layout_weight="1"
                         android:layout_gravity="center_vertical"
                         android:max="500"
                         android:min="10"
                         android:progress="50"
-                        android:minHeight="48sp" />
+                        android:minHeight="@dimen/optionsLineHeight" />
 
                     <TextView
                         android:id="@+id/dateFontSizeValueText"
@@ -241,18 +262,18 @@
                         android:layout_height="wrap_content"
                         android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
                 <!-- Icon Sizes -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20sp"
+                    android:layout_marginTop="@dimen/optionsMarginBig"
                     android:text="@string/icon_size"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:minHeight="48sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel"
+                    android:minHeight="@dimen/optionsLineHeight" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -263,13 +284,13 @@
                         android:id="@+id/iconSizeSeekBar"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8sp"
+                        android:layout_marginEnd="@dimen/optionsMarginSmall"
                         android:layout_weight="1"
                         android:layout_gravity="center_vertical"
                         android:max="600"
                         android:min="10"
                         android:progress="50"
-                        android:minHeight="48sp" />
+                        android:minHeight="@dimen/optionsLineHeight" />
 
                     <TextView
                         android:id="@+id/iconSizeValueText"
@@ -278,7 +299,7 @@
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
                 <!-- Spacing Between Text and Icons -->
@@ -287,7 +308,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/spacing_between_text_and_icons_size"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -298,13 +319,13 @@
                         android:id="@+id/spacingBetweenTextsAndIconsSeekBar"
                         android:layout_width="0sp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8sp"
+                        android:layout_marginEnd="@dimen/optionsMarginSmall"
                         android:layout_weight="1"
                         android:layout_gravity="center_vertical"
                         android:max="150"
                         android:min="0"
                         android:progress="50"
-                        android:minHeight="48sp" />
+                        android:minHeight="@dimen/optionsLineHeight" />
 
                     <TextView
                         android:id="@+id/spacingBetweenTextsAndIconsValueText"
@@ -313,7 +334,7 @@
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
                 <!-- Adjust Time Y -->
@@ -322,7 +343,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/adjust_time_y"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -333,13 +354,13 @@
                         android:id="@+id/adjustTimeYSeekBar"
                         android:layout_width="0sp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8sp"
+                        android:layout_marginEnd="@dimen/optionsMarginSmall"
                         android:layout_weight="1"
                         android:layout_gravity="center_vertical"
                         android:max="100"
                         android:min="-100"
                         android:progress="0"
-                        android:minHeight="48sp" />
+                        android:minHeight="@dimen/optionsLineHeight" />
 
                     <TextView
                         android:id="@+id/adjustTimeYValueText"
@@ -348,7 +369,7 @@
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
                 <!-- Adjust Date Y -->
@@ -357,7 +378,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/adjust_date_y"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp" />
+                    android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -368,13 +389,13 @@
                         android:id="@+id/adjustDateYSeekBar"
                         android:layout_width="0sp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8sp"
+                        android:layout_marginEnd="@dimen/optionsMarginSmall"
                         android:layout_weight="1"
                         android:layout_gravity="center_vertical"
                         android:max="100"
                         android:min="-100"
                         android:progress="0"
-                        android:minHeight="48sp" />
+                        android:minHeight="@dimen/optionsLineHeight" />
 
                     <TextView
                         android:id="@+id/adjustDateYValueText"
@@ -383,7 +404,7 @@
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
                         android:textColor="@color/text_primary"
-                        android:textSize="24sp" />
+                        android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -398,8 +419,8 @@
         android:background="@color/card_background"
         android:gravity="center"
         android:linksClickable="true"
-        android:padding="8sp"
+        android:padding="@dimen/optionsMarginSmall"
         android:text="@string/copyright_notice"
         android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
+        android:textSize="@dimen/optionsTextSizeFooter" />
 </LinearLayout>

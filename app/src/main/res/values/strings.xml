@@ -36,6 +36,12 @@
     <string name="time_font_size">Time font size</string>
     <string name="date_font_size">Date and day of the week font size</string>
     <string name="show_full_day_and_month">Show full day-of-the-week and month names</string>
+    <string name="calendar_align">Calendar Align</string>
+    <string-array name="calendar_align_types">
+        <item>Start</item>
+        <item>Center</item>
+        <item>End</item>
+    </string-array>
     <string name="show_wifi">Show WiFi icon</string>
     <string name="show_gnss">Show GNSS icon</string>
     <string name="spacing_between_text_and_icons_size">Spacing between texts and icons</string>

@@ -76,6 +76,7 @@ public class Preferences {
     public final Bool showDate = new Bool(this, "showDate", false);
     public final Bool showTime = new Bool(this, "showTime", false);
     public final Bool showDayOfTheWeek = new Bool(this, "showDayOfTheWeek", false);
+    public final Int calendarAlign = new Int(this, "calendarAlign", 0);
     public final Bool showWifiIcon = new Bool(this, "showWifiIcon", true);
     public final Bool showGnssIcon = new Bool(this, "showGnssIcon", true);
     public final Bool showFullDayAndMonth = new Bool(this, "showFullDayAndMonth", false);

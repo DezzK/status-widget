@@ -317,6 +317,15 @@ public class WidgetService extends Service {
         binding.dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
         binding.timeText.setVisibility(prefs.showTime.get() ? View.VISIBLE : View.GONE);
         binding.dateText.setVisibility(prefs.showDate.get() || prefs.showDayOfTheWeek.get() ? View.VISIBLE : View.GONE);
+        // Выравнивание календаря
+        if (prefs.calendarAlign.get() == 1) {
+            binding.dateText.setGravity(Gravity.CENTER_HORIZONTAL);
+        } else if (prefs.calendarAlign.get() == 2) {
+            binding.dateText.setGravity(Gravity.END);
+        } else {
+            binding.dateText.setGravity(Gravity.START);
+        }
+        // Иконки (GPS и WiFi)
         binding.wifiStatusIcon.setVisibility(prefs.showWifiIcon.get() ? View.VISIBLE : View.GONE);
         binding.gnssStatusIcon.setVisibility(prefs.showGnssIcon.get() ? View.VISIBLE : View.GONE);
 
