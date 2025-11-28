@@ -19,10 +19,18 @@
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
 
-    <color name="background">#F5F5F5</color>
-    <color name="card_background">@android:color/background_light</color>
-    <color name="header_background">#E0E0E0</color>
-    <color name="text_primary">@android:color/primary_text_light</color>
-    <color name="text_secondary">@android:color/secondary_text_light</color>
-    <color name="text_outline">#AAFFFFFF</color>
+    <color name="background_light">#F5F5F5</color>
+    <color name="card_background_light">@android:color/background_light</color>
+    <color name="header_background_light">#E0E0E0</color>
+    <color name="text_primary_light">@android:color/primary_text_light</color>
+    <color name="text_secondary_light">@android:color/secondary_text_light</color>
+    <color name="text_outline_light">#AAFFFFFF</color>
+
+
+    <color name="background_dark">#121212</color>
+    <color name="card_background_dark">@android:color/background_dark</color>
+    <color name="header_background_dark">#2C2C2C</color>
+    <color name="text_primary_dark">@android:color/primary_text_dark</color>
+    <color name="text_secondary_dark">@android:color/secondary_text_dark</color>
+    <color name="text_outline_dark">#AA000000</color>
 </resources>

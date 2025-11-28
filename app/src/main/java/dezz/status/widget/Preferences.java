@@ -73,6 +73,7 @@ public class Preferences {
 
     public final Bool widgetEnabled = new Bool(this, "enabled", false);
     public final Int iconStyle = new Int(this, "iconStyle", 0);
+    public final Int theme = new Int(this, "theme", 0);
     public final Bool showDate = new Bool(this, "showDate", false);
     public final Bool showTime = new Bool(this, "showTime", false);
     public final Bool showDayOfTheWeek = new Bool(this, "showDayOfTheWeek", false);

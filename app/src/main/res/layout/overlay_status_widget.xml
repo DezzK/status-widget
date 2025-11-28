@@ -43,7 +43,7 @@
             android:layout_marginEnd="8sp"
             android:fontFamily="@font/roboto_condensed_medium"
             android:text="10:00"
-            android:textColor="@color/text_primary"
+            android:textColor="?attr/text_primary"
             android:textSize="100sp"
             tools:ignore="HardcodedText" />
 
@@ -55,7 +55,7 @@
             android:layout_gravity="center_vertical"
             android:fontFamily="@font/roboto_condensed_medium"
             android:text=" Tue, 10 Nov "
-            android:textColor="@color/text_primary"
+            android:textColor="?attr/text_primary"
             android:textSize="20sp"
             tools:ignore="HardcodedText" />
 

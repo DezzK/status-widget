@@ -51,7 +51,8 @@
             android:name=".WidgetService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location"
+            android:theme="@style/AppTheme" />
 
         <receiver
             android:name=".BootReceiver"

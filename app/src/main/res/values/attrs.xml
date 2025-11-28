@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="ic_launcher_background" format="color" />
+
+    <attr name="header_background" format="color" />
+    <attr name="main_background" format="color" />
+    <attr name="card_background" format="color" />
+    <attr name="text_primary" format="color" />
+    <attr name="text_secondary" format="color" />
+    <attr name="text_outline" format="color" />
+</resources>

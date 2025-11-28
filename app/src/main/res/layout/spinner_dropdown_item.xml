@@ -9,6 +9,6 @@
     android:paddingVertical="@dimen/optionsPaddingVertical"
     android:minHeight="@dimen/optionsLineHeight"
     android:singleLine="true"
-    android:textColor="@color/text_primary"
+    android:textColor="?attr/text_primary"
     android:textSize="@dimen/optionsTextSizeLabel"
     tools:text="Spinner Dropdown Item" />

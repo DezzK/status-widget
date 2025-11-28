@@ -17,11 +17,14 @@
 
 package dezz.status.widget;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -30,13 +33,16 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.core.app.ActivityCompat;
 
 import java.util.List;
 
 import dezz.status.widget.databinding.ActivityMainBinding;
+import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
     public static final int PERMISSION_REQUEST_CODE = 1001;
     public static final int OVERLAY_PERMISSION_REQUEST_CODE = 1002;
 
@@ -44,14 +50,24 @@ public class MainActivity extends AppCompatActivity {
 
     ActivityMainBinding binding;
 
+    // Создаём themed контекст
+    Context themedContext;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        prefs = new Preferences(this);
+        setAppTheme(); // <-- Важно: вызывай ДО setContentView()
         super.onCreate(savedInstanceState);
 
-        prefs = new Preferences(this);
 
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
-        binding = ActivityMainBinding.inflate(this.getLayoutInflater());
+//        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+
+        // Оборачиваем контекст в тему, чтобы ?attr работали
+        themedContext = new ContextThemeWrapper(this, R.style.AppTheme);
+        LayoutInflater layoutInflater = LayoutInflater.from(themedContext);
+        binding = ActivityMainBinding.inflate(layoutInflater);
+
+//        binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         initializeViews();
@@ -89,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         ArrayAdapter<String> iconStylesAdapter = new ArrayAdapter<>(
-                this,
+                themedContext,
                 R.layout.spinner_dropdown_item,
                 getResources().getStringArray(R.array.icon_styles)
         );
@@ -110,9 +126,31 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        /* Выбор темы */
+        ArrayAdapter<String> themeSpinnerAdapter = new ArrayAdapter<>(
+                themedContext,
+                R.layout.spinner_dropdown_item,
+                getResources().getStringArray(R.array.theme_types)
+        );
+        themeSpinnerAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        binding.themeSpinner.setAdapter(themeSpinnerAdapter);
+        binding.themeSpinner.setSelection(prefs.theme.get());
+        binding.themeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position != prefs.theme.get()) {
+                    saveThemeAndRestart(position);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
         /* Выбор выравнивания даты */
         ArrayAdapter<String> calendarAlignAdapter = new ArrayAdapter<>(
-                this,
+                themedContext,
                 R.layout.spinner_dropdown_item,
                 getResources().getStringArray(R.array.calendar_align_types)
         );
@@ -209,6 +247,46 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.overlay_permission_required,
                         Toast.LENGTH_LONG).show();
             }
+        }
+    }
+
+
+
+    private void saveThemeAndRestart(int themeMode) {
+        Log.d(TAG, "Saving theme mode: " + themeMode + " and restarting activity");
+        prefs.theme.set(themeMode);
+
+        // Уведомляем WidgetService о смене темы
+        Intent themeChangedIntent = new Intent("dezz.status.THEME_CHANGED"); //TODO Надо ли что-то для Системной темы?
+        sendBroadcast(themeChangedIntent);
+
+        // Перезапуск Activity для смены темы у UI настроек
+        restartActivity();
+    }
+
+    private void restartActivity() {
+        Log.d(TAG, "Restarting activity...");
+        finish();
+        overridePendingTransition(0, 0);
+        startActivity(getIntent());
+        overridePendingTransition(0, 0);
+    }
+
+    private void setAppTheme() {
+        int themeMode = prefs.theme.get();
+        Log.d(TAG, "Theme mode: " + themeMode);
+
+        switch (themeMode) {
+            case 1:
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                break;
+            case 2:
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                break;
+            case 0:
+            default:
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+                break;
         }
     }
 }

@@ -27,6 +27,12 @@
         <item>Цветные</item>
         <item>Индикаторы</item>
     </string-array>
+    <string name="theme">Тема</string>
+    <string-array name="theme_types">
+        <item>Системная</item>
+        <item>Светлая</item>
+        <item>Темная</item>
+    </string-array>
 
     <string name="icon_size">Размер иконок</string>
     <string name="show_date">Показывать дату</string>

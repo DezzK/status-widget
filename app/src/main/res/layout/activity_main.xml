@@ -20,7 +20,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
+    android:background="?attr/background"
     android:orientation="vertical">
 
     <!-- Header -->
@@ -29,12 +29,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/optionsMargin"
-        android:background="@color/header_background"
+        android:background="?attr/header_background"
         android:gravity="start"
         android:paddingHorizontal="@dimen/optionsPaddingHorizontal"
         android:paddingVertical="@dimen/optionsPaddingVertical"
         android:text="@string/app_name"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/text_primary"
         android:textSize="@dimen/optionsTextSizeHeader"
         android:textStyle="bold" />
 
@@ -50,7 +50,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/background"
+            android:background="?attr/background"
             android:orientation="vertical"
             android:padding="@dimen/optionsMargin">
 
@@ -59,7 +59,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/optionsMarginMedium"
-                android:background="@color/card_background"
+                android:background="?attr/card_background"
                 android:elevation="@dimen/optionsElevation"
                 android:orientation="vertical"
                 android:padding="@dimen/optionsMargin">
@@ -69,7 +69,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/optionsMarginSmall"
                     android:text="@string/widget_title"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeBlock"
                     android:textStyle="bold" />
 
@@ -79,7 +79,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/enable_widget"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -93,14 +93,35 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/icon_style"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:textSize="@dimen/optionsTextSizeLabel"
                         android:minHeight="@dimen/optionsLineHeight" />
                     <androidx.appcompat.widget.AppCompatSpinner
                         android:id="@+id/iconStyleSpinner"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
+                        android:minHeight="@dimen/optionsLineHeight" />
+                </LinearLayout>
+
+                <!-- Theme -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/theme"
+                        android:textColor="?attr/text_primary"
+                        android:textSize="@dimen/optionsTextSizeLabel"
+                        android:minHeight="@dimen/optionsLineHeight" />
+                    <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/themeSpinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/text_primary"
                         android:minHeight="@dimen/optionsLineHeight" />
                 </LinearLayout>
 
@@ -110,7 +131,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_time"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -120,7 +141,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_date"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -130,7 +151,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_day_of_the_week"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -140,7 +161,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_full_day_and_month"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -154,14 +175,14 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/calendar_align"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:textSize="@dimen/optionsTextSizeLabel"
                         android:minHeight="@dimen/optionsLineHeight" />
                     <androidx.appcompat.widget.AppCompatSpinner
                         android:id="@+id/calendarAlignSpinner"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:minHeight="@dimen/optionsLineHeight" />
                 </LinearLayout>
 
@@ -171,7 +192,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_wifi"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -181,7 +202,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="@dimen/optionsMarginSmall"
                     android:text="@string/show_gnss"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -192,7 +213,7 @@
                     android:layout_marginTop="@dimen/optionsMarginSmall"
                     android:layout_marginBottom="@dimen/optionsMarginBig"
                     android:text="@string/one_line_layout"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -201,7 +222,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/time_font_size"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
@@ -227,7 +248,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
@@ -236,7 +257,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/date_font_size"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
@@ -261,7 +282,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/size_value_format"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
@@ -271,7 +292,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/optionsMarginBig"
                     android:text="@string/icon_size"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
 
@@ -298,7 +319,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
@@ -307,7 +328,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/spacing_between_text_and_icons_size"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
@@ -333,7 +354,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
@@ -342,7 +363,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/adjust_time_y"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
@@ -368,7 +389,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
 
@@ -377,7 +398,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/adjust_date_y"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <LinearLayout
@@ -403,7 +424,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:text="@string/size_value_format"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/text_primary"
                         android:textSize="@dimen/optionsTextSizeLabel" />
                 </LinearLayout>
             </LinearLayout>
@@ -416,11 +437,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@color/card_background"
+        android:background="?attr/card_background"
         android:gravity="center"
         android:linksClickable="true"
         android:padding="@dimen/optionsMarginSmall"
         android:text="@string/copyright_notice"
-        android:textColor="@color/text_secondary"
+        android:textColor="?attr/text_secondary"
         android:textSize="@dimen/optionsTextSizeFooter" />
 </LinearLayout>

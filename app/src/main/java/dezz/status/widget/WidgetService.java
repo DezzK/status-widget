@@ -23,7 +23,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
@@ -32,7 +35,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
-import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
@@ -54,6 +56,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
@@ -111,6 +114,8 @@ public class WidgetService extends Service {
     private static final long GNSS_STATUS_CHECK_INTERVAL = 1000;
 
     private static WidgetService instance;
+
+    Context themedContext;
 
     private Preferences prefs;
     
@@ -175,7 +180,7 @@ public class WidgetService extends Service {
     private final LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(@NonNull Location location) {
-            Log.d(TAG, "Location changed: " + location);
+//            Log.d(TAG, "Location changed: " + location);
             lastLocationUpdateTime = System.currentTimeMillis();
             if (location.hasAccuracy() && location.getAccuracy() < 10.0) {
                 setGnssStatus(GnssState.GOOD);
@@ -222,6 +227,16 @@ public class WidgetService extends Service {
         }
     };
 
+    private final BroadcastReceiver themeChangedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if ("dezz.status.THEME_CHANGED".equals(intent.getAction())) {
+                Log.d(TAG, "Theme changed detected. Re-inflating overlay view.");
+                updateOverlay(); // Пересоздаём вьюшку с новыми цветами
+            }
+        }
+    };
+
     @Override
     public void onCreate() {
         prefs = new Preferences(this);
@@ -235,6 +250,11 @@ public class WidgetService extends Service {
 
         instance = this;
 
+        // Оборачиваем контекст в тему, чтобы ?attr работали
+        themedContext = new ContextThemeWrapper(this, R.style.AppTheme);
+        // Регистрируем ресивер для обновления темы
+        registerReceiver(themeChangedReceiver, new IntentFilter("dezz.status.THEME_CHANGED"));
+
         windowManager = getSystemService(WindowManager.class);
 
         createOverlayView();
@@ -245,7 +265,10 @@ public class WidgetService extends Service {
 
     private void createOverlayView() {
         // Create the overlay view
-        LayoutInflater layoutInflater = LayoutInflater.from(this);
+        Log.d(TAG, "Creating overlay view");
+
+        LayoutInflater layoutInflater = LayoutInflater.from(themedContext);
+
         binding = OverlayStatusWidgetBinding.inflate(layoutInflater);
         binding.getRoot().setVisibility(View.VISIBLE);
 
@@ -264,8 +287,7 @@ public class WidgetService extends Service {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                         WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS |
-                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-                ,
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT
         );
         params.gravity = Gravity.TOP | Gravity.START;
@@ -275,14 +297,25 @@ public class WidgetService extends Service {
         try {
             windowManager.addView(binding.getRoot(), params);
         } catch (Exception e) {
+            Log.e(TAG, "Failed to add view to window manager", e);
             Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_LONG).show();
             stopSelf();
         }
     }
 
+    private void updateOverlay() {
+        if (binding == null) return;
+        Log.d(TAG, "Updating overlay view");
+
+        windowManager.removeView(binding.getRoot());
+        createOverlayView(); // Пересоздаём с новым контекстом и цветами
+        applyPreferences(); // Обновляем логику
+    }
+
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        Log.d(TAG, "Configuration changed");
         if (binding != null) {
             windowManager.removeView(binding.getRoot());
             createOverlayView();
@@ -307,7 +340,7 @@ public class WidgetService extends Service {
 
         float timeOutlineWidth = Math.max(2F, prefs.timeFontSize.get() / 32F);
         float dateOutlineWidth = Math.max(2F, prefs.dateFontSize.get() / 32F);
-        int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
+        int outlineColor = getColorFromAttr(themedContext, R.attr.text_outline);
         binding.timeText.setOutlineColor(outlineColor);
         binding.timeText.setOutlineWidth(timeOutlineWidth);
         binding.dateText.setOutlineColor(outlineColor);
@@ -516,15 +549,33 @@ public class WidgetService extends Service {
         }
     }
 
+    /**
+     * Получает цвет из атрибута темы
+     */
+    private int getColorFromAttr(Context context, int attr) {
+        TypedValue typedValue = new TypedValue();
+        if (context.getTheme().resolveAttribute(attr, typedValue, true)) {
+            if (typedValue.type >= TypedValue.TYPE_FIRST_COLOR_INT &&
+                    typedValue.type <= TypedValue.TYPE_LAST_COLOR_INT) {
+                return typedValue.data; // Цвет
+            } else {
+                // Это не цвет, а, например, ссылка — разрешаем как ресурс
+                return ContextCompat.getColor(context, typedValue.resourceId);
+            }
+        }
+        throw new IllegalArgumentException("Не удалось разрешить атрибут: " + attr);
+    }
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(themeChangedReceiver);
         instance = null;
 
         mainHandler.removeCallbacks(updateGnssStatusRunnable);
         mainHandler.removeCallbacks(updateDateTimeRunnable);
 
-        if (binding != null && windowManager != null) {
+        if (binding != null && binding.getRoot().getParent() != null && windowManager != null) {
             windowManager.removeView(binding.getRoot());
         }
 

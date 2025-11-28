@@ -27,6 +27,12 @@
         <item>Colorful</item>
         <item>Mono-color</item>
     </string-array>
+    <string name="theme">Theme</string>
+    <string-array name="theme_types">
+        <item>System</item>
+        <item>Day</item>
+        <item>Night</item>
+    </string-array>
 
     <string name="icon_size">Icon sizes</string>
     <string name="show_date">Show date</string>
