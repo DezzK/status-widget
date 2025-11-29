@@ -27,11 +27,12 @@
         <item>Colorful</item>
         <item>Mono-color</item>
     </string-array>
-    <string name="theme">Theme</string>
-    <string-array name="theme_types">
+    <string name="night_mode">Night Mode</string>
+    <string-array name="night_mode_types">
         <item>System</item>
         <item>Day</item>
         <item>Night</item>
+        <!--item>Dawn/Dusk</item-->
     </string-array>
 
     <string name="icon_size">Icon sizes</string>

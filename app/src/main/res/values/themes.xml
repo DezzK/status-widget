@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="Theme.AppCompat.Light">
-        <!-- Цвета для СВЕТЛОЙ темы -->
+    <!-- Цвета для СВЕТЛОЙ темы -->
+    <style name="AppTheme_Day" parent="Theme.AppCompat.Light">
         <item name="ic_launcher_background">@color/ic_launcher_background</item>
 
         <item name="background">@color/background_light</item>
@@ -10,5 +10,16 @@
         <item name="text_primary">@color/text_primary_light</item>
         <item name="text_secondary">@color/text_secondary_light</item>
         <item name="text_outline">@color/text_outline_light</item>
+    </style>
+    <!-- Цвета для ТЕМНОЙ темы -->
+    <style name="AppTheme_Night" parent="Theme.AppCompat.NoActionBar">
+        <item name="ic_launcher_background">@color/ic_launcher_background</item>
+
+        <item name="background">@color/background_dark</item>
+        <item name="card_background">@color/card_background_dark</item>
+        <item name="header_background">@color/header_background_dark</item>
+        <item name="text_primary">@color/text_primary_dark</item>
+        <item name="text_secondary">@color/text_secondary_dark</item>
+        <item name="text_outline">@color/text_outline_dark</item>
     </style>
 </resources>

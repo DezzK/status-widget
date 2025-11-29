@@ -27,11 +27,12 @@
         <item>Цветные</item>
         <item>Индикаторы</item>
     </string-array>
-    <string name="theme">Тема</string>
-    <string-array name="theme_types">
-        <item>Системная</item>
-        <item>Светлая</item>
-        <item>Темная</item>
+    <string name="night_mode">Ночной режим</string>
+    <string-array name="night_mode_types">
+        <item>Как в системе</item>
+        <item>День</item>
+        <item>Ночь</item>
+        <!--item>Рассвет/Закат</item-->
     </string-array>
 
     <string name="icon_size">Размер иконок</string>

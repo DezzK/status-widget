@@ -56,6 +56,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -230,10 +231,8 @@ public class WidgetService extends Service {
     private final BroadcastReceiver themeChangedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if ("dezz.status.THEME_CHANGED".equals(intent.getAction())) {
-                Log.d(TAG, "Theme changed detected. Re-inflating overlay view.");
-                updateOverlay(); // Пересоздаём вьюшку с новыми цветами
-            }
+            Log.d(TAG, "Theme changed detected. Re-inflating overlay view.");
+            updateOverlay(); // Пересоздаём вьюшку с новыми цветами
         }
     };
 
@@ -250,10 +249,8 @@ public class WidgetService extends Service {
 
         instance = this;
 
-        // Оборачиваем контекст в тему, чтобы ?attr работали
-        themedContext = new ContextThemeWrapper(this, R.style.AppTheme);
         // Регистрируем ресивер для обновления темы
-        registerReceiver(themeChangedReceiver, new IntentFilter("dezz.status.THEME_CHANGED"));
+        registerReceiver(themeChangedReceiver, new IntentFilter("ACTION_THEME_CHANGED"));
 
         windowManager = getSystemService(WindowManager.class);
 
@@ -266,6 +263,7 @@ public class WidgetService extends Service {
     private void createOverlayView() {
         // Create the overlay view
         Log.d(TAG, "Creating overlay view");
+        themedContext = new ContextThemeWrapper(this, getThemeResId());
 
         LayoutInflater layoutInflater = LayoutInflater.from(themedContext);
 
@@ -309,7 +307,7 @@ public class WidgetService extends Service {
 
         windowManager.removeView(binding.getRoot());
         createOverlayView(); // Пересоздаём с новым контекстом и цветами
-        applyPreferences(); // Обновляем логику
+//        applyPreferences(); // Обновляем логику //TODO: Проверить, что это нужно
     }
 
     @Override
@@ -564,6 +562,18 @@ public class WidgetService extends Service {
             }
         }
         throw new IllegalArgumentException("Не удалось разрешить атрибут: " + attr);
+    }
+
+    private int getThemeResId() {
+        int nightMode = prefs.savedNightMode.get();
+        boolean isSystemInNightMode =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        if (nightMode == AppCompatDelegate.MODE_NIGHT_YES ||
+                (nightMode == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && isSystemInNightMode)) {
+            return R.style.AppTheme_Night; // Night theme style
+        } else {
+            return R.style.AppTheme_Day; // Day theme style
+        }
     }
 
     @Override
