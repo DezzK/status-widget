@@ -36,8 +36,8 @@
     <string name="time_font_size">Рамер шрифта для отображения времени</string>
     <string name="date_font_size">Размер шрифта для отображения даты и дня недели</string>
     <string name="show_full_day_and_month">Не сокращать дни недели и месяцы</string>
-    <string name="calendar_align">Выравнивание календаря</string>
-    <string-array name="calendar_align_types">
+    <string name="calendar_alignment">Выравнивание календаря</string>
+    <string-array name="calendar_alignment_types">
         <item>Влево</item>
         <item>Центр</item>
         <item>Вправо</item>

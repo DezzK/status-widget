@@ -110,19 +110,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        /* Выбор выравнивания даты */
-        ArrayAdapter<String> calendarAlignAdapter = new ArrayAdapter<>(
+        // Calendar alignment dropdown
+        ArrayAdapter<String> calendarAlignmentAdapter = new ArrayAdapter<>(
                 this,
                 R.layout.spinner_dropdown_item,
-                getResources().getStringArray(R.array.calendar_align_types)
+                getResources().getStringArray(R.array.calendar_alignment_types)
         );
-        calendarAlignAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
-        binding.calendarAlignSpinner.setAdapter(calendarAlignAdapter);
-        binding.calendarAlignSpinner.setSelection(prefs.calendarAlign.get());
-        binding.calendarAlignSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        calendarAlignmentAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        binding.calendarAlignmentSpinner.setAdapter(calendarAlignmentAdapter);
+        binding.calendarAlignmentSpinner.setSelection(prefs.calendarAlignment.get());
+        binding.calendarAlignmentSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.calendarAlign.set(position);
+                prefs.calendarAlignment.set(position);
                 if (WidgetService.isRunning()) {
                     WidgetService.getInstance().applyPreferences();
                 }
