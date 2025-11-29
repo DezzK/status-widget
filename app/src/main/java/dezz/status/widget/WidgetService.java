@@ -32,7 +32,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
-import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
@@ -317,6 +316,13 @@ public class WidgetService extends Service {
         binding.dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
         binding.timeText.setVisibility(prefs.showTime.get() ? View.VISIBLE : View.GONE);
         binding.dateText.setVisibility(prefs.showDate.get() || prefs.showDayOfTheWeek.get() ? View.VISIBLE : View.GONE);
+        // Calendar alignment
+        switch (prefs.calendarAlignment.get()) {
+            case 1 -> binding.dateText.setGravity(Gravity.CENTER_HORIZONTAL);
+            case 2 -> binding.dateText.setGravity(Gravity.END);
+            default -> binding.dateText.setGravity(Gravity.START);
+        }
+        // Icons (GPS and WiFi)
         binding.wifiStatusIcon.setVisibility(prefs.showWifiIcon.get() ? View.VISIBLE : View.GONE);
         binding.gnssStatusIcon.setVisibility(prefs.showGnssIcon.get() ? View.VISIBLE : View.GONE);
 

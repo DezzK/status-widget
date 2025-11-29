@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="optionsTextSizeHeader">32sp</dimen>
+    <dimen name="optionsTextSizeBlock">26sp</dimen>
+    <dimen name="optionsTextSizeLabel">24sp</dimen>
+    <dimen name="optionsTextSizeFooter">12sp</dimen>
+
+    <dimen name="optionsPaddingHorizontal">24sp</dimen>
+    <dimen name="optionsPaddingVertical">12sp</dimen>
+    <dimen name="optionsMarginBig">20sp</dimen>
+    <dimen name="optionsMargin">16sp</dimen>
+    <dimen name="optionsMarginMedium">12sp</dimen>
+    <dimen name="optionsMarginSmall">8sp</dimen>
+    <dimen name="optionsScrollbarSize">8sp</dimen>
+    <dimen name="optionsLineHeight">48sp</dimen>
+    <dimen name="optionsElevation">2sp</dimen>
+</resources>
