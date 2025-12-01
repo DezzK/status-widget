@@ -23,6 +23,10 @@ public final class ViewBinder {
         });
     }
 
+    public void bindColorComponentSeekbar(SeekBar seekBar, TextView valueText, Preferences.Int preference) {
+        bindSeekbar(seekBar, valueText, preference, value -> String.format(context.getString(R.string.color_component_value_format), value));
+    }
+
     public void bindSizeSeekbar(SeekBar seekBar, TextView valueText, Preferences.Int preference) {
         bindSeekbar(seekBar, valueText, preference, value -> String.format(context.getString(R.string.size_value_format), value));
     }

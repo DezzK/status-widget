@@ -306,7 +306,7 @@ public class WidgetService extends Service {
 
         float timeOutlineWidth = Math.max(2F, prefs.timeFontSize.get() / 32F);
         float dateOutlineWidth = Math.max(2F, prefs.dateFontSize.get() / 32F);
-        int outlineColor = ContextCompat.getColor(this, R.color.text_outline);
+        int outlineColor = ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF | (prefs.textOutlineAlpha.get() << 24);
         binding.timeText.setOutlineColor(outlineColor);
         binding.timeText.setOutlineWidth(timeOutlineWidth);
         binding.dateText.setOutlineColor(outlineColor);

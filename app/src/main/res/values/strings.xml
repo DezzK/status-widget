@@ -45,9 +45,11 @@
     <string name="show_wifi">Show WiFi icon</string>
     <string name="show_gnss">Show GNSS icon</string>
     <string name="spacing_between_text_and_icons_size">Spacing between texts and icons</string>
+    <string name="text_outline_transparency">Text outline transparency</string>
     <string name="adjust_time_y">Adjust time by Y coordinate</string>
     <string name="adjust_date_y">Adjust date by Y coordinate</string>
     <string name="size_value_format">%d pixels</string>
+    <string name="color_component_value_format" translatable="false">%d</string>
 
     <string name="permissions_required">Permissions required</string>
     <string name="overlay_permission_required">Overlay permission required</string>

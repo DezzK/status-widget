@@ -45,6 +45,7 @@
     <string name="show_wifi">Показывать иконку Wi-Fi</string>
     <string name="show_gnss">Показывать иконку GPS</string>
     <string name="spacing_between_text_and_icons_size">Промежуток между текстом и иконками</string>
+    <string name="text_outline_transparency">Интенсивность обводки текста</string>
     <string name="adjust_time_y">Сдвиг времени по высоте</string>
     <string name="adjust_date_y">Сдвиг даты по высоте</string>
     <string name="size_value_format">%d пикс.</string>
