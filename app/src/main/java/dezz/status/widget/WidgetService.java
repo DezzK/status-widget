@@ -72,25 +72,25 @@ public class WidgetService extends Service {
     }
 
     private static final int[] GNSS_ICONS_MONO = {
-        R.drawable.ic_mono_gps_off,
-        R.drawable.ic_mono_gps_bad,
-        R.drawable.ic_mono_gps_good
+            R.drawable.ic_mono_gps_off,
+            R.drawable.ic_mono_gps_bad,
+            R.drawable.ic_mono_gps_good
     };
     private static final int[] WIFI_ICONS_MONO = {
-        R.drawable.ic_mono_wifi_off,
-        R.drawable.ic_mono_wifi_no_internet,
-        R.drawable.ic_mono_wifi_internet
+            R.drawable.ic_mono_wifi_off,
+            R.drawable.ic_mono_wifi_no_internet,
+            R.drawable.ic_mono_wifi_internet
     };
 
     private static final int[] GNSS_ICONS_COLOR = {
-        R.drawable.ic_color_gps_off,
-        R.drawable.ic_color_gps_bad,
-        R.drawable.ic_color_gps_good
+            R.drawable.ic_color_gps_off,
+            R.drawable.ic_color_gps_bad,
+            R.drawable.ic_color_gps_good
     };
     private static final int[] WIFI_ICONS_COLOR = {
-        R.drawable.ic_color_wifi_off,
-        R.drawable.ic_color_wifi_no_internet,
-        R.drawable.ic_color_wifi_internet
+            R.drawable.ic_color_wifi_off,
+            R.drawable.ic_color_wifi_no_internet,
+            R.drawable.ic_color_wifi_internet
     };
 
     private static final int[] GNSS_ICONS_MONOCOLOR = {
@@ -112,7 +112,7 @@ public class WidgetService extends Service {
     private static WidgetService instance;
 
     private Preferences prefs;
-    
+
     private WindowManager windowManager;
     private WindowManager.LayoutParams params;
 
