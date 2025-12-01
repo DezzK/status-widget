@@ -27,6 +27,8 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
@@ -129,6 +131,10 @@ public class WidgetService extends Service {
     private LocationManager locationManager = null;
     private ConnectivityManager connectivityManager = null;
     private long lastLocationUpdateTime = 0;
+
+    private GradientDrawable background = null;
+    private int bgColor = -1;
+    private int bgCornerRadius = -1;
 
     private final Runnable updateDateTimeRunnable = new Runnable() {
         @Override
@@ -247,6 +253,11 @@ public class WidgetService extends Service {
         LayoutInflater layoutInflater = LayoutInflater.from(this);
         binding = OverlayStatusWidgetBinding.inflate(layoutInflater);
         binding.getRoot().setVisibility(View.VISIBLE);
+        binding.getRoot().addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            int backgroundCornerRadius = Math.min(binding.getRoot().getWidth(), binding.getRoot().getHeight()) / 2;
+            int backgroundColor = ContextCompat.getColor(this, R.color.widget_background) & 0x00FFFFFF | (prefs.backgroundAlpha.get() << 24);
+            binding.overlayContainer.setBackground(getBackground(backgroundColor, backgroundCornerRadius));
+        });
 
         applyPreferences();
 
@@ -293,6 +304,11 @@ public class WidgetService extends Service {
         updateDateTime();
 
         int iconSize = prefs.iconSize.get();
+        int timeFontSize = prefs.timeFontSize.get();
+        int dateFontSize = prefs.dateFontSize.get();
+        int padding = Math.max(iconSize, Math.max(timeFontSize, dateFontSize)) / 2;
+
+        binding.getRoot().setPadding(padding, 0, padding, 0);
 
         ViewGroup.LayoutParams iconParams = binding.wifiStatusIcon.getLayoutParams();
         iconParams.width = iconSize;
@@ -316,12 +332,14 @@ public class WidgetService extends Service {
         binding.dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
         binding.timeText.setVisibility(prefs.showTime.get() ? View.VISIBLE : View.GONE);
         binding.dateText.setVisibility(prefs.showDate.get() || prefs.showDayOfTheWeek.get() ? View.VISIBLE : View.GONE);
+
         // Calendar alignment
         switch (prefs.calendarAlignment.get()) {
             case 1 -> binding.dateText.setGravity(Gravity.CENTER_HORIZONTAL);
             case 2 -> binding.dateText.setGravity(Gravity.END);
             default -> binding.dateText.setGravity(Gravity.START);
         }
+
         // Icons (GPS and WiFi)
         binding.wifiStatusIcon.setVisibility(prefs.showWifiIcon.get() ? View.VISIBLE : View.GONE);
         binding.gnssStatusIcon.setVisibility(prefs.showGnssIcon.get() ? View.VISIBLE : View.GONE);
@@ -375,6 +393,18 @@ public class WidgetService extends Service {
             locationManager.unregisterGnssStatusCallback(gnssStatusCallback);
             locationManager = null;
         }
+    }
+
+    private Drawable getBackground(int color, int cornerRadius) {
+        if (this.background == null || color != this.bgColor || cornerRadius != this.bgCornerRadius) {
+            this.background = new GradientDrawable();
+            this.background.setColor(color);
+            this.background.setCornerRadius(cornerRadius);
+            this.bgColor = color;
+            this.bgCornerRadius = cornerRadius;
+        }
+
+        return this.background;
     }
 
     private void updateDateTime() {
