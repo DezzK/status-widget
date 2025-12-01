@@ -176,7 +176,7 @@ public class WidgetService extends Service {
         public void onLocationChanged(@NonNull Location location) {
             Log.d(TAG, "Location changed: " + location);
             lastLocationUpdateTime = System.currentTimeMillis();
-            if (location.hasAccuracy() && location.getAccuracy() < 10.0) {
+            if (location.hasAccuracy() && location.getAccuracy() < 20.0) {
                 setGnssStatus(GnssState.GOOD);
             } else {
                 setGnssStatus(GnssState.BAD);
