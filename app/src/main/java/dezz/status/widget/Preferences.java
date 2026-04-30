@@ -85,6 +85,7 @@ public class Preferences {
     public final Int timeFontSize = new Int(this, "timeFontSize", 60);
     public final Int dateFontSize = new Int(this, "dateFontSize", 20);
     public final Int backgroundAlpha = new Int(this, "backgroundAlpha", 0xAA);
+    public final Int backgroundCornerRadius = new Int(this, "backgroundCornerRadius", 100);
     public final Int textOutlineAlpha = new Int(this, "textOutlineAlpha", 0xAA);
     public final Int spacingBetweenTextsAndIcons = new Int(this, "spacingBetweenTextsAndIcons", 0);
     public final Int adjustTimeY = new Int(this, "adjustTimeY", 0);

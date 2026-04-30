@@ -17,19 +17,21 @@
 
 package dezz.status.widget;
 
+import android.Manifest;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 
 import java.util.List;
@@ -37,12 +39,35 @@ import java.util.List;
 import dezz.status.widget.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
-    public static final int PERMISSION_REQUEST_CODE = 1001;
+    public static final int FOREGROUND_PERMISSION_REQUEST_CODE = 1001;
     public static final int OVERLAY_PERMISSION_REQUEST_CODE = 1002;
+    public static final int BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE = 1003;
+    public static final int BACKGROUND_LOCATION_SETTINGS_REQUEST_CODE = 1004;
 
     private Preferences prefs;
 
     ActivityMainBinding binding;
+
+    private final CompoundButton.OnCheckedChangeListener enableWidgetSwitchListener =
+            (buttonView, isChecked) -> {
+                if (isChecked) {
+                    if (Permissions.allPermissionsGranted(this)) {
+                        startWidgetService();
+                    } else {
+                        requestPermissions();
+                    }
+                } else {
+                    stopWidgetService();
+                    prefs.overlayX.reset();
+                    prefs.overlayY.reset();
+                }
+            };
+
+    private void uncheckEnableSwitchSilently() {
+        binding.enableWidgetSwitch.setOnCheckedChangeListener(null);
+        binding.enableWidgetSwitch.setChecked(false);
+        binding.enableWidgetSwitch.setOnCheckedChangeListener(enableWidgetSwitchListener);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,11 +85,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
-
     private void initializeViews() {
         final String appVersion = VersionGetter.getAppVersionName(this);
         if (appVersion != null) {
@@ -73,19 +93,7 @@ public class MainActivity extends AppCompatActivity {
         binding.copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
 
         binding.enableWidgetSwitch.setChecked(prefs.widgetEnabled.get());
-        binding.enableWidgetSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                if (Permissions.allPermissionsGranted(this)) {
-                    startWidgetService();
-                } else {
-                    requestPermissions();
-                }
-            } else {
-                stopWidgetService();
-                prefs.overlayX.reset();
-                prefs.overlayY.reset();
-            }
-        });
+        binding.enableWidgetSwitch.setOnCheckedChangeListener(enableWidgetSwitchListener);
 
         ArrayAdapter<String> iconStylesAdapter = new ArrayAdapter<>(
                 this,
@@ -148,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
         binder.bindSizeSeekbar(binding.spacingBetweenTextsAndIconsSeekBar, binding.spacingBetweenTextsAndIconsValueText, prefs.spacingBetweenTextsAndIcons);
         binder.bindColorComponentSeekbar(binding.textOutlineAlphaSeekBar, binding.textOutlineAlphaValueText, prefs.textOutlineAlpha);
         binder.bindColorComponentSeekbar(binding.backgroundAlphaSeekBar, binding.backgroundAlphaValueText, prefs.backgroundAlpha);
+        binder.bindPercentSeekbar(binding.backgroundCornerRadiusSeekBar, binding.backgroundCornerRadiusValueText, prefs.backgroundCornerRadius);
         binder.bindOffsetSeekbar(binding.adjustTimeYSeekBar, binding.adjustTimeYValueText, prefs.adjustTimeY);
         binder.bindOffsetSeekbar(binding.adjustDateYSeekBar, binding.adjustDateYValueText, prefs.adjustDateY);
     }
@@ -163,13 +172,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void requestPermissions() {
-        List<String> permissionsToRequest = Permissions.checkForMissingPermissions(this);
+        List<String> foregroundMissing = Permissions.checkForMissingForegroundPermissions(this);
 
-        if (!permissionsToRequest.isEmpty()) {
-            // Request missing permissions
+        if (!foregroundMissing.isEmpty()) {
             ActivityCompat.requestPermissions(this,
-                    permissionsToRequest.toArray(new String[0]),
-                    PERMISSION_REQUEST_CODE);
+                    foregroundMissing.toArray(new String[0]),
+                    FOREGROUND_PERMISSION_REQUEST_CODE);
+        } else if (!Permissions.isBackgroundLocationGranted(this)) {
+            requestBackgroundLocationPermission();
         } else if (!Permissions.checkOverlayPermission(this)) {
             requestOverlayPermission();
         }
@@ -179,10 +189,22 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (!Permissions.checkForMissingPermissions(this).isEmpty()) {
-                binding.enableWidgetSwitch.setChecked(false);
+        if (requestCode == FOREGROUND_PERMISSION_REQUEST_CODE) {
+            if (!Permissions.checkForMissingForegroundPermissions(this).isEmpty()) {
+                uncheckEnableSwitchSilently();
                 Toast.makeText(this, R.string.missing_permissions_toast, Toast.LENGTH_LONG).show();
+            } else if (!Permissions.isBackgroundLocationGranted(this)) {
+                requestBackgroundLocationPermission();
+            } else if (!Permissions.checkOverlayPermission(this)) {
+                requestOverlayPermission();
+            } else {
+                Toast.makeText(this, R.string.all_permissions_granted_toast, Toast.LENGTH_SHORT).show();
+                startWidgetService();
+            }
+        } else if (requestCode == BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE) {
+            if (!Permissions.isBackgroundLocationGranted(this)) {
+                uncheckEnableSwitchSilently();
+                Toast.makeText(this, R.string.background_location_required, Toast.LENGTH_LONG).show();
             } else if (!Permissions.checkOverlayPermission(this)) {
                 requestOverlayPermission();
             } else {
@@ -190,6 +212,26 @@ public class MainActivity extends AppCompatActivity {
                 startWidgetService();
             }
         }
+    }
+
+    private void requestBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return;
+        }
+
+        // On Android 11+ the system no longer shows a dialog for ACCESS_BACKGROUND_LOCATION via
+        // requestPermissions(); the user must grant "Allow all the time" in app settings.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Toast.makeText(this, R.string.background_location_settings_hint, Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getPackageName()));
+            startActivityForResult(intent, BACKGROUND_LOCATION_SETTINGS_REQUEST_CODE);
+            return;
+        }
+
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE);
     }
 
     public void requestOverlayPermission() {
@@ -206,9 +248,19 @@ public class MainActivity extends AppCompatActivity {
             if (Permissions.checkOverlayPermission(this)) {
                 startWidgetService();
             } else {
-                binding.enableWidgetSwitch.setChecked(false);
+                uncheckEnableSwitchSilently();
                 Toast.makeText(this, R.string.overlay_permission_required,
                         Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == BACKGROUND_LOCATION_SETTINGS_REQUEST_CODE) {
+            if (!Permissions.isBackgroundLocationGranted(this)) {
+                uncheckEnableSwitchSilently();
+                Toast.makeText(this, R.string.background_location_required, Toast.LENGTH_LONG).show();
+            } else if (!Permissions.checkOverlayPermission(this)) {
+                requestOverlayPermission();
+            } else {
+                Toast.makeText(this, R.string.all_permissions_granted_toast, Toast.LENGTH_SHORT).show();
+                startWidgetService();
             }
         }
     }

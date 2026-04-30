@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Dezz (https://github.com/DezzK)
+ * Copyright © 2025 Dezz (https://github.com/DezzK)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -112,6 +113,8 @@ public class WidgetService extends Service {
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "WidgetServiceChannel";
     private static final long GNSS_STATUS_CHECK_INTERVAL = 1000;
+    private static final long DATETIME_UPDATE_INTERVAL_MS = 60_000L;
+    private static final String GNSSSHARE_CLIENT_PACKAGE = "dezz.gnssshare.client";
 
     private static WidgetService instance;
 
@@ -138,11 +141,19 @@ public class WidgetService extends Service {
     private int bgColor = -1;
     private int bgCornerRadius = -1;
 
+    private int touchSlop;
+
+    private SimpleDateFormat timeFormat;
+    private SimpleDateFormat dateFormat;
+    private String currentDateFormatPattern;
+
     private final Runnable updateDateTimeRunnable = new Runnable() {
         @Override
         public void run() {
             updateDateTime();
-            mainHandler.postDelayed(this, 1000);
+            long now = System.currentTimeMillis();
+            long delay = DATETIME_UPDATE_INTERVAL_MS - (now % DATETIME_UPDATE_INTERVAL_MS);
+            mainHandler.postDelayed(this, delay);
         }
     };
 
@@ -232,6 +243,10 @@ public class WidgetService extends Service {
     @Override
     public void onCreate() {
         prefs = new Preferences(this);
+
+        createNotificationChannel();
+        startForeground(NOTIFICATION_ID, createNotification());
+
         if (!Permissions.allPermissionsGranted(this)) {
             prefs.widgetEnabled.set(false);
             Toast.makeText(this, R.string.permissions_required, Toast.LENGTH_LONG).show();
@@ -242,12 +257,12 @@ public class WidgetService extends Service {
 
         instance = this;
 
+        touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
+        timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+
         windowManager = getSystemService(WindowManager.class);
 
         createOverlayView();
-
-        createNotificationChannel();
-        startForeground(NOTIFICATION_ID, createNotification());
     }
 
     private void createOverlayView() {
@@ -255,11 +270,7 @@ public class WidgetService extends Service {
         LayoutInflater layoutInflater = LayoutInflater.from(this);
         binding = OverlayStatusWidgetBinding.inflate(layoutInflater);
         binding.getRoot().setVisibility(View.VISIBLE);
-        binding.getRoot().addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-            int backgroundCornerRadius = Math.min(binding.getRoot().getWidth(), binding.getRoot().getHeight()) / 2;
-            int backgroundColor = ContextCompat.getColor(this, R.color.widget_background) & 0x00FFFFFF | (prefs.backgroundAlpha.get() << 24);
-            binding.overlayContainer.setBackground(getBackground(backgroundColor, backgroundCornerRadius));
-        });
+        binding.getRoot().addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> updateBackground());
 
         applyPreferences();
 
@@ -295,6 +306,10 @@ public class WidgetService extends Service {
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        // Re-create date/time formatters so a locale change is reflected.
+        timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        currentDateFormatPattern = null;
+
         if (binding != null) {
             windowManager.removeView(binding.getRoot());
             createOverlayView();
@@ -303,6 +318,7 @@ public class WidgetService extends Service {
 
     @SuppressLint("MissingPermission")
     public void applyPreferences() {
+        updateBackground();
         updateDateTime();
 
         int iconSize = prefs.iconSize.get();
@@ -345,6 +361,12 @@ public class WidgetService extends Service {
         // Icons (GPS and WiFi)
         binding.wifiStatusIcon.setVisibility(prefs.showWifiIcon.get() ? View.VISIBLE : View.GONE);
         binding.gnssStatusIcon.setVisibility(prefs.showGnssIcon.get() ? View.VISIBLE : View.GONE);
+        // Re-apply icon style for the current state (icon style may have changed in preferences).
+        updateWifiStatus();
+        updateGnssStatus();
+
+        boolean hasDateOrTime = prefs.showTime.get() || prefs.showDate.get() || prefs.showDayOfTheWeek.get();
+        binding.dateTimeContainer.setVisibility(hasDateOrTime ? View.VISIBLE : View.GONE);
 
         LinearLayout.LayoutParams dateTimeLayoutParams = (LinearLayout.LayoutParams) binding.dateTimeContainer.getLayoutParams();
         dateTimeLayoutParams.setMargins(0, 0, prefs.spacingBetweenTextsAndIcons.get(), 0);
@@ -354,8 +376,10 @@ public class WidgetService extends Service {
         binding.dateText.setTranslationY(prefs.adjustDateY.get());
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
-        if (prefs.showDate.get() || prefs.showTime.get()) {
-            mainHandler.postDelayed(updateDateTimeRunnable, 1000);
+        if (prefs.showDate.get() || prefs.showTime.get() || prefs.showDayOfTheWeek.get()) {
+            long now = System.currentTimeMillis();
+            long delay = DATETIME_UPDATE_INTERVAL_MS - (now % DATETIME_UPDATE_INTERVAL_MS);
+            mainHandler.postDelayed(updateDateTimeRunnable, delay);
         }
 
         if (prefs.showWifiIcon.get()) {
@@ -397,6 +421,21 @@ public class WidgetService extends Service {
         }
     }
 
+    private void updateBackground() {
+        if (binding == null) {
+            return;
+        }
+        int width = binding.getRoot().getWidth();
+        int height = binding.getRoot().getHeight();
+        if (width == 0 || height == 0) {
+            return;
+        }
+        int maxRadius = Math.min(width, height) / 2;
+        int backgroundCornerRadius = maxRadius * prefs.backgroundCornerRadius.get() / 100;
+        int backgroundColor = ContextCompat.getColor(this, R.color.widget_background) & 0x00FFFFFF | (prefs.backgroundAlpha.get() << 24);
+        binding.overlayContainer.setBackground(getBackground(backgroundColor, backgroundCornerRadius));
+    }
+
     private Drawable getBackground(int color, int cornerRadius) {
         if (this.background == null || color != this.bgColor || cornerRadius != this.bgCornerRadius) {
             this.background = new GradientDrawable();
@@ -427,14 +466,23 @@ public class WidgetService extends Service {
         // We add spaces at the start/end to avoid outline cropping by canvas which is not ready for the outline
         String fullFormatStr = (showDayOfTheWeek ? " " + dayOfTheWeekFormatStr + divider : "") + (showDate ? " " + dateFormatStr : "") + " ";
 
-        Date now = new Date();
-        String timeStr = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now);
-        String dateStr = new SimpleDateFormat(fullFormatStr, Locale.getDefault()).format(now);
-        if (showTime && !timeStr.contentEquals(binding.timeText.getText())) {
-            binding.timeText.setText(timeStr);
+        if (!fullFormatStr.equals(currentDateFormatPattern)) {
+            dateFormat = new SimpleDateFormat(fullFormatStr, Locale.getDefault());
+            currentDateFormatPattern = fullFormatStr;
         }
-        if ((showDate || showDayOfTheWeek) && !dateStr.contentEquals(binding.dateText.getText())) {
-            binding.dateText.setText(dateStr);
+
+        Date now = new Date();
+        if (showTime) {
+            String timeStr = timeFormat.format(now);
+            if (!timeStr.contentEquals(binding.timeText.getText())) {
+                binding.timeText.setText(timeStr);
+            }
+        }
+        if (showDate || showDayOfTheWeek) {
+            String dateStr = dateFormat.format(now);
+            if (!dateStr.contentEquals(binding.dateText.getText())) {
+                binding.dateText.setText(dateStr);
+            }
         }
     }
 
@@ -461,7 +509,7 @@ public class WidgetService extends Service {
                     savePosition();
 
                     // Handle click
-                    if (Math.abs(event.getRawX() - initialTouchX) < 5 && Math.abs(event.getRawY() - initialTouchY) < 5) {
+                    if (Math.abs(event.getRawX() - initialTouchX) < touchSlop && Math.abs(event.getRawY() - initialTouchY) < touchSlop) {
                         if (binding.wifiStatusIcon.getVisibility() == View.VISIBLE &&
                                 getBounds(binding.wifiStatusIcon).contains((int) event.getX(), (int) event.getY())) {
                             Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
@@ -472,7 +520,7 @@ public class WidgetService extends Service {
                         }
                         if (binding.gnssStatusIcon.getVisibility() == View.VISIBLE &&
                                 getBounds(binding.gnssStatusIcon).contains((int) event.getX(), (int) event.getY())) {
-                            Intent intent = getPackageManager().getLaunchIntentForPackage("dezz.gnssshare.client");
+                            Intent intent = getPackageManager().getLaunchIntentForPackage(GNSSSHARE_CLIENT_PACKAGE);
                             if (intent == null) {
                                 intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                             }
@@ -497,6 +545,9 @@ public class WidgetService extends Service {
     }
 
     private void setWifiStatus(WiFiState newState) {
+        if (wifiState == newState) {
+            return;
+        }
         wifiState = newState;
         updateWifiStatus();
     }
@@ -506,6 +557,9 @@ public class WidgetService extends Service {
     }
 
     private void setGnssStatus(GnssState newState) {
+        if (gnssState == newState) {
+            return;
+        }
         gnssState = newState;
         updateGnssStatus();
     }
