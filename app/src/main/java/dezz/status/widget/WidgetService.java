@@ -73,37 +73,39 @@ public class WidgetService extends Service {
         OFF, NO_INTERNET, INTERNET
     }
 
-    private static final int[] GNSS_ICONS_MONO = {
+    private static final int[][] GNSS_ICONS = {
+        {
             R.drawable.ic_mono_gps_off,
             R.drawable.ic_mono_gps_bad,
             R.drawable.ic_mono_gps_good
-    };
-    private static final int[] WIFI_ICONS_MONO = {
-            R.drawable.ic_mono_wifi_off,
-            R.drawable.ic_mono_wifi_no_internet,
-            R.drawable.ic_mono_wifi_internet
-    };
-
-    private static final int[] GNSS_ICONS_COLOR = {
+        },
+        {
             R.drawable.ic_color_gps_off,
             R.drawable.ic_color_gps_bad,
             R.drawable.ic_color_gps_good
-    };
-    private static final int[] WIFI_ICONS_COLOR = {
-            R.drawable.ic_color_wifi_off,
-            R.drawable.ic_color_wifi_no_internet,
-            R.drawable.ic_color_wifi_internet
-    };
-
-    private static final int[] GNSS_ICONS_MONOCOLOR = {
+        },
+        {
             R.drawable.ic_monocolor_gps_off,
             R.drawable.ic_monocolor_gps_bad,
             R.drawable.ic_monocolor_gps_good
+        }
     };
-    private static final int[] WIFI_ICONS_MONOCOLOR = {
+    private static final int[][] WIFI_ICONS = {
+        {
+            R.drawable.ic_mono_wifi_off,
+            R.drawable.ic_mono_wifi_no_internet,
+            R.drawable.ic_mono_wifi_internet
+        },
+        {
+            R.drawable.ic_color_wifi_off,
+            R.drawable.ic_color_wifi_no_internet,
+            R.drawable.ic_color_wifi_internet
+        },
+        {
             R.drawable.ic_monocolor_wifi_off,
             R.drawable.ic_monocolor_wifi_no_internet,
             R.drawable.ic_monocolor_wifi_internet
+        }
     };
 
     private static final String TAG = "WidgetService";
@@ -500,7 +502,7 @@ public class WidgetService extends Service {
     }
 
     private void updateWifiStatus() {
-        updateIconStatus(WIFI_ICONS_MONO, WIFI_ICONS_COLOR, WIFI_ICONS_MONOCOLOR, binding.wifiStatusIcon, wifiState.ordinal());
+        updateIconStatus(WIFI_ICONS, binding.wifiStatusIcon, wifiState.ordinal());
     }
 
     private void setGnssStatus(GnssState newState) {
@@ -509,15 +511,12 @@ public class WidgetService extends Service {
     }
 
     private void updateGnssStatus() {
-        updateIconStatus(GNSS_ICONS_MONO, GNSS_ICONS_COLOR, GNSS_ICONS_MONOCOLOR, binding.gnssStatusIcon, gnssState.ordinal());
+        updateIconStatus(GNSS_ICONS, binding.gnssStatusIcon, gnssState.ordinal());
     }
 
-    private void updateIconStatus(int[] monoResources, int[] colorResources, int[] monocolorResources, ImageView icon, int state) {
-        switch (prefs.iconStyle.get()) {
-            case 0 -> icon.setImageResource(monoResources[state]);
-            case 1 -> icon.setImageResource(colorResources[state]);
-            case 2 -> icon.setImageResource(monocolorResources[state]);
-        }
+    private void updateIconStatus(int[][] resources, ImageView icon, int state) {
+        int styleIndex = Math.min(Math.max(0, prefs.iconStyle.get()), resources.length - 1);
+        icon.setImageResource(resources[styleIndex][state]);
     }
 
     private void createNotificationChannel() {
