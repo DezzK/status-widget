@@ -340,11 +340,19 @@ public class WidgetService extends Service {
 
         float timeOutlineWidth = Math.max(2F, prefs.timeFontSize.get() / 32F);
         float dateOutlineWidth = Math.max(2F, prefs.dateFontSize.get() / 32F);
-        int outlineColor = ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF | (prefs.textOutlineAlpha.get() << 24);
-        binding.timeText.setOutlineColor(outlineColor);
+        int outlineRgb = ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF;
+        int textOutlineColor = outlineRgb | (prefs.textOutlineAlpha.get() << 24);
+        binding.timeText.setOutlineColor(textOutlineColor);
         binding.timeText.setOutlineWidth(timeOutlineWidth);
-        binding.dateText.setOutlineColor(outlineColor);
+        binding.dateText.setOutlineColor(textOutlineColor);
         binding.dateText.setOutlineWidth(dateOutlineWidth);
+
+        int iconOutlineWidth = Math.max(2, iconSize / 32);
+        int iconOutlineColor = outlineRgb | (prefs.iconOutlineAlpha.get() << 24);
+        binding.wifiStatusIcon.setOutlineColor(iconOutlineColor);
+        binding.wifiStatusIcon.setOutlineWidth(iconOutlineWidth);
+        binding.gnssStatusIcon.setOutlineColor(iconOutlineColor);
+        binding.gnssStatusIcon.setOutlineWidth(iconOutlineWidth);
 
         binding.timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize.get());
         binding.dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());

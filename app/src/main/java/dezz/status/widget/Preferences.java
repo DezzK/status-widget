@@ -87,6 +87,7 @@ public class Preferences {
     public final Int backgroundAlpha = new Int(this, "backgroundAlpha", 0xAA);
     public final Int backgroundCornerRadius = new Int(this, "backgroundCornerRadius", 100);
     public final Int textOutlineAlpha = new Int(this, "textOutlineAlpha", 0xAA);
+    public final Int iconOutlineAlpha = new Int(this, "iconOutlineAlpha", 0xAA);
     public final Int spacingBetweenTextsAndIcons = new Int(this, "spacingBetweenTextsAndIcons", 0);
     public final Int adjustTimeY = new Int(this, "adjustTimeY", 0);
     public final Int adjustDateY = new Int(this, "adjustDateY", 0);

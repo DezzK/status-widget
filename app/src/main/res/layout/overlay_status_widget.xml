@@ -58,7 +58,7 @@
     </LinearLayout>
 
     <!-- Wi-Fi Status -->
-    <ImageView
+    <dezz.status.widget.OutlineImageView
         android:id="@+id/wifiStatusIcon"
         android:layout_width="100sp"
         android:layout_height="100sp"
@@ -68,7 +68,7 @@
         tools:ignore="ContentDescription" />
 
     <!-- GNSS Status -->
-    <ImageView
+    <dezz.status.widget.OutlineImageView
         android:id="@+id/gnssStatusIcon"
         android:layout_width="100sp"
         android:layout_height="100sp"
