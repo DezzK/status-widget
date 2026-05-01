@@ -160,6 +160,22 @@ public class MainActivity extends AppCompatActivity {
         binder.bindPercentSeekbar(binding.backgroundCornerRadiusSeekBar, binding.backgroundCornerRadiusValueText, prefs.backgroundCornerRadius);
         binder.bindOffsetSeekbar(binding.adjustTimeYSeekBar, binding.adjustTimeYValueText, prefs.adjustTimeY);
         binder.bindOffsetSeekbar(binding.adjustDateYSeekBar, binding.adjustDateYValueText, prefs.adjustDateY);
+
+        binding.hideInAppsButton.setOnClickListener(v -> openAppSelection());
+    }
+
+    private void openAppSelection() {
+        if (!Permissions.isUsageAccessGranted(this)) {
+            Toast.makeText(this, R.string.usage_access_required, Toast.LENGTH_LONG).show();
+            try {
+                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+            } catch (Exception ignored) {
+                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + getPackageName())));
+            }
+            return;
+        }
+        startActivity(new Intent(this, AppSelectionActivity.class));
     }
 
     private void startWidgetService() {

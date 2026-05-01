@@ -57,6 +57,9 @@
     <string name="overlay_permission_required">Требуется разрешение отображения поверх всех окон</string>
     <string name="background_location_required">Требуется доступ к геолокации в фоне</string>
     <string name="background_location_settings_hint">Выберите «Разрешить в любом режиме» для доступа к геолокации</string>
+    <string name="usage_access_required">Предоставьте доступ к данным об использовании, чтобы виджет видел текущее приложение</string>
+    <string name="hide_in_apps_button">Скрывать в приложениях…</string>
+    <string name="hide_in_apps_title">Скрывать в:</string>
     <string name="all_permissions_granted_toast">Все разрешения предоставлены!</string>
     <string name="missing_permissions_toast">Некоторые разрешения не предоставлены. Приложение может работать некорректно.</string>
     <string name="notification_channel_title">Служба виджета статуса</string>

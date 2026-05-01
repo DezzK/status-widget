@@ -20,6 +20,10 @@ package dezz.status.widget;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 public class Preferences {
     public static abstract class Preference {
         final Preferences preferences;
@@ -49,6 +53,22 @@ public class Preferences {
 
         public void set(boolean value) {
             preferences.prefs.edit().putBoolean(key, value).apply();
+        }
+    }
+
+    public static final class StringSet extends Preference {
+        public StringSet(Preferences preferences, String key) {
+            super(preferences, key);
+        }
+
+        public Set<String> get() {
+            Set<String> stored = preferences.prefs.getStringSet(key, Collections.emptySet());
+            // SharedPreferences may return a backing collection — copy to avoid surprises on edit().
+            return new HashSet<>(stored);
+        }
+
+        public void set(Set<String> value) {
+            preferences.prefs.edit().putStringSet(key, new HashSet<>(value)).apply();
         }
     }
 
@@ -93,6 +113,7 @@ public class Preferences {
     public final Int adjustDateY = new Int(this, "adjustDateY", 0);
     public final Int overlayX = new Int(this, "overlayX", 200);
     public final Int overlayY = new Int(this, "overlayY", 300);
+    public final StringSet hideInPackages = new StringSet(this, "hideInPackages");
 
     public Preferences(Context context) {
         final Context deviceContext = context.getApplicationContext().createDeviceProtectedStorageContext();

@@ -23,6 +23,8 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.app.usage.UsageEvents;
+import android.app.usage.UsageStatsManager;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
@@ -37,6 +39,7 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -62,6 +65,7 @@ import androidx.core.content.ContextCompat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Set;
 
 import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
 
@@ -114,6 +118,8 @@ public class WidgetService extends Service {
     private static final String CHANNEL_ID = "WidgetServiceChannel";
     private static final long GNSS_STATUS_CHECK_INTERVAL = 1000;
     private static final long DATETIME_UPDATE_INTERVAL_MS = 60_000L;
+    private static final long FOREGROUND_APP_CHECK_INTERVAL_MS = 1000L;
+    private static final long FOREGROUND_APP_LOOKBACK_MS = 60_000L;
     private static final String GNSSSHARE_CLIENT_PACKAGE = "dezz.gnssshare.client";
 
     private static WidgetService instance;
@@ -147,6 +153,11 @@ public class WidgetService extends Service {
     private SimpleDateFormat dateFormat;
     private String currentDateFormatPattern;
 
+    private UsageStatsManager usageStatsManager = null;
+    private Set<String> hiddenInPackages;
+    private String lastForegroundPackage;
+    private boolean overlayHiddenByApp = false;
+
     private final Runnable updateDateTimeRunnable = new Runnable() {
         @Override
         public void run() {
@@ -154,6 +165,14 @@ public class WidgetService extends Service {
             long now = System.currentTimeMillis();
             long delay = DATETIME_UPDATE_INTERVAL_MS - (now % DATETIME_UPDATE_INTERVAL_MS);
             mainHandler.postDelayed(this, delay);
+        }
+    };
+
+    private final Runnable foregroundAppCheckRunnable = new Runnable() {
+        @Override
+        public void run() {
+            checkForegroundApp();
+            mainHandler.postDelayed(this, FOREGROUND_APP_CHECK_INTERVAL_MS);
         }
     };
 
@@ -318,6 +337,9 @@ public class WidgetService extends Service {
 
     @SuppressLint("MissingPermission")
     public void applyPreferences() {
+        hiddenInPackages = prefs.hideInPackages.get();
+        updateForegroundAppTracking();
+
         updateBackground();
         updateDateTime();
 
@@ -426,6 +448,62 @@ public class WidgetService extends Service {
             locationManager.removeUpdates(locationListener);
             locationManager.unregisterGnssStatusCallback(gnssStatusCallback);
             locationManager = null;
+        }
+    }
+
+    private void updateForegroundAppTracking() {
+        boolean shouldTrack = !hiddenInPackages.isEmpty() && Permissions.isUsageAccessGranted(this);
+        if (shouldTrack) {
+            if (usageStatsManager == null) {
+                usageStatsManager = (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
+            }
+            mainHandler.removeCallbacks(foregroundAppCheckRunnable);
+            mainHandler.post(foregroundAppCheckRunnable);
+        } else {
+            mainHandler.removeCallbacks(foregroundAppCheckRunnable);
+            usageStatsManager = null;
+            lastForegroundPackage = null;
+            applyOverlayVisibility(false);
+        }
+    }
+
+    private void checkForegroundApp() {
+        if (usageStatsManager == null) {
+            return;
+        }
+        if (!Permissions.isUsageAccessGranted(this)) {
+            updateForegroundAppTracking();
+            return;
+        }
+        long now = System.currentTimeMillis();
+        UsageEvents events = usageStatsManager.queryEvents(now - FOREGROUND_APP_LOOKBACK_MS, now);
+        UsageEvents.Event event = new UsageEvents.Event();
+        String latestPackage = lastForegroundPackage;
+        long latestTimestamp = 0;
+        while (events.getNextEvent(event)) {
+            int type = event.getEventType();
+            if (type == UsageEvents.Event.MOVE_TO_FOREGROUND
+                    || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && type == UsageEvents.Event.ACTIVITY_RESUMED)) {
+                if (event.getTimeStamp() >= latestTimestamp) {
+                    latestTimestamp = event.getTimeStamp();
+                    latestPackage = event.getPackageName();
+                }
+            }
+        }
+        if (latestPackage == null) {
+            return;
+        }
+        lastForegroundPackage = latestPackage;
+        applyOverlayVisibility(hiddenInPackages.contains(latestPackage));
+    }
+
+    private void applyOverlayVisibility(boolean hide) {
+        if (overlayHiddenByApp == hide) {
+            return;
+        }
+        overlayHiddenByApp = hide;
+        if (binding != null) {
+            binding.getRoot().setVisibility(hide ? View.GONE : View.VISIBLE);
         }
     }
 
@@ -611,6 +689,7 @@ public class WidgetService extends Service {
 
         mainHandler.removeCallbacks(updateGnssStatusRunnable);
         mainHandler.removeCallbacks(updateDateTimeRunnable);
+        mainHandler.removeCallbacks(foregroundAppCheckRunnable);
 
         if (binding != null && windowManager != null) {
             windowManager.removeView(binding.getRoot());

@@ -190,11 +190,19 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:layout_marginBottom="@dimen/optionsMarginBig"
                     android:text="@string/one_line_layout"
                     android:textColor="@color/text_primary"
                     android:textSize="@dimen/optionsTextSizeLabel"
                     android:minHeight="@dimen/optionsLineHeight" />
+
+                <Button
+                    android:id="@+id/hideInAppsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:layout_marginBottom="@dimen/optionsMarginBig"
+                    android:text="@string/hide_in_apps_button"
+                    android:textSize="@dimen/optionsTextSizeLabel" />
 
                 <!-- Time Font Size -->
                 <TextView
