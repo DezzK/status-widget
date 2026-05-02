@@ -25,11 +25,17 @@
     <string name="section_appearance">Appearance</string>
     <string name="enable_widget">Enable widget (reset position)</string>
 
+    <string name="icon_design">Icon design</string>
+    <string-array name="icon_designs">
+        <item>Classic</item>
+        <item>Solid</item>
+        <item>Bars</item>
+    </string-array>
+
     <string name="icon_style">Icon style</string>
     <string-array name="icon_styles">
         <item>Monochrome</item>
         <item>Colorful</item>
-        <item>Mono-color</item>
     </string-array>
 
     <string name="icon_size">Icon sizes</string>

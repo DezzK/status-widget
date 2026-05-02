@@ -146,6 +146,11 @@ public class MainActivity extends AppCompatActivity {
         binding.sectionGeneral.enableWidgetSwitch.setOnCheckedChangeListener(enableWidgetSwitchListener);
 
         bindDropdown(
+                binding.sectionAppearance.iconDesignDropdown,
+                R.array.icon_designs,
+                prefs.iconDesign);
+
+        bindDropdown(
                 binding.sectionAppearance.iconStyleDropdown,
                 R.array.icon_styles,
                 prefs.iconStyle);

@@ -40,6 +40,7 @@ public class OutlineImageView extends AppCompatImageView {
 
     private int outlineColor = Color.TRANSPARENT;
     private int outlineWidth = 0;
+    private boolean drawIcon = true;
 
     private final Paint outlinePaint = new Paint(Paint.FILTER_BITMAP_FLAG);
     private int filterColor = 0;
@@ -79,6 +80,17 @@ public class OutlineImageView extends AppCompatImageView {
         }
     }
 
+    /**
+     * Whether to draw the icon itself. Set to {@code false} for the "outline-only" style — only
+     * the dilated outline mask is drawn, the icon body is hidden.
+     */
+    public void setDrawIcon(boolean drawIcon) {
+        if (this.drawIcon != drawIcon) {
+            this.drawIcon = drawIcon;
+            invalidate();
+        }
+    }
+
     @Override
     public void setImageDrawable(@Nullable Drawable drawable) {
         super.setImageDrawable(drawable);
@@ -111,7 +123,9 @@ public class OutlineImageView extends AppCompatImageView {
                 canvas.drawBitmap(outline, 0, 0, outlinePaint);
             }
         }
-        super.onDraw(canvas);
+        if (drawIcon) {
+            super.onDraw(canvas);
+        }
     }
 
     @Nullable

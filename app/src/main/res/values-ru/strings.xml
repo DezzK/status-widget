@@ -25,11 +25,17 @@
     <string name="section_appearance">Внешний вид</string>
     <string name="enable_widget">Включить виджет (сбросить позицию)</string>
 
+    <string name="icon_design">Дизайн иконок</string>
+    <string-array name="icon_designs">
+        <item>Классический</item>
+        <item>Силуэт</item>
+        <item>Полоски</item>
+    </string-array>
+
     <string name="icon_style">Стиль иконок</string>
     <string-array name="icon_styles">
         <item>Монохромные</item>
         <item>Цветные</item>
-        <item>Индикаторы</item>
     </string-array>
 
     <string name="icon_size">Размер иконок</string>

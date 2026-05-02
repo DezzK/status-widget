@@ -26,6 +26,7 @@ import android.app.Service;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
@@ -53,7 +54,6 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -61,6 +61,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.ImageViewCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -78,40 +79,28 @@ public class WidgetService extends Service {
         OFF, NO_INTERNET, INTERNET
     }
 
-    private static final int[][] GNSS_ICONS = {
-        {
-            R.drawable.ic_mono_gps_off,
-            R.drawable.ic_mono_gps_bad,
-            R.drawable.ic_mono_gps_good
-        },
-        {
-            R.drawable.ic_color_gps_off,
-            R.drawable.ic_color_gps_bad,
-            R.drawable.ic_color_gps_good
-        },
-        {
-            R.drawable.ic_monocolor_gps_off,
-            R.drawable.ic_monocolor_gps_bad,
-            R.drawable.ic_monocolor_gps_good
-        }
+    // Icon designs: each design has 3 states for both Wi-Fi and GNSS.
+    // Order [Wi-Fi/GNSS][state] matches WiFiState.ordinal() / GnssState.ordinal() (OFF, BAD/NO_INTERNET, GOOD/INTERNET).
+    private static final int[][] DESIGN_CLASSIC = {
+            { R.drawable.ic_status_wifi_off, R.drawable.ic_status_wifi_no_internet, R.drawable.ic_status_wifi_internet },
+            { R.drawable.ic_status_gps_off,  R.drawable.ic_status_gps_bad,          R.drawable.ic_status_gps_good }
     };
-    private static final int[][] WIFI_ICONS = {
-        {
-            R.drawable.ic_mono_wifi_off,
-            R.drawable.ic_mono_wifi_no_internet,
-            R.drawable.ic_mono_wifi_internet
-        },
-        {
-            R.drawable.ic_color_wifi_off,
-            R.drawable.ic_color_wifi_no_internet,
-            R.drawable.ic_color_wifi_internet
-        },
-        {
-            R.drawable.ic_monocolor_wifi_off,
-            R.drawable.ic_monocolor_wifi_no_internet,
-            R.drawable.ic_monocolor_wifi_internet
-        }
+    private static final int[][] DESIGN_SOLID = {
+            { R.drawable.ic_status_filled_wifi_off, R.drawable.ic_status_filled_wifi_no_internet, R.drawable.ic_status_filled_wifi_internet },
+            { R.drawable.ic_status_filled_gps_off,  R.drawable.ic_status_filled_gps_bad,          R.drawable.ic_status_filled_gps_good }
     };
+    private static final int[][] DESIGN_BARS = {
+            { R.drawable.ic_status_bars_wifi_off, R.drawable.ic_status_bars_wifi_no_internet, R.drawable.ic_status_bars_wifi_internet },
+            { R.drawable.ic_status_bars_gps_off,  R.drawable.ic_status_bars_gps_bad,          R.drawable.ic_status_bars_gps_good }
+    };
+    private static final int[][][] ICON_DESIGNS = { DESIGN_CLASSIC, DESIGN_SOLID, DESIGN_BARS };
+
+    private static final int ICON_TYPE_WIFI = 0;
+    private static final int ICON_TYPE_GNSS = 1;
+
+    // Icon style indices (must match strings.xml/icon_styles array order).
+    private static final int STYLE_MONO = 0;
+    private static final int STYLE_COLOR = 1;
 
     private static final String TAG = "WidgetService";
     private static final int NOTIFICATION_ID = 1001;
@@ -369,12 +358,7 @@ public class WidgetService extends Service {
         binding.dateText.setOutlineColor(textOutlineColor);
         binding.dateText.setOutlineWidth(dateOutlineWidth);
 
-        int iconOutlineWidth = Math.max(2, iconSize / 32);
-        int iconOutlineColor = outlineRgb | (prefs.iconOutlineAlpha.get() << 24);
-        binding.wifiStatusIcon.setOutlineColor(iconOutlineColor);
-        binding.wifiStatusIcon.setOutlineWidth(iconOutlineWidth);
-        binding.gnssStatusIcon.setOutlineColor(iconOutlineColor);
-        binding.gnssStatusIcon.setOutlineWidth(iconOutlineWidth);
+        // Icon styling (color, outline) is applied per-icon inside updateIconStatus().
 
         binding.timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize.get());
         binding.dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
@@ -639,7 +623,7 @@ public class WidgetService extends Service {
     }
 
     private void updateWifiStatus() {
-        updateIconStatus(WIFI_ICONS, binding.wifiStatusIcon, wifiState.ordinal());
+        updateIconStatus(ICON_TYPE_WIFI, binding.wifiStatusIcon, wifiState.ordinal());
     }
 
     private void setGnssStatus(GnssState newState) {
@@ -651,13 +635,39 @@ public class WidgetService extends Service {
     }
 
     private void updateGnssStatus() {
-        updateIconStatus(GNSS_ICONS, binding.gnssStatusIcon, gnssState.ordinal());
+        updateIconStatus(ICON_TYPE_GNSS, binding.gnssStatusIcon, gnssState.ordinal());
     }
 
-    private void updateIconStatus(int[][] resources, ImageView icon, int state) {
-        int styleIndex = Math.min(Math.max(0, prefs.iconStyle.get()), resources.length - 1);
-        icon.setImageResource(resources[styleIndex][state]);
+    private void updateIconStatus(int iconType, OutlineImageView icon, int state) {
+        int designIdx = Math.min(Math.max(0, prefs.iconDesign.get()), ICON_DESIGNS.length - 1);
+        int[][] design = ICON_DESIGNS[designIdx];
+        int stateIdx = Math.min(Math.max(0, state), design[iconType].length - 1);
+        icon.setImageResource(design[iconType][stateIdx]);
+        icon.setDrawIcon(true);
+
+        int iconStyle = Math.min(Math.max(0, prefs.iconStyle.get()), 1);
+        int tint = (iconStyle == STYLE_COLOR)
+                ? ContextCompat.getColor(this, STATE_COLOR_RES[stateIdx])
+                : ContextCompat.getColor(this, R.color.text_primary);
+        ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
+
+        int iconSize = prefs.iconSize.get();
+        int outlineAlpha = prefs.iconOutlineAlpha.get();
+        if (outlineAlpha > 0) {
+            int haloColor = (ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF)
+                    | (outlineAlpha << 24);
+            icon.setOutlineColor(haloColor);
+            icon.setOutlineWidth(Math.max(2, iconSize / 32));
+        } else {
+            icon.setOutlineWidth(0);
+        }
     }
+
+    private static final int[] STATE_COLOR_RES = {
+            R.color.status_off,
+            R.color.status_warning,
+            R.color.status_ok
+    };
 
     private void createNotificationChannel() {
         NotificationChannel serviceChannel = new NotificationChannel(CHANNEL_ID, getString(R.string.notification_channel_title), NotificationManager.IMPORTANCE_LOW);
@@ -671,7 +681,7 @@ public class WidgetService extends Service {
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        return new NotificationCompat.Builder(this, CHANNEL_ID).setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.notification_content)).setSmallIcon(R.drawable.ic_mono_gps_good).setContentIntent(pendingIntent).setOngoing(true).build();
+        return new NotificationCompat.Builder(this, CHANNEL_ID).setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.notification_content)).setSmallIcon(R.drawable.ic_status_gps_good).setContentIntent(pendingIntent).setOngoing(true).build();
     }
 
     // Add this method to save position

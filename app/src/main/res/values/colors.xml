@@ -23,4 +23,9 @@
     <color name="widget_background">#FFFFFF</color>
     <color name="text_primary">@android:color/primary_text_light</color>
     <color name="text_outline">#AAFFFFFF</color>
+
+    <!-- Semantic state colors for status icons (Color and Monocolor styles). -->
+    <color name="status_ok">#34A853</color>
+    <color name="status_warning">#F9A825</color>
+    <color name="status_off">#8E8E8E</color>
 </resources>
