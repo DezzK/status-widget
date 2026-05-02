@@ -53,6 +53,10 @@
             android:name=".AppSelectionActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false" />
+
         <service
             android:name=".WidgetService"
             android:enabled="true"

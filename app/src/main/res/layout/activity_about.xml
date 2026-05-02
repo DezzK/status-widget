@@ -31,7 +31,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_arrow_back"
-            app:title="@string/hide_in_apps_title" />
+            app:title="@string/menu_about" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <FrameLayout
@@ -40,16 +40,30 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <ProgressBar
-            android:id="@+id/appSelectionProgress"
+            android:id="@+id/aboutProgress"
             style="?android:attr/progressBarStyleLarge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/appList"
+        <WebView
+            android:id="@+id/aboutWebView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ScrollView
+            android:id="@+id/aboutFallbackContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scrollbars="vertical" />
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/aboutFallback"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="6sp"
+                android:padding="@dimen/sectionPadding"
+                android:textAppearance="?attr/textAppearanceBodyLarge" />
+        </ScrollView>
     </FrameLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

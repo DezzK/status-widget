@@ -63,7 +63,7 @@ public class AppSelectionActivity extends AppCompatActivity {
         binding = ActivityAppSelectionBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.toolbar, (v, windowInsets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout, (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(bars.left, bars.top, bars.right, 0);
@@ -76,7 +76,6 @@ public class AppSelectionActivity extends AppCompatActivity {
             return windowInsets;
         });
 
-        setSupportActionBar(binding.toolbar);
         binding.toolbar.setNavigationOnClickListener(v -> finish());
 
         prefs = new Preferences(this);

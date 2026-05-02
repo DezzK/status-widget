@@ -23,7 +23,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.text.method.LinkMovementMethod;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
@@ -31,7 +30,6 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.Insets;
@@ -87,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
 
         applyWindowInsets();
 
-        setSupportActionBar(binding.toolbar);
         binding.toolbar.setOnMenuItemClickListener(this::onMenuItemSelected);
 
         final String appVersion = VersionGetter.getAppVersionName(this);
@@ -119,26 +116,10 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean onMenuItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.menu_about) {
-            showAboutDialog();
+            startActivity(new Intent(this, AboutActivity.class));
             return true;
         }
         return false;
-    }
-
-    private void showAboutDialog() {
-        android.text.SpannableString message = new android.text.SpannableString(
-                android.text.Html.fromHtml(getString(R.string.copyright_notice),
-                        android.text.Html.FROM_HTML_MODE_COMPACT));
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.menu_about)
-                .setMessage(message)
-                .setPositiveButton(android.R.string.ok, null)
-                .create();
-        dialog.show();
-        android.widget.TextView messageView = dialog.findViewById(android.R.id.message);
-        if (messageView != null) {
-            messageView.setMovementMethod(LinkMovementMethod.getInstance());
-        }
     }
 
     private void initializeViews() {

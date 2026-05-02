@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Виджет информации — об авторах</title>
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --surface: #ffffff;
+            --primary: #2a6df4;
+            --on-surface: #1c1c1f;
+            --muted: #5f6368;
+            --border: #e3e6ee;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #131418;
+                --surface: #1d1f26;
+                --primary: #7aa9ff;
+                --on-surface: #e6e7eb;
+                --muted: #9ea1aa;
+                --border: #2c2f38;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--on-surface);
+            line-height: 1.55;
+            display: flex;
+            justify-content: center;
+            padding: 32px 16px;
+        }
+
+        main {
+            width: 100%;
+            max-width: 720px;
+            display: grid;
+            gap: 16px;
+        }
+
+        h1 {
+            margin: 0 0 4px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        h2 {
+            margin: 0 0 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        p { margin: 0 0 8px; }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .header { text-align: center; }
+        .header .subtitle { color: var(--muted); margin-top: 8px; }
+
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .author-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+        .author-list li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .author-list .name { font-weight: 500; }
+
+        .donate { text-align: center; }
+        .donate img {
+            width: 240px;
+            height: 240px;
+            max-width: 100%;
+            border-radius: 12px;
+            background: white;
+            padding: 12px;
+            border: 1px solid var(--border);
+            margin: 12px 0;
+        }
+        .donate .hint { color: var(--muted); font-size: 14px; }
+
+        footer {
+            margin-top: 8px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <section class="card header">
+        <h1>Виджет информации</h1>
+        <p class="subtitle">Плавающий виджет статуса для автомобильных головных устройств на Android</p>
+    </section>
+
+    <section class="card">
+        <h2>Авторы</h2>
+        <ul class="author-list">
+            <li>
+                <span class="name">Dezz</span>
+                <a href="https://t.me/DezzK" target="_blank" rel="noopener">Telegram: @DezzK</a>
+            </li>
+            <li>
+                <span class="name">S. Ramazanov</span>
+                <a href="https://t.me/RamazanovS" target="_blank" rel="noopener">Telegram: @RamazanovS</a>
+            </li>
+        </ul>
+    </section>
+
+    <section class="card">
+        <h2>Исходный код</h2>
+        <p>Проект распространяется под лицензией GPL-3.0.</p>
+        <p><a href="https://github.com/DezzK/status-widget" target="_blank" rel="noopener">github.com/DezzK/status-widget</a></p>
+    </section>
+
+    <section class="card donate">
+        <h2>Поддержать разработку</h2>
+        <p>Если приложение оказалось вам полезным, вы можете поблагодарить автора чашкой кофе.</p>
+        <img src="donate_qr.png" alt="QR-код для доната">
+        <p class="hint">Отправить чаевые.</p>
+    </section>
+
+    <footer>© 2025 Dezz, S. Ramazanov</footer>
+</main>
+</body>
+</html>

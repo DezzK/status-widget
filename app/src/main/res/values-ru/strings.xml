@@ -71,6 +71,16 @@
     <string name="hide_in_apps_button">Скрывать в приложениях…</string>
     <string name="hide_in_apps_title">Скрывать в:</string>
     <string name="menu_about">О приложении</string>
+    <string name="about_fallback"><![CDATA[
+        <p><b>Виджет информации</b><br>
+        Плавающий виджет статуса для автомобильных головных устройств на Android.</p>
+        <p><b>Авторы</b><br>
+        Dezz — Telegram <a href="https://t.me/DezzK">@DezzK</a><br>
+        S. Ramazanov — Telegram <a href="https://t.me/RamazanovS">@RamazanovS</a></p>
+        <p><b>Исходный код</b><br>
+        <a href="https://github.com/DezzK/status-widget">github.com/DezzK/status-widget</a></p>
+        <p><i>Полная страница «О приложении» доступна онлайн по адресу <a href="https://dezzk.github.io/status-widget/">dezzk.github.io/status-widget</a> при наличии подключения к интернету.</i></p>
+    ]]></string>
     <string name="all_permissions_granted_toast">Все разрешения предоставлены!</string>
     <string name="missing_permissions_toast">Некоторые разрешения не предоставлены. Приложение может работать некорректно.</string>
     <string name="notification_channel_title">Служба виджета статуса</string>

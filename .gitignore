@@ -5,3 +5,4 @@ local.properties
 *.jks
 .DS_Store
 **/.DS_Store
+/docs/README.md
