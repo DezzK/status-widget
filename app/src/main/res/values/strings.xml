@@ -19,6 +19,10 @@
     <string name="app_name">Information Widget</string>
 
     <string name="widget_title">Widget Configuration</string>
+    <string name="section_general">Widget</string>
+    <string name="section_content">Content</string>
+    <string name="section_sizes">Sizes</string>
+    <string name="section_appearance">Appearance</string>
     <string name="enable_widget">Enable widget (reset position)</string>
 
     <string name="icon_style">Icon style</string>
@@ -62,6 +66,7 @@
     <string name="usage_access_required">Please grant "Usage access" so the widget can detect the foreground app</string>
     <string name="hide_in_apps_button">Hide widget in apps…</string>
     <string name="hide_in_apps_title">Hide widget in:</string>
+    <string name="menu_about">About</string>
     <string name="all_permissions_granted_toast">All permissions granted!</string>
     <string name="missing_permissions_toast">Some permissions were denied. The app may not work properly.</string>
     <string name="notification_channel_title">Status Widget Overlay Service</string>

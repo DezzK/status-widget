@@ -17,10 +17,9 @@
   -->
 
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
-
-    <!-- Overlay widget colors (used by the floating widget itself, not by the settings UI). -->
-    <color name="widget_background">#FFFFFF</color>
-    <color name="text_primary">@android:color/primary_text_light</color>
-    <color name="text_outline">#AAFFFFFF</color>
+    <style name="Theme.StatusWidget" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">?attr/colorSurface</item>
+        <item name="android:navigationBarColor">?attr/colorSurface</item>
+    </style>
 </resources>

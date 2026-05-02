@@ -19,6 +19,10 @@
     <string name="app_name">Виджет информации</string>
 
     <string name="widget_title">Настройки виджета</string>
+    <string name="section_general">Виджет</string>
+    <string name="section_content">Содержимое</string>
+    <string name="section_sizes">Размеры</string>
+    <string name="section_appearance">Внешний вид</string>
     <string name="enable_widget">Включить виджет (сбросить позицию)</string>
 
     <string name="icon_style">Стиль иконок</string>
@@ -60,6 +64,7 @@
     <string name="usage_access_required">Предоставьте доступ к данным об использовании, чтобы виджет видел текущее приложение</string>
     <string name="hide_in_apps_button">Скрывать в приложениях…</string>
     <string name="hide_in_apps_title">Скрывать в:</string>
+    <string name="menu_about">О приложении</string>
     <string name="all_permissions_granted_toast">Все разрешения предоставлены!</string>
     <string name="missing_permissions_toast">Некоторые разрешения не предоставлены. Приложение может работать некорректно.</string>
     <string name="notification_channel_title">Служба виджета статуса</string>

@@ -16,4 +16,8 @@
     <dimen name="optionsElevation">2sp</dimen>
 
     <dimen name="appSelectionIconSize">48sp</dimen>
+
+    <dimen name="sectionPadding">16sp</dimen>
+    <dimen name="sectionSpacing">12sp</dimen>
+    <dimen name="sectionHeaderIconSize">24sp</dimen>
 </resources>

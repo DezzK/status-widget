@@ -20,7 +20,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?android:attr/selectableItemBackground"
+    android:background="?attr/selectableItemBackground"
     android:gravity="center_vertical"
     android:minHeight="@dimen/optionsLineHeight"
     android:orientation="horizontal"
@@ -39,10 +39,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:textColor="@color/text_primary"
-        android:textSize="@dimen/optionsTextSizeLabel" />
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
 
-    <androidx.appcompat.widget.AppCompatCheckBox
+    <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/appCheckBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

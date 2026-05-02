@@ -18,10 +18,10 @@
 package dezz.status.widget;
 
 import android.content.Context;
-import android.widget.SeekBar;
-import android.widget.TextView;
+import android.widget.CompoundButton;
 
-import androidx.appcompat.widget.SwitchCompat;
+import com.google.android.material.slider.LabelFormatter;
+import com.google.android.material.slider.Slider;
 
 public final class ViewBinder {
     private final Context context;
@@ -30,7 +30,7 @@ public final class ViewBinder {
         this.context = context;
     }
 
-    public void bindCheckbox(SwitchCompat checkbox, Preferences.Bool preference) {
+    public void bindCheckbox(CompoundButton checkbox, Preferences.Bool preference) {
         checkbox.setChecked(preference.get());
         checkbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             preference.set(isChecked);
@@ -40,45 +40,38 @@ public final class ViewBinder {
         });
     }
 
-    public void bindColorComponentSeekbar(SeekBar seekBar, TextView valueText, Preferences.Int preference) {
-        bindSeekbar(seekBar, valueText, preference, value -> String.format(context.getString(R.string.color_component_value_format), value));
+    public void bindColorComponentSlider(Slider slider, Preferences.Int preference) {
+        bindSlider(slider, preference, value -> String.format(context.getString(R.string.color_component_value_format), (int) value));
     }
 
-    public void bindPercentSeekbar(SeekBar seekBar, TextView valueText, Preferences.Int preference) {
-        bindSeekbar(seekBar, valueText, preference, value -> String.format(context.getString(R.string.percent_value_format), value));
+    public void bindSizeSlider(Slider slider, Preferences.Int preference) {
+        bindSlider(slider, preference, value -> String.format(context.getString(R.string.size_value_format), (int) value));
     }
 
-    public void bindSizeSeekbar(SeekBar seekBar, TextView valueText, Preferences.Int preference) {
-        bindSeekbar(seekBar, valueText, preference, value -> String.format(context.getString(R.string.size_value_format), value));
-    }
-
-    public void bindOffsetSeekbar(SeekBar seekBar, TextView valueText, Preferences.Int preference) {
-        bindSeekbar(seekBar, valueText, preference, value -> String.format((value > 0 ? "+" : "") + context.getString(R.string.size_value_format), value));
-    }
-
-    public void bindSeekbar(SeekBar seekBar, TextView valueText, Preferences.Int preference, ValueTextFormatter formatter) {
-        int progress = preference.get();
-        seekBar.setProgress(progress);
-        valueText.setText(formatter.formatValueText(progress));
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                preference.set(progress);
-                valueText.setText(formatter.formatValueText(progress));
-                if (WidgetService.isRunning()) {
-                    WidgetService.getInstance().applyPreferences();
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
+    public void bindOffsetSlider(Slider slider, Preferences.Int preference) {
+        bindSlider(slider, preference, value -> {
+            int v = (int) value;
+            return String.format((v > 0 ? "+" : "") + context.getString(R.string.size_value_format), v);
         });
     }
 
-    public interface ValueTextFormatter {
-        String formatValueText(int progress);
+    public void bindPercentSlider(Slider slider, Preferences.Int preference) {
+        bindSlider(slider, preference, value -> String.format(context.getString(R.string.percent_value_format), (int) value));
+    }
+
+    public void bindSlider(Slider slider, Preferences.Int preference, LabelFormatter formatter) {
+        float current = clamp(preference.get(), slider.getValueFrom(), slider.getValueTo());
+        slider.setValue(current);
+        slider.setLabelFormatter(formatter);
+        slider.addOnChangeListener((s, value, fromUser) -> {
+            preference.set((int) value);
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
+        });
+    }
+
+    private static float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

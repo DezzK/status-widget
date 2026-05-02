@@ -24,15 +24,21 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
-import android.view.View;
-import android.widget.AdapterView;
+import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 
 import java.util.List;
 
@@ -64,19 +70,30 @@ public class MainActivity extends AppCompatActivity {
             };
 
     private void uncheckEnableSwitchSilently() {
-        binding.enableWidgetSwitch.setOnCheckedChangeListener(null);
-        binding.enableWidgetSwitch.setChecked(false);
-        binding.enableWidgetSwitch.setOnCheckedChangeListener(enableWidgetSwitchListener);
+        binding.sectionGeneral.enableWidgetSwitch.setOnCheckedChangeListener(null);
+        binding.sectionGeneral.enableWidgetSwitch.setChecked(false);
+        binding.sectionGeneral.enableWidgetSwitch.setOnCheckedChangeListener(enableWidgetSwitchListener);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
 
         prefs = new Preferences(this);
 
         binding = ActivityMainBinding.inflate(this.getLayoutInflater());
         setContentView(binding.getRoot());
+
+        applyWindowInsets();
+
+        setSupportActionBar(binding.toolbar);
+        binding.toolbar.setOnMenuItemClickListener(this::onMenuItemSelected);
+
+        final String appVersion = VersionGetter.getAppVersionName(this);
+        if (appVersion != null) {
+            binding.toolbar.setSubtitle(appVersion);
+        }
 
         initializeViews();
 
@@ -85,97 +102,121 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void initializeViews() {
-        final String appVersion = VersionGetter.getAppVersionName(this);
-        if (appVersion != null) {
-            binding.headerText.setText(String.format("%s %s", getString(R.string.app_name), appVersion));
+    private void applyWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout, (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(bars.left, bars.top, bars.right, 0);
+            return windowInsets;
+        });
+        ViewCompat.setOnApplyWindowInsetsListener(binding.scrollView, (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(bars.left, 0, bars.right, bars.bottom);
+            return windowInsets;
+        });
+    }
+
+    private boolean onMenuItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.menu_about) {
+            showAboutDialog();
+            return true;
         }
-        binding.copyrightNoticeText.setMovementMethod(LinkMovementMethod.getInstance());
+        return false;
+    }
 
-        binding.enableWidgetSwitch.setChecked(prefs.widgetEnabled.get());
-        binding.enableWidgetSwitch.setOnCheckedChangeListener(enableWidgetSwitchListener);
+    private void showAboutDialog() {
+        android.text.SpannableString message = new android.text.SpannableString(
+                android.text.Html.fromHtml(getString(R.string.copyright_notice),
+                        android.text.Html.FROM_HTML_MODE_COMPACT));
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.menu_about)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .create();
+        dialog.show();
+        android.widget.TextView messageView = dialog.findViewById(android.R.id.message);
+        if (messageView != null) {
+            messageView.setMovementMethod(LinkMovementMethod.getInstance());
+        }
+    }
 
-        ArrayAdapter<String> iconStylesAdapter = new ArrayAdapter<>(
-                this,
-                R.layout.spinner_dropdown_item,
-                getResources().getStringArray(R.array.icon_styles)
-        );
-        iconStylesAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
-        binding.iconStyleSpinner.setAdapter(iconStylesAdapter);
-        binding.iconStyleSpinner.setSelection(prefs.iconStyle.get());
-        binding.iconStyleSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.iconStyle.set(position);
-                if (WidgetService.isRunning()) {
-                    WidgetService.getInstance().applyPreferences();
-                }
-            }
+    private void initializeViews() {
+        binding.sectionGeneral.enableWidgetSwitch.setChecked(prefs.widgetEnabled.get());
+        binding.sectionGeneral.enableWidgetSwitch.setOnCheckedChangeListener(enableWidgetSwitchListener);
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
+        bindDropdown(
+                binding.sectionAppearance.iconStyleDropdown,
+                R.array.icon_styles,
+                prefs.iconStyle);
 
-        // Calendar alignment dropdown
-        ArrayAdapter<String> calendarAlignmentAdapter = new ArrayAdapter<>(
-                this,
-                R.layout.spinner_dropdown_item,
-                getResources().getStringArray(R.array.calendar_alignment_types)
-        );
-        calendarAlignmentAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
-        binding.calendarAlignmentSpinner.setAdapter(calendarAlignmentAdapter);
-        binding.calendarAlignmentSpinner.setSelection(prefs.calendarAlignment.get());
-        binding.calendarAlignmentSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                prefs.calendarAlignment.set(position);
-                if (WidgetService.isRunning()) {
-                    WidgetService.getInstance().applyPreferences();
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
+        bindDropdown(
+                binding.sectionContent.calendarAlignmentDropdown,
+                R.array.calendar_alignment_types,
+                prefs.calendarAlignment);
 
         ViewBinder binder = new ViewBinder(this);
 
-        binder.bindCheckbox(binding.showDateSwitch, prefs.showDate);
-        binder.bindCheckbox(binding.showTimeSwitch, prefs.showTime);
-        binder.bindCheckbox(binding.showDaySwitch, prefs.showDayOfTheWeek);
-        binder.bindCheckbox(binding.showWiFiSwitch, prefs.showWifiIcon);
-        binder.bindCheckbox(binding.showGnssSwitch, prefs.showGnssIcon);
-        binder.bindCheckbox(binding.showFullDayAndMonthSwitch, prefs.showFullDayAndMonth);
-        binder.bindCheckbox(binding.oneLineLayoutSwitch, prefs.oneLineLayout);
+        binder.bindCheckbox(binding.sectionContent.showDateSwitch, prefs.showDate);
+        binder.bindCheckbox(binding.sectionContent.showTimeSwitch, prefs.showTime);
+        binder.bindCheckbox(binding.sectionContent.showDaySwitch, prefs.showDayOfTheWeek);
+        binder.bindCheckbox(binding.sectionContent.showWiFiSwitch, prefs.showWifiIcon);
+        binder.bindCheckbox(binding.sectionContent.showGnssSwitch, prefs.showGnssIcon);
+        binder.bindCheckbox(binding.sectionContent.showFullDayAndMonthSwitch, prefs.showFullDayAndMonth);
+        binder.bindCheckbox(binding.sectionContent.oneLineLayoutSwitch, prefs.oneLineLayout);
 
-        binder.bindSizeSeekbar(binding.iconSizeSeekBar, binding.iconSizeValueText, prefs.iconSize);
-        binder.bindSizeSeekbar(binding.timeFontSizeSeekBar, binding.timeFontSizeValueText, prefs.timeFontSize);
-        binder.bindSizeSeekbar(binding.dateFontSizeSeekBar, binding.dateFontSizeValueText, prefs.dateFontSize);
-        binder.bindSizeSeekbar(binding.spacingBetweenTextsAndIconsSeekBar, binding.spacingBetweenTextsAndIconsValueText, prefs.spacingBetweenTextsAndIcons);
-        binder.bindColorComponentSeekbar(binding.textOutlineAlphaSeekBar, binding.textOutlineAlphaValueText, prefs.textOutlineAlpha);
-        binder.bindColorComponentSeekbar(binding.iconOutlineAlphaSeekBar, binding.iconOutlineAlphaValueText, prefs.iconOutlineAlpha);
-        binder.bindColorComponentSeekbar(binding.backgroundAlphaSeekBar, binding.backgroundAlphaValueText, prefs.backgroundAlpha);
-        binder.bindPercentSeekbar(binding.backgroundCornerRadiusSeekBar, binding.backgroundCornerRadiusValueText, prefs.backgroundCornerRadius);
-        binder.bindOffsetSeekbar(binding.adjustTimeYSeekBar, binding.adjustTimeYValueText, prefs.adjustTimeY);
-        binder.bindOffsetSeekbar(binding.adjustDateYSeekBar, binding.adjustDateYValueText, prefs.adjustDateY);
+        binder.bindSizeSlider(binding.sectionSizes.iconSizeSlider, prefs.iconSize);
+        binder.bindSizeSlider(binding.sectionSizes.timeFontSizeSlider, prefs.timeFontSize);
+        binder.bindSizeSlider(binding.sectionSizes.dateFontSizeSlider, prefs.dateFontSize);
+        binder.bindSizeSlider(binding.sectionSizes.spacingBetweenTextsAndIconsSlider, prefs.spacingBetweenTextsAndIcons);
+        binder.bindOffsetSlider(binding.sectionSizes.adjustTimeYSlider, prefs.adjustTimeY);
+        binder.bindOffsetSlider(binding.sectionSizes.adjustDateYSlider, prefs.adjustDateY);
 
-        binding.hideInAppsButton.setOnClickListener(v -> openAppSelection());
+        binder.bindColorComponentSlider(binding.sectionAppearance.textOutlineAlphaSlider, prefs.textOutlineAlpha);
+        binder.bindColorComponentSlider(binding.sectionAppearance.iconOutlineAlphaSlider, prefs.iconOutlineAlpha);
+        binder.bindColorComponentSlider(binding.sectionAppearance.backgroundAlphaSlider, prefs.backgroundAlpha);
+        binder.bindPercentSlider(binding.sectionAppearance.backgroundCornerRadiusSlider, prefs.backgroundCornerRadius);
+
+        binding.sectionGeneral.hideInAppsButton.setOnClickListener(v -> openAppSelection());
+    }
+
+    private void bindDropdown(MaterialAutoCompleteTextView dropdown, int arrayRes, Preferences.Int preference) {
+        String[] items = getResources().getStringArray(arrayRes);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, com.google.android.material.R.layout.m3_auto_complete_simple_item, items);
+        dropdown.setAdapter(adapter);
+        int current = Math.max(0, Math.min(preference.get(), items.length - 1));
+        dropdown.setText(items[current], false);
+        dropdown.setOnItemClickListener((parent, view, position, id) -> {
+            preference.set(position);
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
+        });
     }
 
     private void openAppSelection() {
         if (!Permissions.isUsageAccessGranted(this)) {
             Toast.makeText(this, R.string.usage_access_required, Toast.LENGTH_LONG).show();
-            try {
-                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
-            } catch (Exception ignored) {
-                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.parse("package:" + getPackageName())));
-            }
+            openUsageAccessSettings();
             return;
         }
         startActivity(new Intent(this, AppSelectionActivity.class));
+    }
+
+    private void openUsageAccessSettings() {
+        Uri appUri = Uri.parse("package:" + getPackageName());
+        Intent direct = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, appUri);
+        if (direct.resolveActivity(getPackageManager()) != null) {
+            startActivity(direct);
+            return;
+        }
+        Intent generic = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+        if (generic.resolveActivity(getPackageManager()) != null) {
+            startActivity(generic);
+            return;
+        }
+        startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, appUri));
     }
 
     private void startWidgetService() {
@@ -236,8 +277,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // On Android 11+ the system no longer shows a dialog for ACCESS_BACKGROUND_LOCATION via
-        // requestPermissions(); the user must grant "Allow all the time" in app settings.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Toast.makeText(this, R.string.background_location_settings_hint, Toast.LENGTH_LONG).show();
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,

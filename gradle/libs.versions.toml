@@ -1,7 +1,9 @@
 [versions]
+activity = "1.9.3"
 appcompat = "1.7.1"
 constraintlayout = "2.2.1"
 core = "1.17.0"
+material = "1.12.0"
 recyclerview = "1.4.0"
 gradle = "8.13.0"
 kotlin = "2.2.0"
@@ -9,9 +11,11 @@ protobufGradlePlugin = "0.9.5"
 protobufJavalite = "4.33.0"
 
 [libraries]
+activity = { module = "androidx.activity:activity", version.ref = "activity" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
 core = { module = "androidx.core:core", version.ref = "core" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
 recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
