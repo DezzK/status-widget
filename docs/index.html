@@ -46,6 +46,16 @@
             gap: 16px;
         }
 
+        @media (min-width: 900px) {
+            body { padding: 24px; }
+            main {
+                max-width: 1100px;
+                grid-template-columns: 1fr 1fr;
+                align-items: start;
+            }
+            .full-width { grid-column: 1 / -1; }
+        }
+
         h1 {
             margin: 0 0 4px;
             font-size: 28px;
@@ -100,7 +110,7 @@
 </head>
 <body>
 <main>
-    <section class="card header">
+    <section class="card header full-width">
         <h1>Виджет информации</h1>
         <p class="subtitle">Плавающий виджет статуса для автомобильных головных устройств на Android</p>
     </section>
@@ -125,14 +135,14 @@
         <p><a href="https://github.com/DezzK/status-widget" target="_blank" rel="noopener">github.com/DezzK/status-widget</a></p>
     </section>
 
-    <section class="card donate">
+    <section class="card donate full-width">
         <h2>Поддержать разработку</h2>
         <p>Если приложение оказалось вам полезным, вы можете поблагодарить автора чашкой кофе.</p>
         <img src="donate_qr.png" alt="QR-код для доната">
         <p class="hint">Отправить чаевые.</p>
     </section>
 
-    <footer>© 2025-2026 Dezz, S. Ramazanov</footer>
+    <footer class="full-width">© 2025-2026 Dezz, S. Ramazanov</footer>
 </main>
 </body>
 </html>
