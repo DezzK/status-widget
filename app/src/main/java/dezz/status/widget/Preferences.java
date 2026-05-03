@@ -100,6 +100,7 @@ public class Preferences {
     public final Int calendarAlignment = new Int(this, "calendarAlignment", 0);
     public final Bool showWifiIcon = new Bool(this, "showWifiIcon", true);
     public final Bool showGnssIcon = new Bool(this, "showGnssIcon", true);
+    public final Bool showGnssSatelliteBadge = new Bool(this, "showGnssSatelliteBadge", true);
     public final Bool showFullDayAndMonth = new Bool(this, "showFullDayAndMonth", false);
     public final Bool oneLineLayout = new Bool(this, "oneLineLayout", false);
     public final Int iconSize = new Int(this, "iconSize", 70);

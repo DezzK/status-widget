@@ -54,6 +54,8 @@
     </string-array>
     <string name="show_wifi">Show WiFi icon</string>
     <string name="show_gnss">Show GNSS icon</string>
+    <string name="show_gnss_satellite_badge">Show satellite count badge</string>
+    <string name="show_gnss_satellite_badge_hint">Requires GNSS Share to be running</string>
     <string name="spacing_between_text_and_icons_size">Spacing between texts and icons</string>
     <string name="text_outline_transparency">Text outline transparency</string>
     <string name="icon_outline_transparency">Icon outline transparency</string>
