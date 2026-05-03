@@ -42,7 +42,14 @@ public class OutlineImageView extends AppCompatImageView {
     private int outlineWidth = 0;
     private boolean drawIcon = true;
 
+    @Nullable private Drawable badgeDrawable;
+    @Nullable private String badgeText;
+    private int badgeTextBackgroundColor;
+    private int badgeTextForegroundColor;
+
     private final Paint outlinePaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Paint badgeFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint badgeTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int filterColor = 0;
 
     private Bitmap cachedOutline;
@@ -91,6 +98,36 @@ public class OutlineImageView extends AppCompatImageView {
         }
     }
 
+    /**
+     * Sets a small drawable badge that is drawn in the bottom-right corner of the icon, on top of
+     * everything else (icon body and outline). Useful for status indicators that should keep their
+     * own colours regardless of the icon's tint — e.g. a Russian flag overlay for the "limited
+     * internet / whitelist" state.
+     */
+    public void setBadgeDrawable(@Nullable Drawable drawable) {
+        if (this.badgeDrawable != drawable) {
+            this.badgeDrawable = drawable;
+            invalidate();
+        }
+    }
+
+    /**
+     * Sets a text badge (rounded background + centred text) drawn in the bottom-right corner.
+     * Pass {@code null} text to remove. If both {@link #setBadgeDrawable(Drawable)} and a text
+     * badge are set, the text badge wins.
+     */
+    public void setBadgeText(@Nullable String text, int backgroundColor, int textColor) {
+        boolean changed = !java.util.Objects.equals(this.badgeText, text)
+                || this.badgeTextBackgroundColor != backgroundColor
+                || this.badgeTextForegroundColor != textColor;
+        if (changed) {
+            this.badgeText = text;
+            this.badgeTextBackgroundColor = backgroundColor;
+            this.badgeTextForegroundColor = textColor;
+            invalidate();
+        }
+    }
+
     @Override
     public void setImageDrawable(@Nullable Drawable drawable) {
         super.setImageDrawable(drawable);
@@ -126,6 +163,50 @@ public class OutlineImageView extends AppCompatImageView {
         if (drawIcon) {
             super.onDraw(canvas);
         }
+        if (badgeText != null) {
+            drawTextBadge(canvas);
+        } else if (badgeDrawable != null) {
+            int w = getWidth();
+            int h = getHeight();
+            int side = Math.min(w, h);
+            int badgeSize = (int) (side * 0.45f);
+            int padding = (int) (side * 0.04f);
+            int left = w - badgeSize - padding;
+            int top = h - badgeSize - padding;
+            badgeDrawable.setBounds(left, top, left + badgeSize, top + badgeSize);
+            badgeDrawable.draw(canvas);
+        }
+    }
+
+    private void drawTextBadge(Canvas canvas) {
+        int w = getWidth();
+        int h = getHeight();
+        int side = Math.min(w, h);
+        int textLength = badgeText != null ? badgeText.length() : 1;
+        // Width grows with the number of characters (1 char = pill-like circle, more = wider pill).
+        float height = side * 0.32f;
+        float minWidth = height; // 1 character — round shape.
+        float widthPerChar = height * 0.6f;
+        float width = Math.max(minWidth, height * 0.4f + textLength * widthPerChar);
+        float padding = side * 0.02f;
+        float right = w - padding;
+        float bottom = h - padding;
+        float left = right - width;
+        float top = bottom - height;
+        float corner = height * 0.5f;
+
+        badgeFillPaint.setStyle(Paint.Style.FILL);
+        badgeFillPaint.setColor(badgeTextBackgroundColor);
+        canvas.drawRoundRect(left, top, right, bottom, corner, corner, badgeFillPaint);
+
+        badgeTextPaint.setColor(badgeTextForegroundColor);
+        badgeTextPaint.setTextAlign(Paint.Align.CENTER);
+        badgeTextPaint.setFakeBoldText(true);
+        badgeTextPaint.setTextSize(height * 0.65f);
+        Paint.FontMetrics fm = badgeTextPaint.getFontMetrics();
+        float cx = (left + right) / 2f;
+        float cy = (top + bottom) / 2f - (fm.ascent + fm.descent) / 2f;
+        canvas.drawText(badgeText, cx, cy, badgeTextPaint);
     }
 
     @Nullable

@@ -27,5 +27,6 @@
     <!-- Semantic state colors for status icons (Color and Monocolor styles). -->
     <color name="status_ok">#34A853</color>
     <color name="status_warning">#F9A825</color>
+    <color name="status_error">#E53935</color>
     <color name="status_off">#8E8E8E</color>
 </resources>

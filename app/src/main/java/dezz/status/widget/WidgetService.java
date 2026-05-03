@@ -25,7 +25,10 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
@@ -63,6 +66,8 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.ImageViewCompat;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -76,22 +81,36 @@ public class WidgetService extends Service {
     }
 
     enum WiFiState {
-        OFF, NO_INTERNET, INTERNET
+        OFF, NO_INTERNET, LIMITED_INTERNET, INTERNET
     }
 
-    // Icon designs: each design has 3 states for both Wi-Fi and GNSS.
-    // Order [Wi-Fi/GNSS][state] matches WiFiState.ordinal() / GnssState.ordinal() (OFF, BAD/NO_INTERNET, GOOD/INTERNET).
+    // Icon designs: 4 Wi-Fi states (OFF, NO_INTERNET, LIMITED_INTERNET, INTERNET) and 3 GNSS states.
     private static final int[][] DESIGN_CLASSIC = {
-            { R.drawable.ic_status_wifi_off, R.drawable.ic_status_wifi_no_internet, R.drawable.ic_status_wifi_internet },
-            { R.drawable.ic_status_gps_off,  R.drawable.ic_status_gps_bad,          R.drawable.ic_status_gps_good }
+            {
+                    R.drawable.ic_status_wifi_off,
+                    R.drawable.ic_status_wifi_no_internet,
+                    R.drawable.ic_status_wifi_whitelist,
+                    R.drawable.ic_status_wifi_internet
+            },
+            { R.drawable.ic_status_gps_off, R.drawable.ic_status_gps_bad, R.drawable.ic_status_gps_good }
     };
     private static final int[][] DESIGN_SOLID = {
-            { R.drawable.ic_status_filled_wifi_off, R.drawable.ic_status_filled_wifi_no_internet, R.drawable.ic_status_filled_wifi_internet },
-            { R.drawable.ic_status_filled_gps_off,  R.drawable.ic_status_filled_gps_bad,          R.drawable.ic_status_filled_gps_good }
+            {
+                    R.drawable.ic_status_filled_wifi_off,
+                    R.drawable.ic_status_filled_wifi_no_internet,
+                    R.drawable.ic_status_filled_wifi_whitelist,
+                    R.drawable.ic_status_filled_wifi_internet
+            },
+            { R.drawable.ic_status_filled_gps_off, R.drawable.ic_status_filled_gps_bad, R.drawable.ic_status_filled_gps_good }
     };
     private static final int[][] DESIGN_BARS = {
-            { R.drawable.ic_status_bars_wifi_off, R.drawable.ic_status_bars_wifi_no_internet, R.drawable.ic_status_bars_wifi_internet },
-            { R.drawable.ic_status_bars_gps_off,  R.drawable.ic_status_bars_gps_bad,          R.drawable.ic_status_bars_gps_good }
+            {
+                    R.drawable.ic_status_bars_wifi_off,
+                    R.drawable.ic_status_bars_wifi_no_internet,
+                    R.drawable.ic_status_bars_wifi_whitelist,
+                    R.drawable.ic_status_bars_wifi_internet
+            },
+            { R.drawable.ic_status_bars_gps_off, R.drawable.ic_status_bars_gps_bad, R.drawable.ic_status_bars_gps_good }
     };
     private static final int[][][] ICON_DESIGNS = { DESIGN_CLASSIC, DESIGN_SOLID, DESIGN_BARS };
 
@@ -102,6 +121,8 @@ public class WidgetService extends Service {
     private static final int STYLE_MONO = 0;
     private static final int STYLE_COLOR = 1;
 
+    private static final long INTERNET_PROBE_INTERVAL_MS = 30_000L;
+
     private static final String TAG = "WidgetService";
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "WidgetServiceChannel";
@@ -110,6 +131,9 @@ public class WidgetService extends Service {
     private static final long FOREGROUND_APP_CHECK_INTERVAL_MS = 1000L;
     private static final long FOREGROUND_APP_LOOKBACK_MS = 60_000L;
     private static final String GNSSSHARE_CLIENT_PACKAGE = "dezz.gnssshare.client";
+    private static final String GNSSSHARE_SATELLITE_STATUS_ACTION = "dezz.gnssshare.action.SATELLITE_STATUS";
+    private static final String GNSSSHARE_EXTRA_SATELLITES_COUNT = "count";
+    private static final long GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS = 30_000L;
 
     private static WidgetService instance;
 
@@ -146,6 +170,26 @@ public class WidgetService extends Service {
     private Set<String> hiddenInPackages;
     private String lastForegroundPackage;
     private boolean overlayHiddenByApp = false;
+
+    private int satellitesCount = 0;
+    private long satellitesCountTimestamp = 0;
+    private boolean satelliteReceiverRegistered = false;
+    private final BroadcastReceiver satelliteStatusReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int count = intent.getIntExtra(GNSSSHARE_EXTRA_SATELLITES_COUNT, 0);
+            Log.d(TAG, "GNSS Share satellites count: " + count);
+            satellitesCount = count;
+            satellitesCountTimestamp = System.currentTimeMillis();
+            mainHandler.removeCallbacks(satellitesCountResetRunnable);
+            mainHandler.postDelayed(satellitesCountResetRunnable, GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS);
+            updateGnssStatus();
+        }
+    };
+    private final Runnable satellitesCountResetRunnable = () -> {
+        satellitesCount = 0;
+        updateGnssStatus();
+    };
 
     private final Runnable updateDateTimeRunnable = new Runnable() {
         @Override
@@ -228,6 +272,7 @@ public class WidgetService extends Service {
             if (wifiState == WiFiState.OFF) {
                 setWifiStatus(WiFiState.NO_INTERNET);
             }
+            mainHandler.post(() -> probeReachability());
         }
 
         @Override
@@ -241,12 +286,44 @@ public class WidgetService extends Service {
             if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 boolean hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
                 Log.d(TAG, "Wi-Fi capabilities changed, has internet = " + hasInternet);
-                setWifiStatus(hasInternet ? WiFiState.INTERNET : WiFiState.NO_INTERNET);
+                if (hasInternet) {
+                    // Network claims Internet capability — do our own probe to differentiate
+                    // FULL vs WHITELIST vs NONE.
+                    mainHandler.post(() -> probeReachability());
+                } else {
+                    setWifiStatus(WiFiState.NO_INTERNET);
+                }
             } else {
                 setWifiStatus(WiFiState.OFF);
             }
         }
     };
+
+    private final Runnable reachabilityProbeRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (wifiState != WiFiState.OFF) {
+                probeReachability();
+            }
+            mainHandler.postDelayed(this, INTERNET_PROBE_INTERVAL_MS);
+        }
+    };
+
+    private ReachabilityChecker reachabilityChecker;
+
+    private void probeReachability() {
+        if (reachabilityChecker == null) {
+            reachabilityChecker = new ReachabilityChecker(mainHandler);
+        }
+        reachabilityChecker.check(reach -> {
+            if (wifiState == WiFiState.OFF) return;
+            switch (reach) {
+                case FULL -> setWifiStatus(WiFiState.INTERNET);
+                case WHITELIST -> setWifiStatus(WiFiState.LIMITED_INTERNET);
+                case NONE -> setWifiStatus(WiFiState.NO_INTERNET);
+            }
+        });
+    }
 
     @Override
     public void onCreate() {
@@ -400,20 +477,29 @@ public class WidgetService extends Service {
             if (connectivityManager == null) {
                 connectivityManager = getSystemService(ConnectivityManager.class);
 
+                // Initial state: assume "no internet" until our async probe determines whether
+                // the connection is full / whitelisted / broken.
+                boolean wifiPresent = false;
                 for (Network net : connectivityManager.getAllNetworks()) {
                     NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(net);
                     if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                        boolean hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
-                        setWifiStatus(hasInternet ? WiFiState.INTERNET : WiFiState.NO_INTERNET);
+                        setWifiStatus(WiFiState.NO_INTERNET);
+                        wifiPresent = true;
                         break;
                     }
                 }
 
                 NetworkRequest networkRequest = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build();
                 connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+
+                if (wifiPresent) {
+                    probeReachability();
+                }
+                mainHandler.postDelayed(reachabilityProbeRunnable, INTERNET_PROBE_INTERVAL_MS);
             }
             updateWifiStatus();
         } else if (connectivityManager != null) {
+            mainHandler.removeCallbacks(reachabilityProbeRunnable);
             connectivityManager.unregisterNetworkCallback(networkCallback);
             connectivityManager = null;
         }
@@ -426,13 +512,41 @@ public class WidgetService extends Service {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener, Looper.getMainLooper());
                 mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
             }
+            if (prefs.showGnssSatelliteBadge.get()) {
+                registerSatelliteStatusReceiver();
+            } else {
+                unregisterSatelliteStatusReceiver();
+            }
             updateGnssStatus();
         } else if (locationManager != null) {
             mainHandler.removeCallbacks(updateGnssStatusRunnable);
+            unregisterSatelliteStatusReceiver();
             locationManager.removeUpdates(locationListener);
             locationManager.unregisterGnssStatusCallback(gnssStatusCallback);
             locationManager = null;
         }
+    }
+
+    private void registerSatelliteStatusReceiver() {
+        if (satelliteReceiverRegistered) return;
+        IntentFilter filter = new IntentFilter(GNSSSHARE_SATELLITE_STATUS_ACTION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(satelliteStatusReceiver, filter, RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(satelliteStatusReceiver, filter);
+        }
+        satelliteReceiverRegistered = true;
+    }
+
+    private void unregisterSatelliteStatusReceiver() {
+        if (!satelliteReceiverRegistered) return;
+        try {
+            unregisterReceiver(satelliteStatusReceiver);
+        } catch (IllegalArgumentException ignored) {
+        }
+        satelliteReceiverRegistered = false;
+        mainHandler.removeCallbacks(satellitesCountResetRunnable);
+        satellitesCount = 0;
     }
 
     private void updateForegroundAppTracking() {
@@ -646,8 +760,9 @@ public class WidgetService extends Service {
         icon.setDrawIcon(true);
 
         int iconStyle = Math.min(Math.max(0, prefs.iconStyle.get()), 1);
+        int[] colorRes = (iconType == ICON_TYPE_WIFI) ? WIFI_STATE_COLOR_RES : GNSS_STATE_COLOR_RES;
         int tint = (iconStyle == STYLE_COLOR)
-                ? ContextCompat.getColor(this, STATE_COLOR_RES[stateIdx])
+                ? ContextCompat.getColor(this, colorRes[stateIdx])
                 : ContextCompat.getColor(this, R.color.text_primary);
         ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
 
@@ -661,9 +776,38 @@ public class WidgetService extends Service {
         } else {
             icon.setOutlineWidth(0);
         }
+
+        // Whitelist (Russian-only internet) — overlay a small flag badge regardless of style.
+        if (iconType == ICON_TYPE_WIFI && stateIdx == WiFiState.LIMITED_INTERNET.ordinal()) {
+            Drawable flag = ContextCompat.getDrawable(this, R.drawable.ic_badge_ru_flag);
+            // mutate() ensures setBounds() doesn't affect a shared cached instance.
+            icon.setBadgeDrawable(flag != null ? flag.mutate() : null);
+        } else {
+            icon.setBadgeDrawable(null);
+        }
+
+        // GNSS Share satellite count — show as a text badge on the GPS icon.
+        if (iconType == ICON_TYPE_GNSS && prefs.showGnssSatelliteBadge.get() && satellitesCount > 0
+                && System.currentTimeMillis() - satellitesCountTimestamp < GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS) {
+            int bgColor = (iconStyle == STYLE_COLOR)
+                    ? ContextCompat.getColor(this, colorRes[stateIdx])
+                    : ContextCompat.getColor(this, R.color.text_primary);
+            int fgColor = ContextCompat.getColor(this, R.color.text_outline) | 0xFF000000;
+            icon.setBadgeText(String.valueOf(satellitesCount), bgColor, fgColor);
+        } else {
+            icon.setBadgeText(null, 0, 0);
+        }
     }
 
-    private static final int[] STATE_COLOR_RES = {
+    // Wi-Fi state colours by ordinal (OFF, NO_INTERNET, LIMITED_INTERNET, INTERNET).
+    private static final int[] WIFI_STATE_COLOR_RES = {
+            R.color.status_off,
+            R.color.status_error,
+            R.color.status_warning,
+            R.color.status_ok
+    };
+    // GNSS state colours by ordinal (OFF, BAD, GOOD).
+    private static final int[] GNSS_STATE_COLOR_RES = {
             R.color.status_off,
             R.color.status_warning,
             R.color.status_ok
@@ -700,6 +844,7 @@ public class WidgetService extends Service {
         mainHandler.removeCallbacks(updateGnssStatusRunnable);
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         mainHandler.removeCallbacks(foregroundAppCheckRunnable);
+        mainHandler.removeCallbacks(reachabilityProbeRunnable);
 
         if (binding != null && windowManager != null) {
             windowManager.removeView(binding.getRoot());
@@ -713,6 +858,13 @@ public class WidgetService extends Service {
         if (connectivityManager != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
         }
+
+        if (reachabilityChecker != null) {
+            reachabilityChecker.shutdown();
+            reachabilityChecker = null;
+        }
+
+        unregisterSatelliteStatusReceiver();
     }
 
     @Nullable
