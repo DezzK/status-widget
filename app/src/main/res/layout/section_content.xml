@@ -64,6 +64,15 @@
             android:text="@string/show_full_day_and_month"
             android:textAppearance="?attr/textAppearanceBodyLarge" />
 
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/dateBeforeDayOfWeekSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="@dimen/optionsMarginSmall"
+            android:minHeight="@dimen/optionsLineHeight"
+            android:text="@string/date_before_day_of_week"
+            android:textAppearance="?attr/textAppearanceBodyLarge" />
+
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"

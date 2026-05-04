@@ -150,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
         binder.bindCheckbox(binding.sectionContent.showGnssSwitch, prefs.showGnssIcon);
         binder.bindCheckbox(binding.sectionContent.showGnssSatelliteBadgeSwitch, prefs.showGnssSatelliteBadge);
         binder.bindCheckbox(binding.sectionContent.showFullDayAndMonthSwitch, prefs.showFullDayAndMonth);
+        binder.bindCheckbox(binding.sectionContent.dateBeforeDayOfWeekSwitch, prefs.dateBeforeDayOfWeek);
         binder.bindCheckbox(binding.sectionContent.oneLineLayoutSwitch, prefs.oneLineLayout);
 
         binder.bindSizeSlider(binding.sectionSizes.iconSizeSlider, prefs.iconSize);

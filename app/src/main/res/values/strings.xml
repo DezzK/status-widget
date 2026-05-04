@@ -46,6 +46,7 @@
     <string name="time_font_size">Time font size</string>
     <string name="date_font_size">Date and day of the week font size</string>
     <string name="show_full_day_and_month">Show full day-of-the-week and month names</string>
+    <string name="date_before_day_of_week">Date before day of the week</string>
     <string name="calendar_alignment">Calendar Alignment</string>
     <string-array name="calendar_alignment_types">
         <item>Start</item>

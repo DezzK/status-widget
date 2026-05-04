@@ -648,7 +648,11 @@ public class WidgetService extends Service {
         String dateFormatStr = showFullDayAndMonth ? "d MMMM" : "d MMM";
 
         // We add spaces at the start/end to avoid outline cropping by canvas which is not ready for the outline
-        String fullFormatStr = (showDayOfTheWeek ? " " + dayOfTheWeekFormatStr + divider : "") + (showDate ? " " + dateFormatStr : "") + " ";
+        String dayPart = showDayOfTheWeek ? " " + dayOfTheWeekFormatStr : "";
+        String datePart = showDate ? " " + dateFormatStr : "";
+        String fullFormatStr = prefs.dateBeforeDayOfWeek.get()
+                ? datePart + (showDate && showDayOfTheWeek ? divider : "") + dayPart + " "
+                : dayPart + (showDate && showDayOfTheWeek ? divider : "") + datePart + " ";
 
         if (!fullFormatStr.equals(currentDateFormatPattern)) {
             dateFormat = new SimpleDateFormat(fullFormatStr, Locale.getDefault());
