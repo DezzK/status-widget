@@ -23,34 +23,58 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import dezz.status.widget.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
+
     public static final int FOREGROUND_PERMISSION_REQUEST_CODE = 1001;
     public static final int OVERLAY_PERMISSION_REQUEST_CODE = 1002;
     public static final int BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE = 1003;
     public static final int BACKGROUND_LOCATION_SETTINGS_REQUEST_CODE = 1004;
 
+    private static final String EXPORT_FILE_NAME = "status-widget-settings.json";
+    private static final String EXPORT_MIME_TYPE = "application/json";
+
     private Preferences prefs;
 
     ActivityMainBinding binding;
+
+    private final ActivityResultLauncher<String[]> importLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri != null) {
+                    importSettings(uri);
+                }
+            });
 
     private final CompoundButton.OnCheckedChangeListener enableWidgetSwitchListener =
             (buttonView, isChecked) -> {
@@ -115,11 +139,80 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean onMenuItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.menu_about) {
+        int id = item.getItemId();
+        if (id == R.id.menu_about) {
             startActivity(new Intent(this, AboutActivity.class));
             return true;
         }
+        if (id == R.id.menu_export_settings) {
+            exportSettings();
+            return true;
+        }
+        if (id == R.id.menu_import_settings) {
+            importLauncher.launch(new String[]{EXPORT_MIME_TYPE, "*/*"});
+            return true;
+        }
         return false;
+    }
+
+    private void exportSettings() {
+        try {
+            String json = prefs.exportToJson();
+            File exportsDir = new File(getCacheDir(), "exports");
+            if (!exportsDir.exists() && !exportsDir.mkdirs()) {
+                Toast.makeText(this, R.string.export_failed_toast, Toast.LENGTH_LONG).show();
+                return;
+            }
+            File file = new File(exportsDir, EXPORT_FILE_NAME);
+            try (FileOutputStream out = new FileOutputStream(file)) {
+                out.write(json.getBytes(StandardCharsets.UTF_8));
+            }
+            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType(EXPORT_MIME_TYPE);
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.putExtra(Intent.EXTRA_SUBJECT, EXPORT_FILE_NAME);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(send, getString(R.string.export_chooser_title)));
+        } catch (Exception e) {
+            Log.e(TAG, "Export failed", e);
+            Toast.makeText(this, R.string.export_failed_toast, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void importSettings(Uri uri) {
+        StringBuilder builder = new StringBuilder();
+        try (InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) {
+                throw new IOException("Could not open input stream");
+            }
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    builder.append(line).append('\n');
+                }
+            }
+            prefs.importFromJson(builder.toString());
+        } catch (Preferences.InvalidSettingsFileException e) {
+            Log.w(TAG, "Invalid settings file", e);
+            Toast.makeText(this, R.string.import_invalid_file_toast, Toast.LENGTH_LONG).show();
+            return;
+        } catch (Exception e) {
+            Log.e(TAG, "Import failed", e);
+            Toast.makeText(this, R.string.import_failed_toast, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        boolean wasRunning = WidgetService.isRunning();
+        if (wasRunning) {
+            stopService(new Intent(this, WidgetService.class));
+        }
+        Toast.makeText(this, R.string.import_success_toast, Toast.LENGTH_SHORT).show();
+        if (prefs.widgetEnabled.get() && Permissions.allPermissionsGranted(this)) {
+            startForegroundService(new Intent(this, WidgetService.class));
+        }
+        recreate();
     }
 
     private void initializeViews() {

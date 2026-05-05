@@ -74,6 +74,13 @@
     <string name="hide_in_apps_button">Скрывать в приложениях…</string>
     <string name="hide_in_apps_title">Скрывать в:</string>
     <string name="menu_about">О приложении</string>
+    <string name="menu_export_settings">Экспорт настроек</string>
+    <string name="menu_import_settings">Импорт настроек</string>
+    <string name="export_chooser_title">Экспорт настроек</string>
+    <string name="export_failed_toast">Не удалось экспортировать настройки</string>
+    <string name="import_success_toast">Настройки импортированы</string>
+    <string name="import_failed_toast">Не удалось импортировать настройки</string>
+    <string name="import_invalid_file_toast">Этот файл не является экспортом настроек Виджета информации</string>
     <string name="about_fallback"><![CDATA[
         <p><b>Виджет информации</b><br>
         Плавающий виджет статуса для автомобильных головных устройств на Android.</p>

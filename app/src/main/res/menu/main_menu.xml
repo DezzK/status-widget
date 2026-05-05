@@ -3,6 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/menu_export_settings"
+        android:icon="@drawable/ic_export"
+        android:title="@string/menu_export_settings"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_import_settings"
+        android:icon="@drawable/ic_import"
+        android:title="@string/menu_import_settings"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/menu_about"
         android:icon="@drawable/ic_info"
         android:title="@string/menu_about"

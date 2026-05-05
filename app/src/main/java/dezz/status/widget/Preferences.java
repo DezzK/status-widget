@@ -20,8 +20,14 @@ package dezz.status.widget;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 public class Preferences {
@@ -121,5 +127,84 @@ public class Preferences {
     public Preferences(Context context) {
         final Context deviceContext = context.getApplicationContext().createDeviceProtectedStorageContext();
         prefs = deviceContext.getSharedPreferences(context.getPackageName() + "_preferences", Context.MODE_PRIVATE);
+    }
+
+    private static final String EXPORT_FILE_TYPE = "dezz.status.widget.settings";
+    private static final int EXPORT_FILE_VERSION = 1;
+    private static final String KEY_FILE_TYPE = "fileType";
+    private static final String KEY_FILE_VERSION = "fileVersion";
+    private static final String KEY_PREFERENCES = "preferences";
+
+    public static class InvalidSettingsFileException extends Exception {
+        public InvalidSettingsFileException(String message) {
+            super(message);
+        }
+    }
+
+    public String exportToJson() throws JSONException {
+        JSONObject preferencesNode = new JSONObject();
+        for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
+            Object value = entry.getValue();
+            if (value instanceof Set) {
+                JSONArray array = new JSONArray();
+                for (Object item : (Set<?>) value) {
+                    array.put(String.valueOf(item));
+                }
+                preferencesNode.put(entry.getKey(), array);
+            } else {
+                preferencesNode.put(entry.getKey(), value);
+            }
+        }
+        JSONObject root = new JSONObject();
+        root.put(KEY_FILE_TYPE, EXPORT_FILE_TYPE);
+        root.put(KEY_FILE_VERSION, EXPORT_FILE_VERSION);
+        root.put(KEY_PREFERENCES, preferencesNode);
+        return root.toString(2);
+    }
+
+    public void importFromJson(String json) throws JSONException, InvalidSettingsFileException {
+        JSONObject root = new JSONObject(json);
+        if (!EXPORT_FILE_TYPE.equals(root.optString(KEY_FILE_TYPE, null))) {
+            throw new InvalidSettingsFileException("Not a Status Widget settings file");
+        }
+        int version = root.optInt(KEY_FILE_VERSION, -1);
+        if (version <= 0 || version > EXPORT_FILE_VERSION) {
+            throw new InvalidSettingsFileException("Unsupported settings file version: " + version);
+        }
+        JSONObject preferencesNode = root.optJSONObject(KEY_PREFERENCES);
+        if (preferencesNode == null) {
+            throw new InvalidSettingsFileException("Missing preferences section");
+        }
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.clear();
+        Iterator<String> keys = preferencesNode.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Object value = preferencesNode.get(key);
+            if (value instanceof Boolean) {
+                editor.putBoolean(key, (Boolean) value);
+            } else if (value instanceof Integer) {
+                editor.putInt(key, (Integer) value);
+            } else if (value instanceof Long) {
+                long longValue = (Long) value;
+                if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+                    editor.putInt(key, (int) longValue);
+                } else {
+                    editor.putLong(key, longValue);
+                }
+            } else if (value instanceof Double || value instanceof Float) {
+                editor.putFloat(key, ((Number) value).floatValue());
+            } else if (value instanceof JSONArray) {
+                JSONArray array = (JSONArray) value;
+                Set<String> set = new HashSet<>();
+                for (int i = 0; i < array.length(); i++) {
+                    set.add(array.getString(i));
+                }
+                editor.putStringSet(key, set);
+            } else if (value instanceof String) {
+                editor.putString(key, (String) value);
+            }
+        }
+        editor.apply();
     }
 }
