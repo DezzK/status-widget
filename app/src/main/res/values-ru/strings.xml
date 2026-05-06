@@ -73,6 +73,7 @@
     <string name="usage_access_required">Предоставьте доступ к данным об использовании, чтобы виджет видел текущее приложение</string>
     <string name="hide_in_apps_button">Скрывать в приложениях…</string>
     <string name="hide_in_apps_title">Скрывать в:</string>
+    <string name="app_selection_load_failed_toast">Не удалось загрузить список установленных приложений</string>
     <string name="menu_about">О приложении</string>
     <string name="menu_export_settings">Экспорт настроек</string>
     <string name="menu_import_settings">Импорт настроек</string>

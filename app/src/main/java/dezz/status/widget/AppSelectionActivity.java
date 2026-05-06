@@ -23,12 +23,14 @@ import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -50,6 +52,8 @@ import java.util.Set;
 import dezz.status.widget.databinding.ActivityAppSelectionBinding;
 
 public class AppSelectionActivity extends AppCompatActivity {
+    private static final String TAG = "AppSelectionActivity";
+
     private ActivityAppSelectionBinding binding;
     private Preferences prefs;
     private Set<String> selected = new HashSet<>();
@@ -58,85 +62,135 @@ public class AppSelectionActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        EdgeToEdge.enable(this);
+        try {
+            EdgeToEdge.enable(this);
+        } catch (Throwable t) {
+            Log.w(TAG, "EdgeToEdge.enable failed", t);
+        }
         super.onCreate(savedInstanceState);
-        binding = ActivityAppSelectionBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        try {
+            binding = ActivityAppSelectionBinding.inflate(getLayoutInflater());
+            setContentView(binding.getRoot());
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout, (v, windowInsets) -> {
-            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
-                    | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, bars.top, bars.right, 0);
-            return windowInsets;
-        });
-        ViewCompat.setOnApplyWindowInsetsListener(binding.appList, (v, windowInsets) -> {
-            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
-                    | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, 0, bars.right, bars.bottom);
-            return windowInsets;
-        });
+            ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout, (v, windowInsets) -> {
+                Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
+                        | WindowInsetsCompat.Type.displayCutout());
+                v.setPadding(bars.left, bars.top, bars.right, 0);
+                return windowInsets;
+            });
+            ViewCompat.setOnApplyWindowInsetsListener(binding.appList, (v, windowInsets) -> {
+                Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
+                        | WindowInsetsCompat.Type.displayCutout());
+                v.setPadding(bars.left, 0, bars.right, bars.bottom);
+                return windowInsets;
+            });
 
-        binding.toolbar.setNavigationOnClickListener(v -> finish());
+            binding.toolbar.setNavigationOnClickListener(v -> finish());
 
-        prefs = new Preferences(this);
-        selected = prefs.hideInPackages.get();
+            prefs = new Preferences(this);
+            selected = prefs.hideInPackages.get();
 
-        adapter = new AppAdapter();
-        binding.appList.setLayoutManager(new LinearLayoutManager(this));
-        binding.appList.setAdapter(adapter);
+            adapter = new AppAdapter();
+            binding.appList.setLayoutManager(new LinearLayoutManager(this));
+            binding.appList.setAdapter(adapter);
 
-        new LoadAppsTask().execute();
+            new LoadAppsTask().execute();
+        } catch (Throwable t) {
+            Log.e(TAG, "AppSelectionActivity onCreate failed", t);
+            Toast.makeText(getApplicationContext(),
+                    R.string.app_selection_load_failed_toast, Toast.LENGTH_LONG).show();
+            finish();
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        prefs.hideInPackages.set(selected);
-        if (WidgetService.isRunning()) {
-            WidgetService.getInstance().applyPreferences();
+        if (prefs != null) {
+            prefs.hideInPackages.set(selected);
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
         }
     }
 
     private class LoadAppsTask extends AsyncTask<Void, Void, List<AppEntry>> {
         @Override
         protected List<AppEntry> doInBackground(Void... voids) {
-            PackageManager pm = getPackageManager();
-            Intent launcherIntent = new Intent(Intent.ACTION_MAIN, null);
-            launcherIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-            List<ResolveInfo> launchableApps = pm.queryIntentActivities(launcherIntent, 0);
+            try {
+                return loadApps();
+            } catch (Throwable t) {
+                Log.e(TAG, "Failed to load installed apps", t);
+                return Collections.emptyList();
+            }
+        }
 
+        private List<AppEntry> loadApps() {
+            PackageManager pm = getPackageManager();
+            List<ResolveInfo> launchableApps = safeQueryIntentActivities(pm, Intent.CATEGORY_LAUNCHER);
             // Home screens / launchers usually only declare CATEGORY_HOME, so they wouldn't appear
             // in the list above — query them separately.
-            Intent homeIntent = new Intent(Intent.ACTION_MAIN, null);
-            homeIntent.addCategory(Intent.CATEGORY_HOME);
-            List<ResolveInfo> homeApps = pm.queryIntentActivities(homeIntent, 0);
+            List<ResolveInfo> homeApps = safeQueryIntentActivities(pm, Intent.CATEGORY_HOME);
 
             List<AppEntry> result = new ArrayList<>(launchableApps.size() + homeApps.size());
             String selfPackage = getPackageName();
             HashSet<String> seen = new HashSet<>();
-            for (ResolveInfo info : launchableApps) {
-                String pkg = info.activityInfo.packageName;
-                if (pkg.equals(selfPackage) || !seen.add(pkg)) {
-                    continue;
-                }
-                CharSequence label = info.loadLabel(pm);
-                Drawable icon = info.loadIcon(pm);
-                result.add(new AppEntry(pkg, label != null ? label.toString() : pkg, icon));
-            }
-            for (ResolveInfo info : homeApps) {
-                String pkg = info.activityInfo.packageName;
-                if (pkg.equals(selfPackage) || !seen.add(pkg)) {
-                    continue;
-                }
-                CharSequence label = info.loadLabel(pm);
-                Drawable icon = info.loadIcon(pm);
-                result.add(new AppEntry(pkg, label != null ? label.toString() : pkg, icon));
-            }
+            collectEntries(pm, launchableApps, selfPackage, seen, result);
+            collectEntries(pm, homeApps, selfPackage, seen, result);
 
-            Collator collator = Collator.getInstance(Locale.getDefault());
-            collator.setStrength(Collator.PRIMARY);
-            Collections.sort(result, (a, b) -> collator.compare(a.label, b.label));
+            try {
+                Collator collator = Collator.getInstance(Locale.getDefault());
+                collator.setStrength(Collator.PRIMARY);
+                Collections.sort(result, (a, b) -> collator.compare(a.label, b.label));
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to sort app list", t);
+            }
             return result;
+        }
+
+        private List<ResolveInfo> safeQueryIntentActivities(PackageManager pm, String category) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_MAIN, null);
+                intent.addCategory(category);
+                List<ResolveInfo> list = pm.queryIntentActivities(intent, 0);
+                return list != null ? list : Collections.emptyList();
+            } catch (Throwable t) {
+                Log.w(TAG, "queryIntentActivities failed for " + category, t);
+                return Collections.emptyList();
+            }
+        }
+
+        private void collectEntries(PackageManager pm, List<ResolveInfo> source,
+                                    String selfPackage, HashSet<String> seen,
+                                    List<AppEntry> result) {
+            for (ResolveInfo info : source) {
+                try {
+                    if (info == null || info.activityInfo == null) {
+                        continue;
+                    }
+                    String pkg = info.activityInfo.packageName;
+                    if (pkg == null || pkg.equals(selfPackage) || !seen.add(pkg)) {
+                        continue;
+                    }
+                    String label;
+                    try {
+                        CharSequence raw = info.loadLabel(pm);
+                        label = raw != null ? raw.toString() : pkg;
+                    } catch (Throwable t) {
+                        Log.w(TAG, "loadLabel failed for " + pkg, t);
+                        label = pkg;
+                    }
+                    Drawable icon = null;
+                    try {
+                        icon = info.loadIcon(pm);
+                    } catch (Throwable t) {
+                        Log.w(TAG, "loadIcon failed for " + pkg, t);
+                    }
+                    result.add(new AppEntry(pkg, label, icon));
+                } catch (Throwable t) {
+                    Log.w(TAG, "Skipping bad ResolveInfo", t);
+                }
+            }
         }
 
         @Override
@@ -145,6 +199,10 @@ public class AppSelectionActivity extends AppCompatActivity {
             apps.addAll(result);
             adapter.notifyDataSetChanged();
             binding.appSelectionProgress.setVisibility(View.GONE);
+            if (result.isEmpty()) {
+                Toast.makeText(getApplicationContext(),
+                        R.string.app_selection_load_failed_toast, Toast.LENGTH_LONG).show();
+            }
         }
     }
 
