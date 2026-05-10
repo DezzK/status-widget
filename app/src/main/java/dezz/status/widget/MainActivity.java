@@ -35,6 +35,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -245,6 +246,17 @@ public class MainActivity extends AppCompatActivity {
                 R.array.widget_themes,
                 prefs.widgetTheme);
 
+        bindDropdown(
+                binding.sectionGeneral.widgetModeDropdown,
+                R.array.widget_modes,
+                prefs.widgetMode,
+                () -> {
+                    refreshFloatingControlsEnabled();
+                    if (brickAdapter != null) {
+                        brickAdapter.notifyDataSetChanged();
+                    }
+                });
+
         ViewBinder binder = new ViewBinder(this);
 
         binder.bindCheckbox(binding.sectionGeneral.widgetAlignRightSwitch, prefs.widgetAlignRight);
@@ -266,6 +278,16 @@ public class MainActivity extends AppCompatActivity {
         binding.sectionGeneral.widgetPositionYSlider.setValueTo(Math.max(1, dm.heightPixels));
         binder.bindSizeSlider(binding.sectionGeneral.widgetPositionXSlider, prefs.overlayX);
         binder.bindSizeSlider(binding.sectionGeneral.widgetPositionYSlider, prefs.overlayY);
+        refreshFloatingControlsEnabled();
+    }
+
+    /** Position sliders, right-edge anchor switch and corner radius only matter in floating mode. */
+    private void refreshFloatingControlsEnabled() {
+        boolean floating = prefs.widgetMode.get() != 1;
+        binding.sectionGeneral.widgetAlignRightSwitch.setEnabled(floating);
+        binding.sectionGeneral.widgetPositionXSlider.setEnabled(floating);
+        binding.sectionGeneral.widgetPositionYSlider.setEnabled(floating);
+        binding.sectionAppearance.backgroundCornerRadiusSlider.setEnabled(floating);
     }
 
     private void setupBrickList() {
@@ -337,6 +359,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void bindDropdown(MaterialAutoCompleteTextView dropdown, int arrayRes, Preferences.Int preference) {
+        bindDropdown(dropdown, arrayRes, preference, null);
+    }
+
+    private void bindDropdown(MaterialAutoCompleteTextView dropdown, int arrayRes,
+                              Preferences.Int preference, @Nullable Runnable onChange) {
         String[] items = getResources().getStringArray(arrayRes);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 this, com.google.android.material.R.layout.m3_auto_complete_simple_item, items);
@@ -347,6 +374,9 @@ public class MainActivity extends AppCompatActivity {
             preference.set(position);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
+            }
+            if (onChange != null) {
+                onChange.run();
             }
         });
     }

@@ -23,6 +23,12 @@
     <string name="section_layout">Расположение</string>
     <string name="section_appearance">Внешний вид</string>
     <string name="enable_widget">Включить виджет (сбросить позицию)</string>
+    <string name="widget_mode">Режим виджета</string>
+    <string-array name="widget_modes">
+        <item>Плавающий</item>
+        <item>Статусная строка</item>
+    </string-array>
+
     <string name="widget_align_right">Привязать виджет к правому краю</string>
     <string name="widget_align_right_hint">При изменении ширины содержимого правый край остаётся на месте, а левый сдвигается</string>
     <string name="widget_position_x">Позиция виджета по X</string>
@@ -84,6 +90,12 @@
     <string name="brick_margin_end">Отступ справа</string>
     <string name="brick_adjust_y">Сдвиг по вертикали</string>
     <string name="brick_media_max_width">Максимальная ширина медиа</string>
+    <string name="brick_status_alignment">Выравнивание в статусной строке</string>
+    <string-array name="brick_status_alignments">
+        <item>Слева</item>
+        <item>Центр</item>
+        <item>Справа</item>
+    </string-array>
     <string name="brick_hide_in_apps">Скрывать в приложениях…</string>
     <string name="brick_hide_in_apps_count">Скрывать в приложениях… (%1$d)</string>
     <string name="brick_hide_in_apps_title">Скрывать %1$s в:</string>

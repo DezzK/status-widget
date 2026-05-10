@@ -23,6 +23,12 @@
     <string name="section_layout">Layout</string>
     <string name="section_appearance">Appearance</string>
     <string name="enable_widget">Enable widget (reset position)</string>
+    <string name="widget_mode">Widget mode</string>
+    <string-array name="widget_modes">
+        <item>Floating</item>
+        <item>Status bar</item>
+    </string-array>
+
     <string name="widget_align_right">Anchor widget to right edge</string>
     <string name="widget_align_right_hint">When the widget content changes width, the right edge stays fixed and the left edge moves</string>
     <string name="widget_position_x">Widget position X</string>
@@ -84,6 +90,12 @@
     <string name="brick_margin_end">Right spacing</string>
     <string name="brick_adjust_y">Vertical offset</string>
     <string name="brick_media_max_width">Media maximum width</string>
+    <string name="brick_status_alignment">Status bar alignment</string>
+    <string-array name="brick_status_alignments">
+        <item>Start</item>
+        <item>Center</item>
+        <item>End</item>
+    </string-array>
     <string name="brick_hide_in_apps">Hide in apps…</string>
     <string name="brick_hide_in_apps_count">Hide in apps… (%1$d)</string>
     <string name="brick_hide_in_apps_title">Hide %1$s in:</string>

@@ -128,6 +128,9 @@ public class WidgetService extends Service {
     private static final int ICON_TYPE_WIFI = 0;
     private static final int ICON_TYPE_GNSS = 1;
 
+    private static final int WIDGET_MODE_FLOATING = 0;
+    private static final int WIDGET_MODE_STATUS_BAR = 1;
+
     // Icon style indices (must match strings.xml/icon_styles array order).
     private static final int STYLE_MONO = 0;
     private static final int STYLE_COLOR = 1;
@@ -401,7 +404,8 @@ public class WidgetService extends Service {
             if (params == null) return;
             int oldWidth = oldRight - oldLeft;
             int newWidth = right - left;
-            if (prefs.widgetAlignRight.get() && oldWidth > 0 && newWidth > 0 && newWidth != oldWidth) {
+            if (prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR
+                    && prefs.widgetAlignRight.get() && oldWidth > 0 && newWidth > 0 && newWidth != oldWidth) {
                 params.x += oldWidth - newWidth;
                 try {
                     windowManager.updateViewLayout(v, params);
@@ -421,8 +425,11 @@ public class WidgetService extends Service {
         setupDragListener();
 
         // Add the view to the window
+        boolean statusBar = prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR;
         params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
+                statusBar
+                        ? WindowManager.LayoutParams.MATCH_PARENT
+                        : WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
@@ -432,8 +439,8 @@ public class WidgetService extends Service {
                 PixelFormat.TRANSLUCENT
         );
         params.gravity = Gravity.TOP | Gravity.LEFT;
-        params.x = prefs.overlayX.get();
-        params.y = prefs.overlayY.get();
+        params.x = statusBar ? 0 : prefs.overlayX.get();
+        params.y = statusBar ? 0 : prefs.overlayY.get();
         params.windowAnimations = 0;
 
         try {
@@ -574,8 +581,34 @@ public class WidgetService extends Service {
     }
 
     private void reorderBricks(List<BrickType> bricks) {
+        if (prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR) {
+            reorderForStatusBar(bricks);
+        } else {
+            reorderForFloating(bricks);
+        }
+    }
+
+    private void reorderForFloating(List<BrickType> bricks) {
         LinearLayout root = (LinearLayout) binding.getRoot();
+        // Status-bar group containers and spacers are hidden in floating mode and emptied so
+        // bricks live as direct children of the root again.
+        binding.startGroup.removeAllViews();
+        binding.centerGroup.removeAllViews();
+        binding.endGroup.removeAllViews();
+        binding.startGroup.setVisibility(View.GONE);
+        binding.centerGroup.setVisibility(View.GONE);
+        binding.endGroup.setVisibility(View.GONE);
+        binding.startCenterSpacer.setVisibility(View.GONE);
+        binding.centerEndSpacer.setVisibility(View.GONE);
+
         List<View> expected = new ArrayList<>();
+        // Re-include the (empty) groups + spacers so their visibility=GONE keeps them out of
+        // measure but the views remain attached to the same root for next switch.
+        expected.add(binding.startGroup);
+        expected.add(binding.startCenterSpacer);
+        expected.add(binding.centerGroup);
+        expected.add(binding.centerEndSpacer);
+        expected.add(binding.endGroup);
         for (BrickType type : bricks) {
             View v = viewForBrick(type);
             if (v != null) expected.add(v);
@@ -586,21 +619,71 @@ public class WidgetService extends Service {
                 if (v != null) expected.add(v);
             }
         }
-        boolean inOrder = root.getChildCount() == expected.size();
+        applyChildOrder(root, expected);
+    }
+
+    private void reorderForStatusBar(List<BrickType> bricks) {
+        LinearLayout root = (LinearLayout) binding.getRoot();
+        // Detach bricks from wherever they currently sit (root or any group).
+        binding.startGroup.removeAllViews();
+        binding.centerGroup.removeAllViews();
+        binding.endGroup.removeAllViews();
+
+        // Root order: startGroup, spacer, centerGroup, spacer, endGroup. Hidden bricks dangle off
+        // the root after these so they remain attached but invisible.
+        List<View> rootChildren = new ArrayList<>();
+        rootChildren.add(binding.startGroup);
+        rootChildren.add(binding.startCenterSpacer);
+        rootChildren.add(binding.centerGroup);
+        rootChildren.add(binding.centerEndSpacer);
+        rootChildren.add(binding.endGroup);
+        for (BrickType type : BrickType.values()) {
+            if (!bricks.contains(type)) {
+                View v = viewForBrick(type);
+                if (v != null) rootChildren.add(v);
+            }
+        }
+        applyChildOrder(root, rootChildren);
+
+        // Distribute visible bricks into the proper alignment group.
+        for (BrickType type : bricks) {
+            View v = viewForBrick(type);
+            if (v == null) continue;
+            int alignment = clampAlignment(prefs.statusAlignmentFor(type).get());
+            LinearLayout target = (alignment == 1) ? binding.centerGroup
+                    : (alignment == 2) ? binding.endGroup
+                    : binding.startGroup;
+            target.addView(v);
+        }
+
+        binding.startGroup.setVisibility(View.VISIBLE);
+        binding.centerGroup.setVisibility(View.VISIBLE);
+        binding.endGroup.setVisibility(View.VISIBLE);
+        binding.startCenterSpacer.setVisibility(View.VISIBLE);
+        binding.centerEndSpacer.setVisibility(View.VISIBLE);
+    }
+
+    private static void applyChildOrder(ViewGroup parent, List<View> expected) {
+        boolean inOrder = parent.getChildCount() == expected.size();
         if (inOrder) {
             for (int i = 0; i < expected.size(); i++) {
-                if (root.getChildAt(i) != expected.get(i)) {
+                if (parent.getChildAt(i) != expected.get(i)) {
                     inOrder = false;
                     break;
                 }
             }
         }
-        if (!inOrder) {
-            root.removeAllViews();
-            for (View v : expected) {
-                root.addView(v);
-            }
+        if (inOrder) return;
+        parent.removeAllViews();
+        for (View v : expected) {
+            ViewGroup p = (ViewGroup) v.getParent();
+            if (p != null) p.removeView(v);
+            parent.addView(v);
         }
+    }
+
+    private static int clampAlignment(int v) {
+        return v < 0 ? 0 : (v > 2 ? 2 : v);
     }
 
     @Nullable
@@ -805,17 +888,22 @@ public class WidgetService extends Service {
     }
 
     /**
-     * Pushes the saved widget position into the WindowManager. Called from {@link
-     * #applyPreferences()} so the position sliders in settings move the widget live.
-     * Skipped when the widget isn't drawn yet ({@code params == null}).
+     * Pushes the saved widget position and mode-specific window params into the WindowManager.
+     * Called from {@link #applyPreferences()} so the position sliders / mode switcher in
+     * settings affect the widget live. Skipped when the widget isn't drawn yet.
      */
     private void applyOverlayPosition() {
         if (params == null || binding == null || windowManager == null) return;
-        int newX = prefs.overlayX.get();
-        int newY = prefs.overlayY.get();
-        if (params.x == newX && params.y == newY) return;
+        boolean statusBar = prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR;
+        int newWidth = statusBar
+                ? WindowManager.LayoutParams.MATCH_PARENT
+                : WindowManager.LayoutParams.WRAP_CONTENT;
+        int newX = statusBar ? 0 : prefs.overlayX.get();
+        int newY = statusBar ? 0 : prefs.overlayY.get();
+        if (params.x == newX && params.y == newY && params.width == newWidth) return;
         params.x = newX;
         params.y = newY;
+        params.width = newWidth;
         try {
             windowManager.updateViewLayout(binding.getRoot(), params);
         } catch (Exception ignored) {
@@ -1060,7 +1148,9 @@ public class WidgetService extends Service {
             return;
         }
         int maxRadius = Math.min(width, height) / 2;
-        int backgroundCornerRadius = maxRadius * prefs.backgroundCornerRadius.get() / 100;
+        int backgroundCornerRadius = (prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR)
+                ? 0
+                : maxRadius * prefs.backgroundCornerRadius.get() / 100;
         int backgroundColor = ContextCompat.getColor(themedContext, R.color.widget_background) & 0x00FFFFFF | (prefs.backgroundAlpha.get() << 24);
         binding.overlayContainer.setBackground(getBackground(backgroundColor, backgroundCornerRadius));
     }
@@ -1136,6 +1226,11 @@ public class WidgetService extends Service {
                     return true;
 
                 case MotionEvent.ACTION_MOVE:
+                    if (prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR) {
+                        // Pinned to (0, 0) full-width — drag is disabled, but consume the event so
+                        // ACTION_UP still arrives for click handling.
+                        return true;
+                    }
                     params.x = initialX + (int) (event.getRawX() - initialTouchX);
                     params.y = initialY + (int) (event.getRawY() - initialTouchY);
                     windowManager.updateViewLayout(binding.getRoot(), params);
@@ -1143,7 +1238,9 @@ public class WidgetService extends Service {
                     return true;
 
                 case MotionEvent.ACTION_UP:
-                    savePosition();
+                    if (prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR) {
+                        savePosition();
+                    }
 
                     // Handle click
                     if (Math.abs(event.getRawX() - initialTouchX) < touchSlop && Math.abs(event.getRawY() - initialTouchY) < touchSlop) {

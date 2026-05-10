@@ -186,6 +186,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final Slider brickOutlineWidthSlider;
         final Slider brickMarginStartSlider;
         final Slider brickMarginEndSlider;
+        final com.google.android.material.textfield.TextInputLayout brickStatusAlignmentLayout;
+        final MaterialAutoCompleteTextView brickStatusAlignmentDropdown;
         final LinearLayout brickAdjustYBlock;
         final Slider brickAdjustYSlider;
         final LinearLayout brickDateBlock;
@@ -224,6 +226,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickOutlineWidthSlider = itemView.findViewById(R.id.brickOutlineWidthSlider);
             brickMarginStartSlider = itemView.findViewById(R.id.brickMarginStartSlider);
             brickMarginEndSlider = itemView.findViewById(R.id.brickMarginEndSlider);
+            brickStatusAlignmentLayout = itemView.findViewById(R.id.brickStatusAlignmentLayout);
+            brickStatusAlignmentDropdown = itemView.findViewById(R.id.brickStatusAlignmentDropdown);
             brickAdjustYBlock = itemView.findViewById(R.id.brickAdjustYBlock);
             brickAdjustYSlider = itemView.findViewById(R.id.brickAdjustYSlider);
             brickDateBlock = itemView.findViewById(R.id.brickDateBlock);
@@ -317,7 +321,28 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             }
 
             bindHideBlock(type);
+            bindStatusAlignment(type);
             applyExpandState();
+        }
+
+        private void bindStatusAlignment(BrickType type) {
+            // Only relevant in status-bar mode — hide the dropdown otherwise.
+            boolean statusBar = prefs.widgetMode.get() == 1;
+            brickStatusAlignmentLayout.setVisibility(statusBar ? View.VISIBLE : View.GONE);
+            if (!statusBar) return;
+
+            String[] items = activity.getResources().getStringArray(R.array.brick_status_alignments);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    activity,
+                    com.google.android.material.R.layout.m3_auto_complete_simple_item,
+                    items);
+            brickStatusAlignmentDropdown.setAdapter(adapter);
+            int current = Math.max(0, Math.min(prefs.statusAlignmentFor(type).get(), items.length - 1));
+            brickStatusAlignmentDropdown.setText(items[current], false);
+            brickStatusAlignmentDropdown.setOnItemClickListener((parent, view, position, id) -> {
+                prefs.statusAlignmentFor(type).set(position);
+                notifyService();
+            });
         }
 
         private void bindHideBlock(BrickType type) {

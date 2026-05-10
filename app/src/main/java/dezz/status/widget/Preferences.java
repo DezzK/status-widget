@@ -129,6 +129,8 @@ public class Preferences {
          * Empty string means use {@link #hideInPackages}.
          */
         public final Str hideSource;
+        /** Position group inside status-bar mode: 0 = start, 1 = center, 2 = end. */
+        public final Int statusAlignment;
 
         public TextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
             this.prefix = prefix;
@@ -139,6 +141,7 @@ public class Preferences {
             marginEnd = new Int(p, prefix + "MarginEnd", 0);
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
+            statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
         }
 
         public String hideInPackagesKey() {
@@ -196,6 +199,8 @@ public class Preferences {
         public final Int marginEnd;
         public final StringSet hideInPackages;
         public final Str hideSource;
+        /** Position group inside status-bar mode: 0 = start, 1 = center, 2 = end. */
+        public final Int statusAlignment;
 
         public IconBrickPrefs(Preferences p, String prefix) {
             this.prefix = prefix;
@@ -206,6 +211,7 @@ public class Preferences {
             marginEnd = new Int(p, prefix + "MarginEnd", 0);
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
+            statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
         }
 
         public String hideInPackagesKey() {
@@ -228,6 +234,8 @@ public class Preferences {
     // Global widget settings.
     public final Bool widgetEnabled = new Bool(this, "enabled", false);
     public final Bool widgetAlignRight = new Bool(this, "widgetAlignRight", false);
+    /** 0 = floating overlay (current behaviour), 1 = full-width status bar at the top. */
+    public final Int widgetMode = new Int(this, "widgetMode", 0);
     public final Int iconDesign = new Int(this, "iconDesign", 0);
     public final Int iconStyle = new Int(this, "iconStyle", 0);
     // 0 = follow system, 1 = always light, 2 = always dark, 3 = inverse of system.
@@ -283,6 +291,14 @@ public class Preferences {
         if (t != null) return t.hideInPackages;
         IconBrickPrefs i = iconBrickPrefs(type);
         if (i != null) return i.hideInPackages;
+        throw new IllegalArgumentException("Unknown brick type: " + type);
+    }
+
+    public Int statusAlignmentFor(BrickType type) {
+        TextBrickPrefs t = textBrickPrefs(type);
+        if (t != null) return t.statusAlignment;
+        IconBrickPrefs i = iconBrickPrefs(type);
+        if (i != null) return i.statusAlignment;
         throw new IllegalArgumentException("Unknown brick type: " + type);
     }
 

@@ -149,6 +149,23 @@
                 android:valueFrom="0"
                 android:valueTo="300" />
 
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/brickStatusAlignmentLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMargin"
+                android:hint="@string/brick_status_alignment"
+                android:visibility="gone">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/brickStatusAlignmentDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <LinearLayout
                 android:id="@+id/brickAdjustYBlock"
                 android:layout_width="match_parent"

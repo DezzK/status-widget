@@ -24,6 +24,46 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal">
 
+    <!-- Status-bar mode containers + spacers. Hidden in floating mode; bricks live as direct
+         children of the root then. WidgetService rearranges things at runtime. -->
+    <LinearLayout
+        android:id="@+id/startGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone" />
+
+    <View
+        android:id="@+id/startCenterSpacer"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/centerGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone" />
+
+    <View
+        android:id="@+id/centerEndSpacer"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/endGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone" />
+
     <dezz.status.widget.OutlineTextView
         android:id="@+id/timeText"
         android:layout_width="wrap_content"
