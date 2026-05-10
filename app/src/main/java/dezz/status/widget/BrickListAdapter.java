@@ -547,7 +547,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             // Upper bound = 80% of the current screen width — gives a useful range on both phones
             // and car head units without locking it to the XML default.
             int screenW = activity.getResources().getDisplayMetrics().widthPixels;
-            int upper = Math.max(brickMediaMaxWidthSlider.getValueFrom() + 1, (int) (screenW * 0.8F));
+            float upper = Math.max(brickMediaMaxWidthSlider.getValueFrom() + 1F, screenW * 0.8F);
             brickMediaMaxWidthSlider.setValueTo(upper);
             bindIntSlider(brickMediaMaxWidthSlider, prefs.media.maxWidth, sizeFormatter());
             brickMediaPermissionButton.setOnClickListener(v -> {
