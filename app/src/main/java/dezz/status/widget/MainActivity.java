@@ -254,7 +254,9 @@ public class MainActivity extends AppCompatActivity {
         binder.bindOffsetSlider(binding.sectionSizes.adjustDateYSlider, prefs.adjustDateY);
 
         binder.bindColorComponentSlider(binding.sectionAppearance.textOutlineAlphaSlider, prefs.textOutlineAlpha);
+        binder.bindSizeSlider(binding.sectionAppearance.textOutlineWidthSlider, prefs.textOutlineWidth);
         binder.bindColorComponentSlider(binding.sectionAppearance.iconOutlineAlphaSlider, prefs.iconOutlineAlpha);
+        binder.bindSizeSlider(binding.sectionAppearance.iconOutlineWidthSlider, prefs.iconOutlineWidth);
         binder.bindColorComponentSlider(binding.sectionAppearance.backgroundAlphaSlider, prefs.backgroundAlpha);
         binder.bindPercentSlider(binding.sectionAppearance.backgroundCornerRadiusSlider, prefs.backgroundCornerRadius);
 

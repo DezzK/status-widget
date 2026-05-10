@@ -59,7 +59,9 @@
     <string name="show_gnss_satellite_badge_hint">Requires GNSS Share to be running</string>
     <string name="spacing_between_text_and_icons_size">Spacing between texts and icons</string>
     <string name="text_outline_transparency">Text outline transparency</string>
+    <string name="text_outline_width">Text outline thickness</string>
     <string name="icon_outline_transparency">Icon outline transparency</string>
+    <string name="icon_outline_width">Icon outline thickness</string>
     <string name="background_transparency">Background transparency</string>
     <string name="background_corner_radius">Background corner radius</string>
     <string name="adjust_time_y">Adjust time by Y coordinate</string>

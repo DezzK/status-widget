@@ -426,14 +426,13 @@ public class WidgetService extends Service {
         iconParams.height = iconSize;
         binding.gnssStatusIcon.setLayoutParams(iconParams);
 
-        float timeOutlineWidth = Math.max(2F, prefs.timeFontSize.get() / 32F);
-        float dateOutlineWidth = Math.max(2F, prefs.dateFontSize.get() / 32F);
+        float textOutlineWidthPx = prefs.textOutlineWidth.get();
         int outlineRgb = ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF;
         int textOutlineColor = outlineRgb | (prefs.textOutlineAlpha.get() << 24);
         binding.timeText.setOutlineColor(textOutlineColor);
-        binding.timeText.setOutlineWidth(timeOutlineWidth);
+        binding.timeText.setOutlineWidth(textOutlineWidthPx);
         binding.dateText.setOutlineColor(textOutlineColor);
-        binding.dateText.setOutlineWidth(dateOutlineWidth);
+        binding.dateText.setOutlineWidth(textOutlineWidthPx);
 
         // Icon styling (color, outline) is applied per-icon inside updateIconStatus().
 
@@ -770,13 +769,12 @@ public class WidgetService extends Service {
                 : ContextCompat.getColor(this, R.color.text_primary);
         ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
 
-        int iconSize = prefs.iconSize.get();
         int outlineAlpha = prefs.iconOutlineAlpha.get();
         if (outlineAlpha > 0) {
             int haloColor = (ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF)
                     | (outlineAlpha << 24);
             icon.setOutlineColor(haloColor);
-            icon.setOutlineWidth(Math.max(2, iconSize / 32));
+            icon.setOutlineWidth(prefs.iconOutlineWidth.get());
         } else {
             icon.setOutlineWidth(0);
         }
