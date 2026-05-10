@@ -181,6 +181,9 @@ public class WidgetService extends Service {
     private String lastForegroundPackage;
     private boolean overlayHiddenByApp = false;
 
+    private Context themedContext;
+    private int appliedThemePref = -1;
+
     private MediaSessionManager mediaSessionManager;
     private final List<MediaController> activeMediaControllers = new ArrayList<>();
     private final MediaController.Callback mediaControllerCallback = new MediaController.Callback() {
@@ -438,6 +441,11 @@ public class WidgetService extends Service {
         // Re-create date/time formatters so a locale change is reflected.
         timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         currentDateFormatPattern = null;
+        // If the user is in "follow system" mode, the system uiMode flip means the cached
+        // themedContext now points at the wrong configuration — invalidate so the next
+        // applyPreferences() rebuilds it.
+        themedContext = null;
+        appliedThemePref = -1;
 
         if (binding != null) {
             windowManager.removeView(binding.getRoot());
@@ -449,6 +457,7 @@ public class WidgetService extends Service {
     public void applyPreferences() {
         hiddenInPackages = prefs.hideInPackages.get();
         updateForegroundAppTracking();
+        updateThemedContext();
 
         updateBackground();
         updateDateTime();
@@ -629,10 +638,13 @@ public class WidgetService extends Service {
 
     private void applyMediaBrickSettings() {
         int outlineColor = textOutlineColor(prefs.media.outlineAlpha.get());
+        int textColor = ContextCompat.getColor(themedContext, R.color.text_primary);
         binding.mediaAppText.setOutlineColor(outlineColor);
         binding.mediaAppText.setOutlineWidth(prefs.media.outlineWidth.get());
+        binding.mediaAppText.setTextColor(textColor);
         binding.mediaTitleText.setOutlineColor(outlineColor);
         binding.mediaTitleText.setOutlineWidth(prefs.media.outlineWidth.get());
+        binding.mediaTitleText.setTextColor(textColor);
         binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
@@ -655,6 +667,7 @@ public class WidgetService extends Service {
     }
 
     private void applySingleLineTextBrick(OutlineTextView view, Preferences.SingleLineTextBrickPrefs p) {
+        view.setTextColor(ContextCompat.getColor(themedContext, R.color.text_primary));
         view.setOutlineColor(textOutlineColor(p.outlineAlpha.get()));
         view.setOutlineWidth(p.outlineWidth.get());
         view.setTextSize(TypedValue.COMPLEX_UNIT_PX, p.fontSize.get());
@@ -663,7 +676,28 @@ public class WidgetService extends Service {
     }
 
     private int textOutlineColor(int alpha) {
-        return (ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF) | (alpha << 24);
+        return (ContextCompat.getColor(themedContext, R.color.text_outline) & 0x00FFFFFF) | (alpha << 24);
+    }
+
+    /**
+     * Rebuilds {@link #themedContext} so theme-dependent colour lookups respect the user's
+     * "Widget theme" preference. Pref values: 0 = follow system, 1 = always light, 2 = always
+     * dark. Cached so we don't allocate a new Context on every {@code applyPreferences()}.
+     */
+    private void updateThemedContext() {
+        int pref = prefs.widgetTheme.get();
+        if (themedContext != null && pref == appliedThemePref) return;
+        if (pref == 0) {
+            themedContext = this;
+        } else {
+            Configuration cfg = new Configuration(getResources().getConfiguration());
+            int uiMode = (pref == 1)
+                    ? Configuration.UI_MODE_NIGHT_NO
+                    : Configuration.UI_MODE_NIGHT_YES;
+            cfg.uiMode = (cfg.uiMode & ~Configuration.UI_MODE_NIGHT_MASK) | uiMode;
+            themedContext = createConfigurationContext(cfg);
+        }
+        appliedThemePref = pref;
     }
 
     private static void applyHorizontalMargins(View view, int start, int end) {
@@ -851,6 +885,9 @@ public class WidgetService extends Service {
         if (binding == null) {
             return;
         }
+        if (themedContext == null) {
+            updateThemedContext();
+        }
         int width = binding.getRoot().getWidth();
         int height = binding.getRoot().getHeight();
         if (width == 0 || height == 0) {
@@ -858,7 +895,7 @@ public class WidgetService extends Service {
         }
         int maxRadius = Math.min(width, height) / 2;
         int backgroundCornerRadius = maxRadius * prefs.backgroundCornerRadius.get() / 100;
-        int backgroundColor = ContextCompat.getColor(this, R.color.widget_background) & 0x00FFFFFF | (prefs.backgroundAlpha.get() << 24);
+        int backgroundColor = ContextCompat.getColor(themedContext, R.color.widget_background) & 0x00FFFFFF | (prefs.backgroundAlpha.get() << 24);
         binding.overlayContainer.setBackground(getBackground(backgroundColor, backgroundCornerRadius));
     }
 
@@ -1011,14 +1048,14 @@ public class WidgetService extends Service {
         int iconStyle = Math.min(Math.max(0, prefs.iconStyle.get()), 1);
         int[] colorRes = (iconType == ICON_TYPE_WIFI) ? WIFI_STATE_COLOR_RES : GNSS_STATE_COLOR_RES;
         int tint = (iconStyle == STYLE_COLOR)
-                ? ContextCompat.getColor(this, colorRes[stateIdx])
-                : ContextCompat.getColor(this, R.color.text_primary);
+                ? ContextCompat.getColor(themedContext, colorRes[stateIdx])
+                : ContextCompat.getColor(themedContext, R.color.text_primary);
         ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
 
         Preferences.IconBrickPrefs iconPrefs = (iconType == ICON_TYPE_WIFI) ? prefs.wifi : prefs.gps;
         int outlineAlpha = iconPrefs.outlineAlpha.get();
         if (outlineAlpha > 0) {
-            int haloColor = (ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF)
+            int haloColor = (ContextCompat.getColor(themedContext, R.color.text_outline) & 0x00FFFFFF)
                     | (outlineAlpha << 24);
             icon.setOutlineColor(haloColor);
             icon.setOutlineWidth(iconPrefs.outlineWidth.get());
@@ -1039,9 +1076,9 @@ public class WidgetService extends Service {
         if (iconType == ICON_TYPE_GNSS && prefs.gps.showSatelliteBadge.get() && satellitesCount > 0
                 && System.currentTimeMillis() - satellitesCountTimestamp < GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS) {
             int bgColor = (iconStyle == STYLE_COLOR)
-                    ? ContextCompat.getColor(this, colorRes[stateIdx])
-                    : ContextCompat.getColor(this, R.color.text_primary);
-            int fgColor = ContextCompat.getColor(this, R.color.text_outline) | 0xFF000000;
+                    ? ContextCompat.getColor(themedContext, colorRes[stateIdx])
+                    : ContextCompat.getColor(themedContext, R.color.text_primary);
+            int fgColor = ContextCompat.getColor(themedContext, R.color.text_outline) | 0xFF000000;
             icon.setBadgeText(String.valueOf(satellitesCount), bgColor, fgColor);
         } else {
             icon.setBadgeText(null, 0, 0);

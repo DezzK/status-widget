@@ -17,6 +17,6 @@
 
 <resources>
     <color name="widget_background">#000000</color>
-    <color name="text_primary">@android:color/primary_text_dark</color>
+    <color name="text_primary">#FFFFFFFF</color>
     <color name="text_outline">#AA000000</color>
 </resources>

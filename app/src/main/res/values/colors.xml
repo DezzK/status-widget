@@ -21,7 +21,7 @@
 
     <!-- Overlay widget colors (used by the floating widget itself, not by the settings UI). -->
     <color name="widget_background">#FFFFFF</color>
-    <color name="text_primary">@android:color/primary_text_light</color>
+    <color name="text_primary">#FF000000</color>
     <color name="text_outline">#AAFFFFFF</color>
 
     <!-- Semantic state colors for status icons (Color and Monocolor styles). -->

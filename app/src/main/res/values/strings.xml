@@ -39,6 +39,13 @@
         <item>Colorful</item>
     </string-array>
 
+    <string name="widget_theme">Widget theme</string>
+    <string-array name="widget_themes">
+        <item>Follow system</item>
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+
     <string name="show_date">Show date</string>
     <string name="show_day_of_the_week">Show day of the week</string>
     <string name="one_line_layout">One line layout</string>

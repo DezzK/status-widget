@@ -39,6 +39,13 @@
         <item>Цветные</item>
     </string-array>
 
+    <string name="widget_theme">Тема виджета</string>
+    <string-array name="widget_themes">
+        <item>Системная</item>
+        <item>Светлая</item>
+        <item>Тёмная</item>
+    </string-array>
+
     <string name="show_date">Показывать дату</string>
     <string name="show_day_of_the_week">Показывать день недели</string>
     <string name="one_line_layout">Однострочное расположение</string>

@@ -193,6 +193,8 @@ public class Preferences {
     public final Bool widgetAlignRight = new Bool(this, "widgetAlignRight", false);
     public final Int iconDesign = new Int(this, "iconDesign", 0);
     public final Int iconStyle = new Int(this, "iconStyle", 0);
+    // 0 = follow system, 1 = always light, 2 = always dark.
+    public final Int widgetTheme = new Int(this, "widgetTheme", 0);
     public final Int backgroundAlpha = new Int(this, "backgroundAlpha", 0xAA);
     public final Int backgroundCornerRadius = new Int(this, "backgroundCornerRadius", 100);
     public final Int overlayX = new Int(this, "overlayX", 200);

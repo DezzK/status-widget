@@ -238,6 +238,11 @@ public class MainActivity extends AppCompatActivity {
                 R.array.icon_styles,
                 prefs.iconStyle);
 
+        bindDropdown(
+                binding.sectionAppearance.widgetThemeDropdown,
+                R.array.widget_themes,
+                prefs.widgetTheme);
+
         ViewBinder binder = new ViewBinder(this);
 
         binder.bindCheckbox(binding.sectionGeneral.widgetAlignRightSwitch, prefs.widgetAlignRight);
