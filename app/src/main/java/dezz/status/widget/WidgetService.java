@@ -78,6 +78,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -452,96 +453,53 @@ public class WidgetService extends Service {
         updateBackground();
         updateDateTime();
 
-        int iconSize = prefs.iconSize.get();
-        int timeFontSize = prefs.timeFontSize.get();
-        int dateFontSize = prefs.dateFontSize.get();
-        int mediaFontSize = prefs.mediaFontSize.get();
-        int padding = Math.max(Math.max(iconSize, timeFontSize), Math.max(dateFontSize, mediaFontSize)) / 2;
+        List<BrickType> bricks = BrickType.parseOrder(prefs.brickOrder.get());
+        Set<BrickType> bricksSet = EnumSet.noneOf(BrickType.class);
+        bricksSet.addAll(bricks);
 
-        binding.getRoot().setPadding(padding, 0, padding, 0);
+        // Reorder children of the root LinearLayout to match brickOrder. Hidden bricks are
+        // appended at the end with View.GONE — kept attached so we don't need to re-bind state.
+        reorderBricks(bricks);
 
-        ViewGroup.LayoutParams iconParams = binding.wifiStatusIcon.getLayoutParams();
-        iconParams.width = iconSize;
-        iconParams.height = iconSize;
-        binding.wifiStatusIcon.setLayoutParams(iconParams);
+        // Apply each brick's settings (size/font, outline, margins) — independent of visibility.
+        applyTimeBrickSettings();
+        applyDateBrickSettings();
+        applyMediaBrickSettings();
+        applyWifiBrickSettings();
+        applyGpsBrickSettings();
 
-        iconParams = binding.gnssStatusIcon.getLayoutParams();
-        iconParams.width = iconSize;
-        iconParams.height = iconSize;
-        binding.gnssStatusIcon.setLayoutParams(iconParams);
+        // Visibility from brickOrder. The brick's view stays in the tree even when hidden.
+        binding.timeText.setVisibility(bricksSet.contains(BrickType.TIME) ? View.VISIBLE : View.GONE);
+        boolean dateActive = bricksSet.contains(BrickType.DATE)
+                && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get());
+        binding.dateText.setVisibility(dateActive ? View.VISIBLE : View.GONE);
+        // mediaContainer visibility is set by updateMediaInfo()/disableMediaTracking() below.
+        binding.wifiStatusIcon.setVisibility(bricksSet.contains(BrickType.WIFI) ? View.VISIBLE : View.GONE);
+        binding.gnssStatusIcon.setVisibility(bricksSet.contains(BrickType.GPS) ? View.VISIBLE : View.GONE);
 
-        float textOutlineWidthPx = prefs.textOutlineWidth.get();
-        int outlineRgb = ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF;
-        int textOutlineColor = outlineRgb | (prefs.textOutlineAlpha.get() << 24);
-        binding.timeText.setOutlineColor(textOutlineColor);
-        binding.timeText.setOutlineWidth(textOutlineWidthPx);
-        binding.dateText.setOutlineColor(textOutlineColor);
-        binding.dateText.setOutlineWidth(textOutlineWidthPx);
-        binding.mediaAppText.setOutlineColor(textOutlineColor);
-        binding.mediaAppText.setOutlineWidth(textOutlineWidthPx);
-        binding.mediaTitleText.setOutlineColor(textOutlineColor);
-        binding.mediaTitleText.setOutlineWidth(textOutlineWidthPx);
-
-        // Icon styling (color, outline) is applied per-icon inside updateIconStatus().
-
-        binding.timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize.get());
-        binding.dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
-        binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.mediaFontSize.get());
-        binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.mediaFontSize.get());
-        binding.timeText.setVisibility(prefs.showTime.get() ? View.VISIBLE : View.GONE);
-        binding.dateText.setVisibility(prefs.showDate.get() || prefs.showDayOfTheWeek.get() ? View.VISIBLE : View.GONE);
-
-        // Calendar alignment
-        switch (prefs.calendarAlignment.get()) {
-            case 1 -> binding.dateText.setGravity(Gravity.CENTER_HORIZONTAL);
-            case 2 -> binding.dateText.setGravity(Gravity.END);
-            default -> binding.dateText.setGravity(Gravity.START);
-        }
-
-        // Icons (GPS and WiFi)
-        binding.wifiStatusIcon.setVisibility(prefs.showWifiIcon.get() ? View.VISIBLE : View.GONE);
-        binding.gnssStatusIcon.setVisibility(prefs.showGnssIcon.get() ? View.VISIBLE : View.GONE);
-        // Re-apply icon style for the current state (icon style may have changed in preferences).
+        // Re-apply icon style for the current state — icon style and outline may have changed.
         updateWifiStatus();
         updateGnssStatus();
 
-        boolean hasDateOrTime = prefs.showTime.get() || prefs.showDate.get() || prefs.showDayOfTheWeek.get();
-        binding.dateTimeContainer.setVisibility(hasDateOrTime ? View.VISIBLE : View.GONE);
-
-        // Spacing model: marginStart on the target block. "left of media" applies only when media
-        // is shown; "left of icons" applies on the leftmost visible icon (so when media is hidden,
-        // it acts as the spacing between date and icons).
-        int leftOfMedia = prefs.spacingLeftOfMedia.get();
-        int leftOfIcons = prefs.spacingLeftOfIcons.get();
-
-        LinearLayout.LayoutParams mediaLayoutParams = (LinearLayout.LayoutParams) binding.mediaContainer.getLayoutParams();
-        mediaLayoutParams.setMarginStart(leftOfMedia);
-        mediaLayoutParams.setMarginEnd(0);
-        binding.mediaContainer.setLayoutParams(mediaLayoutParams);
-
-        LinearLayout.LayoutParams wifiLayoutParams = (LinearLayout.LayoutParams) binding.wifiStatusIcon.getLayoutParams();
-        LinearLayout.LayoutParams gnssLayoutParams = (LinearLayout.LayoutParams) binding.gnssStatusIcon.getLayoutParams();
-        if (prefs.showWifiIcon.get()) {
-            wifiLayoutParams.setMarginStart(leftOfIcons);
-            gnssLayoutParams.setMarginStart(0);
-        } else {
-            wifiLayoutParams.setMarginStart(0);
-            gnssLayoutParams.setMarginStart(prefs.showGnssIcon.get() ? leftOfIcons : 0);
-        }
-        binding.wifiStatusIcon.setLayoutParams(wifiLayoutParams);
-        binding.gnssStatusIcon.setLayoutParams(gnssLayoutParams);
-
-        binding.timeText.setTranslationY(prefs.adjustTimeY.get());
-        binding.dateText.setTranslationY(prefs.adjustDateY.get());
+        // Root horizontal padding is the largest brick dimension among the visible bricks. We
+        // need it because text outlines and icon outlines bleed past the view bounds and would
+        // otherwise be clipped by the window surface.
+        int padding = 0;
+        if (bricksSet.contains(BrickType.TIME)) padding = Math.max(padding, prefs.time.fontSize.get());
+        if (bricksSet.contains(BrickType.DATE)) padding = Math.max(padding, prefs.date.fontSize.get());
+        if (bricksSet.contains(BrickType.MEDIA)) padding = Math.max(padding, prefs.media.fontSize.get());
+        if (bricksSet.contains(BrickType.WIFI)) padding = Math.max(padding, prefs.wifi.size.get());
+        if (bricksSet.contains(BrickType.GPS)) padding = Math.max(padding, prefs.gps.size.get());
+        binding.getRoot().setPadding(padding / 2, 0, padding / 2, 0);
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
-        if (prefs.showDate.get() || prefs.showTime.get() || prefs.showDayOfTheWeek.get()) {
+        if (bricksSet.contains(BrickType.TIME) || bricksSet.contains(BrickType.DATE)) {
             long now = System.currentTimeMillis();
             long delay = DATETIME_UPDATE_INTERVAL_MS - (now % DATETIME_UPDATE_INTERVAL_MS);
             mainHandler.postDelayed(updateDateTimeRunnable, delay);
         }
 
-        if (prefs.showWifiIcon.get()) {
+        if (bricksSet.contains(BrickType.WIFI)) {
             if (connectivityManager == null) {
                 connectivityManager = getSystemService(ConnectivityManager.class);
 
@@ -572,7 +530,7 @@ public class WidgetService extends Service {
             connectivityManager = null;
         }
 
-        if (prefs.showGnssIcon.get()) {
+        if (bricksSet.contains(BrickType.GPS)) {
             if (locationManager == null) {
                 locationManager = getSystemService(LocationManager.class);
 
@@ -580,7 +538,7 @@ public class WidgetService extends Service {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener, Looper.getMainLooper());
                 mainHandler.postDelayed(updateGnssStatusRunnable, GNSS_STATUS_CHECK_INTERVAL);
             }
-            if (prefs.showGnssSatelliteBadge.get()) {
+            if (prefs.gps.showSatelliteBadge.get()) {
                 registerSatelliteStatusReceiver();
             } else {
                 unregisterSatelliteStatusReceiver();
@@ -594,12 +552,125 @@ public class WidgetService extends Service {
             locationManager = null;
         }
 
-        if (prefs.showMedia.get() && Permissions.isNotificationAccessGranted(this)) {
+        if (bricksSet.contains(BrickType.MEDIA) && Permissions.isNotificationAccessGranted(this)) {
             enableMediaTracking();
         } else {
             disableMediaTracking();
             binding.mediaContainer.setVisibility(View.GONE);
         }
+    }
+
+    private void reorderBricks(List<BrickType> bricks) {
+        LinearLayout root = (LinearLayout) binding.getRoot();
+        List<View> expected = new ArrayList<>();
+        for (BrickType type : bricks) {
+            View v = viewForBrick(type);
+            if (v != null) expected.add(v);
+        }
+        for (BrickType type : BrickType.values()) {
+            if (!bricks.contains(type)) {
+                View v = viewForBrick(type);
+                if (v != null) expected.add(v);
+            }
+        }
+        boolean inOrder = root.getChildCount() == expected.size();
+        if (inOrder) {
+            for (int i = 0; i < expected.size(); i++) {
+                if (root.getChildAt(i) != expected.get(i)) {
+                    inOrder = false;
+                    break;
+                }
+            }
+        }
+        if (!inOrder) {
+            root.removeAllViews();
+            for (View v : expected) {
+                root.addView(v);
+            }
+        }
+    }
+
+    @Nullable
+    private View viewForBrick(BrickType type) {
+        switch (type) {
+            case TIME:
+                return binding.timeText;
+            case DATE:
+                return binding.dateText;
+            case MEDIA:
+                return binding.mediaContainer;
+            case WIFI:
+                return binding.wifiStatusIcon;
+            case GPS:
+                return binding.gnssStatusIcon;
+            default:
+                return null;
+        }
+    }
+
+    private void applyTimeBrickSettings() {
+        applySingleLineTextBrick(binding.timeText, prefs.time);
+    }
+
+    private void applyDateBrickSettings() {
+        applySingleLineTextBrick(binding.dateText, prefs.date);
+        switch (prefs.date.alignment.get()) {
+            case 1:
+                binding.dateText.setGravity(Gravity.CENTER_HORIZONTAL);
+                break;
+            case 2:
+                binding.dateText.setGravity(Gravity.END);
+                break;
+            default:
+                binding.dateText.setGravity(Gravity.START);
+                break;
+        }
+    }
+
+    private void applyMediaBrickSettings() {
+        int outlineColor = textOutlineColor(prefs.media.outlineAlpha.get());
+        binding.mediaAppText.setOutlineColor(outlineColor);
+        binding.mediaAppText.setOutlineWidth(prefs.media.outlineWidth.get());
+        binding.mediaTitleText.setOutlineColor(outlineColor);
+        binding.mediaTitleText.setOutlineWidth(prefs.media.outlineWidth.get());
+        binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
+        binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
+        applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
+    }
+
+    private void applyWifiBrickSettings() {
+        ViewGroup.LayoutParams ip = binding.wifiStatusIcon.getLayoutParams();
+        ip.width = prefs.wifi.size.get();
+        ip.height = prefs.wifi.size.get();
+        binding.wifiStatusIcon.setLayoutParams(ip);
+        applyHorizontalMargins(binding.wifiStatusIcon, prefs.wifi.marginStart.get(), prefs.wifi.marginEnd.get());
+    }
+
+    private void applyGpsBrickSettings() {
+        ViewGroup.LayoutParams ip = binding.gnssStatusIcon.getLayoutParams();
+        ip.width = prefs.gps.size.get();
+        ip.height = prefs.gps.size.get();
+        binding.gnssStatusIcon.setLayoutParams(ip);
+        applyHorizontalMargins(binding.gnssStatusIcon, prefs.gps.marginStart.get(), prefs.gps.marginEnd.get());
+    }
+
+    private void applySingleLineTextBrick(OutlineTextView view, Preferences.SingleLineTextBrickPrefs p) {
+        view.setOutlineColor(textOutlineColor(p.outlineAlpha.get()));
+        view.setOutlineWidth(p.outlineWidth.get());
+        view.setTextSize(TypedValue.COMPLEX_UNIT_PX, p.fontSize.get());
+        view.setTranslationY(p.adjustY.get());
+        applyHorizontalMargins(view, p.marginStart.get(), p.marginEnd.get());
+    }
+
+    private int textOutlineColor(int alpha) {
+        return (ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF) | (alpha << 24);
+    }
+
+    private static void applyHorizontalMargins(View view, int start, int end) {
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
+        lp.setMarginStart(start);
+        lp.setMarginEnd(end);
+        view.setLayoutParams(lp);
     }
 
     private void enableMediaTracking() {
@@ -804,24 +875,27 @@ public class WidgetService extends Service {
     }
 
     private void updateDateTime() {
-        boolean showTime = prefs.showTime.get();
-        boolean showDate = prefs.showDate.get();
-        boolean showDayOfTheWeek = prefs.showDayOfTheWeek.get();
+        Set<BrickType> bricks = EnumSet.noneOf(BrickType.class);
+        bricks.addAll(BrickType.parseOrder(prefs.brickOrder.get()));
+        boolean showTime = bricks.contains(BrickType.TIME);
+        boolean dateBrickActive = bricks.contains(BrickType.DATE);
+        boolean showDate = dateBrickActive && prefs.date.showDate.get();
+        boolean showDayOfTheWeek = dateBrickActive && prefs.date.showDayOfWeek.get();
 
         if (!showTime && !showDate && !showDayOfTheWeek) {
             return;
         }
 
-        boolean showFullDayAndMonth = prefs.showFullDayAndMonth.get();
+        boolean showFullDayAndMonth = prefs.date.showFullName.get();
 
-        String divider = (showDate && showDayOfTheWeek) ? (prefs.oneLineLayout.get() ? "," : " \n") : "";
+        String divider = (showDate && showDayOfTheWeek) ? (prefs.date.oneLineLayout.get() ? "," : " \n") : "";
         String dayOfTheWeekFormatStr = showFullDayAndMonth ? "EEEE" : "EEE";
         String dateFormatStr = showFullDayAndMonth ? "d MMMM" : "d MMM";
 
         // We add spaces at the start/end to avoid outline cropping by canvas which is not ready for the outline
         String dayPart = showDayOfTheWeek ? " " + dayOfTheWeekFormatStr : "";
         String datePart = showDate ? " " + dateFormatStr : "";
-        String fullFormatStr = prefs.dateBeforeDayOfWeek.get()
+        String fullFormatStr = prefs.date.dateBeforeDayOfWeek.get()
                 ? datePart + (showDate && showDayOfTheWeek ? divider : "") + dayPart + " "
                 : dayPart + (showDate && showDayOfTheWeek ? divider : "") + datePart + " ";
 
@@ -941,12 +1015,13 @@ public class WidgetService extends Service {
                 : ContextCompat.getColor(this, R.color.text_primary);
         ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
 
-        int outlineAlpha = prefs.iconOutlineAlpha.get();
+        Preferences.IconBrickPrefs iconPrefs = (iconType == ICON_TYPE_WIFI) ? prefs.wifi : prefs.gps;
+        int outlineAlpha = iconPrefs.outlineAlpha.get();
         if (outlineAlpha > 0) {
             int haloColor = (ContextCompat.getColor(this, R.color.text_outline) & 0x00FFFFFF)
                     | (outlineAlpha << 24);
             icon.setOutlineColor(haloColor);
-            icon.setOutlineWidth(prefs.iconOutlineWidth.get());
+            icon.setOutlineWidth(iconPrefs.outlineWidth.get());
         } else {
             icon.setOutlineWidth(0);
         }
@@ -961,7 +1036,7 @@ public class WidgetService extends Service {
         }
 
         // GNSS Share satellite count — show as a text badge on the GPS icon.
-        if (iconType == ICON_TYPE_GNSS && prefs.showGnssSatelliteBadge.get() && satellitesCount > 0
+        if (iconType == ICON_TYPE_GNSS && prefs.gps.showSatelliteBadge.get() && satellitesCount > 0
                 && System.currentTimeMillis() - satellitesCountTimestamp < GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS) {
             int bgColor = (iconStyle == STYLE_COLOR)
                     ? ContextCompat.getColor(this, colorRes[stateIdx])

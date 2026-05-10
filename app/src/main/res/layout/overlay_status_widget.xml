@@ -24,38 +24,25 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal">
 
-    <LinearLayout
-        android:id="@+id/dateTimeContainer"
-        android:layout_width="0dp"
+    <dezz.status.widget.OutlineTextView
+        android:id="@+id/timeText"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:layout_gravity="center_vertical"
-        android:orientation="horizontal">
+        android:fontFamily="@font/roboto_condensed_medium"
+        android:textColor="@color/text_primary"
+        android:textSize="100sp"
+        tools:text="10:00" />
 
-        <!-- Time -->
-        <dezz.status.widget.OutlineTextView
-            android:id="@+id/timeText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_marginEnd="8sp"
-            android:fontFamily="@font/roboto_condensed_medium"
-            android:textColor="@color/text_primary"
-            android:textSize="100sp"
-            tools:text="10:00" />
-
-        <!-- Date -->
-        <dezz.status.widget.OutlineTextView
-            android:id="@+id/dateText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:fontFamily="@font/roboto_condensed_medium"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            tools:text=" Tue, 10 Nov " />
-
-    </LinearLayout>
+    <dezz.status.widget.OutlineTextView
+        android:id="@+id/dateText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:fontFamily="@font/roboto_condensed_medium"
+        android:textColor="@color/text_primary"
+        android:textSize="20sp"
+        tools:text=" Tue, 10 Nov " />
 
     <LinearLayout
         android:id="@+id/mediaContainer"
@@ -90,7 +77,6 @@
             tools:visibility="visible" />
     </LinearLayout>
 
-    <!-- Wi-Fi Status -->
     <dezz.status.widget.OutlineImageView
         android:id="@+id/wifiStatusIcon"
         android:layout_width="100sp"
@@ -100,7 +86,6 @@
         android:src="@drawable/ic_status_wifi_off"
         tools:ignore="ContentDescription" />
 
-    <!-- GNSS Status -->
     <dezz.status.widget.OutlineImageView
         android:id="@+id/gnssStatusIcon"
         android:layout_width="100sp"

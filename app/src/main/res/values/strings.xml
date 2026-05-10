@@ -20,8 +20,7 @@
 
     <string name="widget_title">Widget Configuration</string>
     <string name="section_general">Widget</string>
-    <string name="section_content">Content</string>
-    <string name="section_sizes">Sizes</string>
+    <string name="section_layout">Layout</string>
     <string name="section_appearance">Appearance</string>
     <string name="enable_widget">Enable widget (reset position)</string>
     <string name="widget_align_right">Anchor widget to right edge</string>
@@ -40,14 +39,9 @@
         <item>Colorful</item>
     </string-array>
 
-    <string name="icon_size">Icon sizes</string>
     <string name="show_date">Show date</string>
-    <string name="show_time">Show time</string>
     <string name="show_day_of_the_week">Show day of the week</string>
     <string name="one_line_layout">One line layout</string>
-    <string name="time_font_size">Time font size</string>
-    <string name="date_font_size">Date and day of the week font size</string>
-    <string name="media_font_size">Media font size</string>
     <string name="show_full_day_and_month">Show full day-of-the-week and month names</string>
     <string name="date_before_day_of_week">Date before day of the week</string>
     <string name="calendar_alignment">Calendar Alignment</string>
@@ -56,23 +50,31 @@
         <item>Center</item>
         <item>End</item>
     </string-array>
-    <string name="show_wifi">Show WiFi icon</string>
-    <string name="show_gnss">Show GNSS icon</string>
     <string name="show_gnss_satellite_badge">Show satellite count badge</string>
     <string name="show_gnss_satellite_badge_hint">Requires GNSS Share to be running</string>
-    <string name="show_media">Show currently playing media</string>
-    <string name="show_media_hint">Requires Notification access</string>
+    <string name="show_media_hint">Showing currently playing media requires Notification access.</string>
+    <string name="grant_notification_access">Grant Notification access</string>
     <string name="notification_access_required">Please grant Notification access so the widget can read the active media session</string>
-    <string name="spacing_left_of_media_size">Spacing to the left of media</string>
-    <string name="spacing_left_of_icons_size">Spacing to the left of icons</string>
-    <string name="text_outline_transparency">Text outline transparency</string>
-    <string name="text_outline_width">Text outline thickness</string>
-    <string name="icon_outline_transparency">Icon outline transparency</string>
-    <string name="icon_outline_width">Icon outline thickness</string>
+
+    <string name="add_element">Add element</string>
+    <string name="remove_element">Remove element</string>
+    <string name="brick_drag_handle">Drag to reorder</string>
+    <string name="brick_expand">Expand or collapse settings</string>
+    <string name="brick_title_time">Time</string>
+    <string name="brick_title_date">Date and day of week</string>
+    <string name="brick_title_media">Now playing</string>
+    <string name="brick_title_wifi">Wi-Fi</string>
+    <string name="brick_title_gps">GPS</string>
+    <string name="brick_font_size">Font size</string>
+    <string name="brick_size">Size</string>
+    <string name="brick_outline_alpha">Outline transparency</string>
+    <string name="brick_outline_width">Outline thickness</string>
+    <string name="brick_margin_start">Left spacing</string>
+    <string name="brick_margin_end">Right spacing</string>
+    <string name="brick_adjust_y">Vertical offset</string>
+
     <string name="background_transparency">Background transparency</string>
     <string name="background_corner_radius">Background corner radius</string>
-    <string name="adjust_time_y">Adjust time by Y coordinate</string>
-    <string name="adjust_date_y">Adjust date by Y coordinate</string>
     <string name="size_value_format">%d pixels</string>
     <string name="color_component_value_format" translatable="false">%d</string>
     <string name="percent_value_format" translatable="false">%d%%</string>

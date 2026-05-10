@@ -20,8 +20,7 @@
 
     <string name="widget_title">Настройки виджета</string>
     <string name="section_general">Виджет</string>
-    <string name="section_content">Содержимое</string>
-    <string name="section_sizes">Размеры</string>
+    <string name="section_layout">Расположение</string>
     <string name="section_appearance">Внешний вид</string>
     <string name="enable_widget">Включить виджет (сбросить позицию)</string>
     <string name="widget_align_right">Привязать виджет к правому краю</string>
@@ -40,14 +39,9 @@
         <item>Цветные</item>
     </string-array>
 
-    <string name="icon_size">Размер иконок</string>
     <string name="show_date">Показывать дату</string>
-    <string name="show_time">Показывать время</string>
     <string name="show_day_of_the_week">Показывать день недели</string>
     <string name="one_line_layout">Однострочное расположение</string>
-    <string name="time_font_size">Рамер шрифта для отображения времени</string>
-    <string name="date_font_size">Размер шрифта для отображения даты и дня недели</string>
-    <string name="media_font_size">Размер шрифта для отображения медиа</string>
     <string name="show_full_day_and_month">Не сокращать дни недели и месяцы</string>
     <string name="date_before_day_of_week">Число перед днём недели</string>
     <string name="calendar_alignment">Выравнивание календаря</string>
@@ -56,23 +50,31 @@
         <item>Центр</item>
         <item>Вправо</item>
     </string-array>
-    <string name="show_wifi">Показывать иконку Wi-Fi</string>
-    <string name="show_gnss">Показывать иконку GPS</string>
     <string name="show_gnss_satellite_badge">Показывать число спутников</string>
     <string name="show_gnss_satellite_badge_hint">Работает только с приложением GNSS Share</string>
-    <string name="show_media">Показывать воспроизводимое медиа</string>
-    <string name="show_media_hint">Требуется доступ к уведомлениям</string>
+    <string name="show_media_hint">Для отображения воспроизводимого медиа требуется доступ к уведомлениям.</string>
+    <string name="grant_notification_access">Открыть настройки доступа к уведомлениям</string>
     <string name="notification_access_required">Предоставьте доступ к уведомлениям, чтобы виджет мог читать активную медиа-сессию</string>
-    <string name="spacing_left_of_media_size">Промежуток слева от медиа</string>
-    <string name="spacing_left_of_icons_size">Промежуток слева от иконок</string>
-    <string name="text_outline_transparency">Интенсивность обводки текста</string>
-    <string name="text_outline_width">Толщина обводки текста</string>
-    <string name="icon_outline_transparency">Интенсивность обводки иконок</string>
-    <string name="icon_outline_width">Толщина обводки иконок</string>
+
+    <string name="add_element">Добавить элемент</string>
+    <string name="remove_element">Удалить элемент</string>
+    <string name="brick_drag_handle">Перетаскивание для изменения порядка</string>
+    <string name="brick_expand">Развернуть или свернуть настройки</string>
+    <string name="brick_title_time">Время</string>
+    <string name="brick_title_date">Дата и день недели</string>
+    <string name="brick_title_media">Воспроизведение</string>
+    <string name="brick_title_wifi">Wi-Fi</string>
+    <string name="brick_title_gps">GPS</string>
+    <string name="brick_font_size">Размер шрифта</string>
+    <string name="brick_size">Размер</string>
+    <string name="brick_outline_alpha">Интенсивность обводки</string>
+    <string name="brick_outline_width">Толщина обводки</string>
+    <string name="brick_margin_start">Отступ слева</string>
+    <string name="brick_margin_end">Отступ справа</string>
+    <string name="brick_adjust_y">Сдвиг по вертикали</string>
+
     <string name="background_transparency">Интенсивность фона</string>
     <string name="background_corner_radius">Скругление углов фона</string>
-    <string name="adjust_time_y">Сдвиг времени по высоте</string>
-    <string name="adjust_date_y">Сдвиг даты по высоте</string>
     <string name="size_value_format">%d пикс.</string>
 
     <string name="permissions_required">Требуется предоставить разрешения</string>

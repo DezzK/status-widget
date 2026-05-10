@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Toast;
@@ -35,11 +36,17 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 
 import java.io.BufferedReader;
@@ -215,6 +222,8 @@ public class MainActivity extends AppCompatActivity {
         recreate();
     }
 
+    private BrickListAdapter brickAdapter;
+
     private void initializeViews() {
         binding.sectionGeneral.enableWidgetSwitch.setChecked(prefs.widgetEnabled.get());
         binding.sectionGeneral.enableWidgetSwitch.setOnCheckedChangeListener(enableWidgetSwitchListener);
@@ -229,42 +238,84 @@ public class MainActivity extends AppCompatActivity {
                 R.array.icon_styles,
                 prefs.iconStyle);
 
-        bindDropdown(
-                binding.sectionContent.calendarAlignmentDropdown,
-                R.array.calendar_alignment_types,
-                prefs.calendarAlignment);
-
         ViewBinder binder = new ViewBinder(this);
 
         binder.bindCheckbox(binding.sectionGeneral.widgetAlignRightSwitch, prefs.widgetAlignRight);
-        binder.bindCheckbox(binding.sectionContent.showDateSwitch, prefs.showDate);
-        binder.bindCheckbox(binding.sectionContent.showTimeSwitch, prefs.showTime);
-        binder.bindCheckbox(binding.sectionContent.showDaySwitch, prefs.showDayOfTheWeek);
-        binder.bindCheckbox(binding.sectionContent.showWiFiSwitch, prefs.showWifiIcon);
-        binder.bindCheckbox(binding.sectionContent.showGnssSwitch, prefs.showGnssIcon);
-        binder.bindCheckbox(binding.sectionContent.showGnssSatelliteBadgeSwitch, prefs.showGnssSatelliteBadge);
-        binder.bindCheckbox(binding.sectionContent.showFullDayAndMonthSwitch, prefs.showFullDayAndMonth);
-        binder.bindCheckbox(binding.sectionContent.dateBeforeDayOfWeekSwitch, prefs.dateBeforeDayOfWeek);
-        binder.bindCheckbox(binding.sectionContent.oneLineLayoutSwitch, prefs.oneLineLayout);
-        bindShowMediaSwitch();
 
-        binder.bindSizeSlider(binding.sectionSizes.iconSizeSlider, prefs.iconSize);
-        binder.bindSizeSlider(binding.sectionSizes.timeFontSizeSlider, prefs.timeFontSize);
-        binder.bindSizeSlider(binding.sectionSizes.dateFontSizeSlider, prefs.dateFontSize);
-        binder.bindSizeSlider(binding.sectionSizes.mediaFontSizeSlider, prefs.mediaFontSize);
-        binder.bindSizeSlider(binding.sectionSizes.spacingLeftOfMediaSlider, prefs.spacingLeftOfMedia);
-        binder.bindSizeSlider(binding.sectionSizes.spacingLeftOfIconsSlider, prefs.spacingLeftOfIcons);
-        binder.bindOffsetSlider(binding.sectionSizes.adjustTimeYSlider, prefs.adjustTimeY);
-        binder.bindOffsetSlider(binding.sectionSizes.adjustDateYSlider, prefs.adjustDateY);
-
-        binder.bindColorComponentSlider(binding.sectionAppearance.textOutlineAlphaSlider, prefs.textOutlineAlpha);
-        binder.bindSizeSlider(binding.sectionAppearance.textOutlineWidthSlider, prefs.textOutlineWidth);
-        binder.bindColorComponentSlider(binding.sectionAppearance.iconOutlineAlphaSlider, prefs.iconOutlineAlpha);
-        binder.bindSizeSlider(binding.sectionAppearance.iconOutlineWidthSlider, prefs.iconOutlineWidth);
         binder.bindColorComponentSlider(binding.sectionAppearance.backgroundAlphaSlider, prefs.backgroundAlpha);
         binder.bindPercentSlider(binding.sectionAppearance.backgroundCornerRadiusSlider, prefs.backgroundCornerRadius);
 
         binding.sectionGeneral.hideInAppsButton.setOnClickListener(v -> openAppSelection());
+
+        setupBrickList();
+    }
+
+    private void setupBrickList() {
+        brickAdapter = new BrickListAdapter(this, prefs, this::refreshAddBrickChips);
+        binding.sectionLayout.brickList.setLayoutManager(new LinearLayoutManager(this));
+        binding.sectionLayout.brickList.setAdapter(brickAdapter);
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
+                ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder source,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                brickAdapter.moveBrick(source.getBindingAdapterPosition(),
+                        target.getBindingAdapterPosition());
+                return true;
+            }
+
+            @Override
+            public boolean isLongPressDragEnabled() {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                // No swipe-to-dismiss; user removes via the in-card button.
+            }
+        });
+        itemTouchHelper.attachToRecyclerView(binding.sectionLayout.brickList);
+        brickAdapter.attachItemTouchHelper(itemTouchHelper);
+
+        refreshAddBrickChips();
+    }
+
+    private void refreshAddBrickChips() {
+        ChipGroup chipGroup = binding.sectionLayout.addBrickChips;
+        chipGroup.removeAllViews();
+        List<BrickType> current = brickAdapter.getBricks();
+        boolean anyMissing = false;
+        for (BrickType type : BrickType.values()) {
+            if (current.contains(type)) continue;
+            anyMissing = true;
+            Chip chip = new Chip(this);
+            chip.setText(brickTitle(type));
+            chip.setCheckable(false);
+            chip.setChipIcon(ContextCompat.getDrawable(this, android.R.drawable.ic_input_add));
+            chip.setOnClickListener(v -> brickAdapter.addBrick(type));
+            chipGroup.addView(chip);
+        }
+        binding.sectionLayout.addBrickLabel.setVisibility(anyMissing ? View.VISIBLE : View.GONE);
+        chipGroup.setVisibility(anyMissing ? View.VISIBLE : View.GONE);
+    }
+
+    private String brickTitle(BrickType type) {
+        switch (type) {
+            case TIME:
+                return getString(R.string.brick_title_time);
+            case DATE:
+                return getString(R.string.brick_title_date);
+            case MEDIA:
+                return getString(R.string.brick_title_media);
+            case WIFI:
+                return getString(R.string.brick_title_wifi);
+            case GPS:
+                return getString(R.string.brick_title_gps);
+            default:
+                return "";
+        }
     }
 
     private void bindDropdown(MaterialAutoCompleteTextView dropdown, int arrayRes, Preferences.Int preference) {
@@ -282,41 +333,13 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void bindShowMediaSwitch() {
-        boolean active = prefs.showMedia.get() && Permissions.isNotificationAccessGranted(this);
-        binding.sectionContent.showMediaSwitch.setOnCheckedChangeListener(null);
-        binding.sectionContent.showMediaSwitch.setChecked(active);
-        binding.sectionContent.showMediaSwitch.setOnCheckedChangeListener((view, isChecked) -> {
-            prefs.showMedia.set(isChecked);
-            if (isChecked && !Permissions.isNotificationAccessGranted(this)) {
-                Toast.makeText(this, R.string.notification_access_required, Toast.LENGTH_LONG).show();
-                openNotificationAccessSettings();
-            }
-            if (WidgetService.isRunning()) {
-                WidgetService.getInstance().applyPreferences();
-            }
-        });
-    }
-
-    private void openNotificationAccessSettings() {
-        try {
-            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
-            startActivity(intent);
-        } catch (Throwable t) {
-            Log.w(TAG, "Failed to open notification listener settings", t);
-        }
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
-        if (binding != null) {
-            // Re-evaluate the media switch state so it reflects reality after the user toggled
-            // Notification access in system settings.
-            bindShowMediaSwitch();
-            if (WidgetService.isRunning()) {
-                WidgetService.getInstance().applyPreferences();
-            }
+        if (binding != null && WidgetService.isRunning()) {
+            // Re-apply so the widget picks up state changes triggered outside the activity
+            // (e.g. Notification access toggled in system settings while the activity was paused).
+            WidgetService.getInstance().applyPreferences();
         }
     }
 

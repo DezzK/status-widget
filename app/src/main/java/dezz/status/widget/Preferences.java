@@ -95,44 +95,203 @@ public class Preferences {
         }
     }
 
+    public static final class Str extends Preference {
+        private final String defaultValue;
+
+        public Str(Preferences preferences, String key, String defaultValue) {
+            super(preferences, key);
+            this.defaultValue = defaultValue;
+        }
+
+        public String get() {
+            return preferences.prefs.getString(key, defaultValue);
+        }
+
+        public void set(String value) {
+            preferences.prefs.edit().putString(key, value).apply();
+        }
+    }
+
+    /** Common settings for any text-based brick. */
+    public static class TextBrickPrefs {
+        public final Int fontSize;
+        public final Int outlineAlpha;
+        public final Int outlineWidth;
+        public final Int marginStart;
+        public final Int marginEnd;
+
+        public TextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
+            fontSize = new Int(p, prefix + "FontSize", defaultFontSize);
+            outlineAlpha = new Int(p, prefix + "OutlineAlpha", 0xAA);
+            outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
+            marginStart = new Int(p, prefix + "MarginStart", 0);
+            marginEnd = new Int(p, prefix + "MarginEnd", 0);
+        }
+    }
+
+    /** Single-line text brick (Time, Date) — adds vertical adjust. */
+    public static class SingleLineTextBrickPrefs extends TextBrickPrefs {
+        public final Int adjustY;
+
+        public SingleLineTextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
+            super(p, prefix, defaultFontSize);
+            adjustY = new Int(p, prefix + "AdjustY", 0);
+        }
+    }
+
+    /** Date brick — date number, day of week, formatting and ordering options. */
+    public static final class DateBrickPrefs extends SingleLineTextBrickPrefs {
+        public final Bool showDate;
+        public final Bool showDayOfWeek;
+        public final Bool showFullName;
+        public final Bool dateBeforeDayOfWeek;
+        public final Bool oneLineLayout;
+        public final Int alignment;
+
+        public DateBrickPrefs(Preferences p) {
+            super(p, "date", 20);
+            showDate = new Bool(p, "dateShowDate", true);
+            showDayOfWeek = new Bool(p, "dateShowDayOfWeek", true);
+            showFullName = new Bool(p, "dateShowFullName", false);
+            dateBeforeDayOfWeek = new Bool(p, "dateBeforeDayOfWeek", false);
+            oneLineLayout = new Bool(p, "dateOneLineLayout", false);
+            alignment = new Int(p, "dateAlignment", 0);
+        }
+    }
+
+    /** Common settings for an icon brick. */
+    public static class IconBrickPrefs {
+        public final Int size;
+        public final Int outlineAlpha;
+        public final Int outlineWidth;
+        public final Int marginStart;
+        public final Int marginEnd;
+
+        public IconBrickPrefs(Preferences p, String prefix) {
+            size = new Int(p, prefix + "Size", 70);
+            outlineAlpha = new Int(p, prefix + "OutlineAlpha", 0xAA);
+            outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
+            marginStart = new Int(p, prefix + "MarginStart", 0);
+            marginEnd = new Int(p, prefix + "MarginEnd", 0);
+        }
+    }
+
+    /** GPS brick adds the satellite-count badge toggle. */
+    public static final class GpsBrickPrefs extends IconBrickPrefs {
+        public final Bool showSatelliteBadge;
+
+        public GpsBrickPrefs(Preferences p) {
+            super(p, "gps");
+            showSatelliteBadge = new Bool(p, "gpsShowSatelliteBadge", true);
+        }
+    }
+
     private final SharedPreferences prefs;
 
+    // Global widget settings.
     public final Bool widgetEnabled = new Bool(this, "enabled", false);
     public final Bool widgetAlignRight = new Bool(this, "widgetAlignRight", false);
     public final Int iconDesign = new Int(this, "iconDesign", 0);
     public final Int iconStyle = new Int(this, "iconStyle", 0);
-    public final Bool showDate = new Bool(this, "showDate", false);
-    public final Bool showTime = new Bool(this, "showTime", false);
-    public final Bool showDayOfTheWeek = new Bool(this, "showDayOfTheWeek", false);
-    public final Bool dateBeforeDayOfWeek = new Bool(this, "dateBeforeDayOfWeek", false);
-    public final Int calendarAlignment = new Int(this, "calendarAlignment", 0);
-    public final Bool showWifiIcon = new Bool(this, "showWifiIcon", true);
-    public final Bool showGnssIcon = new Bool(this, "showGnssIcon", true);
-    public final Bool showMedia = new Bool(this, "showMedia", false);
-    public final Bool showGnssSatelliteBadge = new Bool(this, "showGnssSatelliteBadge", true);
-    public final Bool showFullDayAndMonth = new Bool(this, "showFullDayAndMonth", false);
-    public final Bool oneLineLayout = new Bool(this, "oneLineLayout", false);
-    public final Int iconSize = new Int(this, "iconSize", 70);
-    public final Int timeFontSize = new Int(this, "timeFontSize", 60);
-    public final Int dateFontSize = new Int(this, "dateFontSize", 20);
-    public final Int mediaFontSize = new Int(this, "mediaFontSize", 20);
     public final Int backgroundAlpha = new Int(this, "backgroundAlpha", 0xAA);
     public final Int backgroundCornerRadius = new Int(this, "backgroundCornerRadius", 100);
-    public final Int textOutlineAlpha = new Int(this, "textOutlineAlpha", 0xAA);
-    public final Int iconOutlineAlpha = new Int(this, "iconOutlineAlpha", 0xAA);
-    public final Int textOutlineWidth = new Int(this, "textOutlineWidth", 2);
-    public final Int iconOutlineWidth = new Int(this, "iconOutlineWidth", 2);
-    public final Int spacingLeftOfMedia = new Int(this, "spacingBetweenTextsAndIcons", 0);
-    public final Int spacingLeftOfIcons = new Int(this, "spacingBetweenMediaAndIcons", 0);
-    public final Int adjustTimeY = new Int(this, "adjustTimeY", 0);
-    public final Int adjustDateY = new Int(this, "adjustDateY", 0);
     public final Int overlayX = new Int(this, "overlayX", 200);
     public final Int overlayY = new Int(this, "overlayY", 300);
     public final StringSet hideInPackages = new StringSet(this, "hideInPackages");
 
+    // Layout: the comma-separated list of brick types in display order. Missing types are hidden.
+    public final Str brickOrder = new Str(this, "brickOrder", "TIME,DATE,WIFI,GPS");
+
+    // Whether the user has been shown the notification access prompt at least once. Used to keep
+    // the media brick "active" only when the user has explicitly granted access.
+    public final Bool mediaEnabled = new Bool(this, "mediaEnabled", false);
+
+    // Per-brick settings.
+    public final SingleLineTextBrickPrefs time = new SingleLineTextBrickPrefs(this, "time", 60);
+    public final DateBrickPrefs date = new DateBrickPrefs(this);
+    public final TextBrickPrefs media = new TextBrickPrefs(this, "media", 20);
+    public final IconBrickPrefs wifi = new IconBrickPrefs(this, "wifi");
+    public final GpsBrickPrefs gps = new GpsBrickPrefs(this);
+
     public Preferences(Context context) {
         final Context deviceContext = context.getApplicationContext().createDeviceProtectedStorageContext();
         prefs = deviceContext.getSharedPreferences(context.getPackageName() + "_preferences", Context.MODE_PRIVATE);
+        migrateLegacyPrefsIfNeeded();
+    }
+
+    /**
+     * One-shot migration from the pre-brick layout. Idempotent: re-running after the migration is
+     * a no-op (detected by the presence of the {@code brickOrder} key). Also re-run after every
+     * settings import in case the imported file used the legacy schema.
+     */
+    private void migrateLegacyPrefsIfNeeded() {
+        if (prefs.contains("brickOrder")) return;
+        if (!prefs.contains("showWifiIcon") && !prefs.contains("showGnssIcon")
+                && !prefs.contains("showTime") && !prefs.contains("showDate")
+                && !prefs.contains("showMedia")) {
+            // Fresh install — keep the default brickOrder; nothing to migrate.
+            return;
+        }
+
+        SharedPreferences.Editor e = prefs.edit();
+
+        StringBuilder order = new StringBuilder();
+        if (prefs.getBoolean("showTime", false)) appendOrder(order, BrickType.TIME);
+        if (prefs.getBoolean("showDate", false) || prefs.getBoolean("showDayOfTheWeek", false)) {
+            appendOrder(order, BrickType.DATE);
+        }
+        if (prefs.getBoolean("showMedia", false)) appendOrder(order, BrickType.MEDIA);
+        if (prefs.getBoolean("showWifiIcon", true)) appendOrder(order, BrickType.WIFI);
+        if (prefs.getBoolean("showGnssIcon", true)) appendOrder(order, BrickType.GPS);
+        e.putString("brickOrder", order.toString());
+
+        e.putBoolean("mediaEnabled", prefs.getBoolean("showMedia", false));
+
+        // Carry over the date sub-toggles into the new namespace.
+        e.putBoolean("dateShowDate", prefs.getBoolean("showDate", true));
+        e.putBoolean("dateShowDayOfWeek", prefs.getBoolean("showDayOfTheWeek", true));
+        e.putBoolean("dateShowFullName", prefs.getBoolean("showFullDayAndMonth", false));
+        e.putBoolean("dateOneLineLayout", prefs.getBoolean("oneLineLayout", false));
+        // dateBeforeDayOfWeek and dateAlignment kept their original keys.
+
+        // Text outline → per-text-brick.
+        int textAlpha = prefs.getInt("textOutlineAlpha", 0xAA);
+        int textWidth = prefs.getInt("textOutlineWidth", 2);
+        e.putInt("timeOutlineAlpha", textAlpha);
+        e.putInt("timeOutlineWidth", textWidth);
+        e.putInt("dateOutlineAlpha", textAlpha);
+        e.putInt("dateOutlineWidth", textWidth);
+        e.putInt("mediaOutlineAlpha", textAlpha);
+        e.putInt("mediaOutlineWidth", textWidth);
+
+        // Icon outline + size → per-icon-brick.
+        int iconAlpha = prefs.getInt("iconOutlineAlpha", 0xAA);
+        int iconWidth = prefs.getInt("iconOutlineWidth", 2);
+        int iconSize = prefs.getInt("iconSize", 70);
+        e.putInt("wifiOutlineAlpha", iconAlpha);
+        e.putInt("wifiOutlineWidth", iconWidth);
+        e.putInt("wifiSize", iconSize);
+        e.putInt("gpsOutlineAlpha", iconAlpha);
+        e.putInt("gpsOutlineWidth", iconWidth);
+        e.putInt("gpsSize", iconSize);
+
+        // Per-text adjust Y kept original keys: timeAdjustY, dateAdjustY → migrate from legacy.
+        e.putInt("timeAdjustY", prefs.getInt("adjustTimeY", 0));
+        e.putInt("dateAdjustY", prefs.getInt("adjustDateY", 0));
+
+        // Legacy spacings: spacingLeftOfMedia → media.marginStart; spacingLeftOfIcons → wifi.marginStart.
+        e.putInt("mediaMarginStart", prefs.getInt("spacingBetweenTextsAndIcons", 0));
+        e.putInt("wifiMarginStart", prefs.getInt("spacingBetweenMediaAndIcons", 0));
+
+        // Carry the satellite badge toggle.
+        e.putBoolean("gpsShowSatelliteBadge", prefs.getBoolean("showGnssSatelliteBadge", true));
+
+        e.apply();
+    }
+
+    private static void appendOrder(StringBuilder sb, BrickType type) {
+        if (sb.length() > 0) sb.append(',');
+        sb.append(type.name());
     }
 
     private static final String EXPORT_FILE_TYPE = "dezz.status.widget.settings";
@@ -212,5 +371,7 @@ public class Preferences {
             }
         }
         editor.apply();
+        // The file may be from the legacy (pre-brick) schema — re-run migration so it adapts.
+        migrateLegacyPrefsIfNeeded();
     }
 }

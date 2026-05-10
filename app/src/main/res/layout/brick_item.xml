@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright © 2025-2026 Dezz (https://github.com/DezzK)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/brickCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="@dimen/optionsMarginSmall"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/optionsMarginSmall">
+
+        <LinearLayout
+            android:id="@+id/brickHeader"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/listPreferredItemHeightSmall"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/brickDragHandle"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="@string/brick_drag_handle"
+                android:src="@drawable/ic_drag_handle" />
+
+            <TextView
+                android:id="@+id/brickTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/optionsMarginSmall"
+                android:layout_weight="1"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
+                tools:text="Time" />
+
+            <ImageView
+                android:id="@+id/brickExpand"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="@string/brick_expand"
+                android:src="@drawable/ic_expand_more" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/brickPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="@dimen/optionsMarginSmall"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/brickSizeLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/brick_font_size"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/brickSizeSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:value="20"
+                android:valueFrom="10"
+                android:valueTo="500" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMarginSmall"
+                android:text="@string/brick_outline_alpha"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/brickOutlineAlphaSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:value="170"
+                android:valueFrom="0"
+                android:valueTo="255" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMarginSmall"
+                android:text="@string/brick_outline_width"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/brickOutlineWidthSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:value="2"
+                android:valueFrom="0"
+                android:valueTo="20" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMarginSmall"
+                android:text="@string/brick_margin_start"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/brickMarginStartSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:value="0"
+                android:valueFrom="0"
+                android:valueTo="300" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMarginSmall"
+                android:text="@string/brick_margin_end"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/brickMarginEndSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:value="0"
+                android:valueFrom="0"
+                android:valueTo="300" />
+
+            <LinearLayout
+                android:id="@+id/brickAdjustYBlock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:text="@string/brick_adjust_y"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/brickAdjustYSlider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:value="0"
+                    android:valueFrom="-100"
+                    android:valueTo="100" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/brickDateBlock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickDateShowDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/show_date"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickDateShowDayOfWeek"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/show_day_of_the_week"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickDateShowFullName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/show_full_day_and_month"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickDateBeforeDayOfWeek"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/date_before_day_of_week"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickDateOneLineLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/one_line_layout"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMargin"
+                    android:hint="@string/calendar_alignment">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/brickDateAlignmentDropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/brickGpsBlock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickGpsShowSatelliteBadge"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/show_gnss_satellite_badge"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/show_gnss_satellite_badge_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/brickMediaBlock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:text="@string/show_media_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/brickMediaPermissionButton"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:text="@string/grant_notification_access" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/brickRemoveButton"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMargin"
+                android:text="@string/remove_element" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

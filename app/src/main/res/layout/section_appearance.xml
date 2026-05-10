@@ -62,66 +62,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/optionsMargin"
-            android:text="@string/text_outline_transparency"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <com.google.android.material.slider.Slider
-            android:id="@+id/textOutlineAlphaSlider"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:value="170"
-            android:valueFrom="0"
-            android:valueTo="255" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/optionsMarginSmall"
-            android:text="@string/text_outline_width"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <com.google.android.material.slider.Slider
-            android:id="@+id/textOutlineWidthSlider"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:value="2"
-            android:valueFrom="0"
-            android:valueTo="20" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/optionsMarginSmall"
-            android:text="@string/icon_outline_transparency"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <com.google.android.material.slider.Slider
-            android:id="@+id/iconOutlineAlphaSlider"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:value="170"
-            android:valueFrom="0"
-            android:valueTo="255" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/optionsMarginSmall"
-            android:text="@string/icon_outline_width"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <com.google.android.material.slider.Slider
-            android:id="@+id/iconOutlineWidthSlider"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:value="2"
-            android:valueFrom="0"
-            android:valueTo="20" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/optionsMarginSmall"
             android:text="@string/background_transparency"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 

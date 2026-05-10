@@ -62,8 +62,8 @@
                     android:layout_marginBottom="@dimen/sectionSpacing" />
 
                 <include
-                    android:id="@+id/sectionContent"
-                    layout="@layout/section_content"
+                    android:id="@+id/sectionAppearance"
+                    layout="@layout/section_appearance"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
             </LinearLayout>
@@ -75,15 +75,8 @@
                 android:orientation="vertical">
 
                 <include
-                    android:id="@+id/sectionSizes"
-                    layout="@layout/section_sizes"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/sectionSpacing" />
-
-                <include
-                    android:id="@+id/sectionAppearance"
-                    layout="@layout/section_appearance"
+                    android:id="@+id/sectionLayout"
+                    layout="@layout/section_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
             </LinearLayout>
