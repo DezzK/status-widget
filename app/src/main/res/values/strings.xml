@@ -61,6 +61,7 @@
     <string name="show_gnss_satellite_badge">Show satellite count badge</string>
     <string name="show_gnss_satellite_badge_hint">Requires GNSS Share to be running</string>
     <string name="show_media_hint">Showing currently playing media requires Notification access.</string>
+    <string name="media_unknown_track">Playing</string>
     <string name="grant_notification_access">Grant Notification access</string>
     <string name="notification_access_required">Please grant Notification access so the widget can read the active media session</string>
 

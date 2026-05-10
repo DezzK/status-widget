@@ -818,7 +818,7 @@ public class WidgetService extends Service {
             return;
         }
         MediaMetadata metadata = playing.getMetadata();
-        String title = metadata != null ? metadata.getString(MediaMetadata.METADATA_KEY_TITLE) : null;
+        String title = pickMediaTitle(metadata);
         String artist = metadata != null ? metadata.getString(MediaMetadata.METADATA_KEY_ARTIST) : null;
         String subtitle;
         if (!isEmpty(artist) && !isEmpty(title)) {
@@ -828,15 +828,57 @@ public class WidgetService extends Service {
         } else if (!isEmpty(artist)) {
             subtitle = artist;
         } else {
-            subtitle = "";
-        }
-        if (subtitle.isEmpty()) {
-            binding.mediaContainer.setVisibility(View.GONE);
-            return;
+            // Something is playing but the player exposes no metadata at all — at least show a
+            // placeholder so the user can see that media playback is active.
+            subtitle = getString(R.string.media_unknown_track);
         }
         binding.mediaAppText.setText(getAppLabel(playing.getPackageName()));
         binding.mediaTitleText.setText(subtitle);
         binding.mediaContainer.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Best-effort extraction of a track title from the media metadata. Falls back through several
+     * standard keys, then to the file name parsed out of the media URI, so we still show something
+     * useful for players that don't populate {@link MediaMetadata#METADATA_KEY_TITLE}.
+     */
+    @Nullable
+    private static String pickMediaTitle(@Nullable MediaMetadata metadata) {
+        if (metadata == null) return null;
+        String[] keys = {
+                MediaMetadata.METADATA_KEY_TITLE,
+                MediaMetadata.METADATA_KEY_DISPLAY_TITLE,
+                MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE,
+                MediaMetadata.METADATA_KEY_DISPLAY_DESCRIPTION,
+        };
+        for (String key : keys) {
+            String value = metadata.getString(key);
+            if (!isEmpty(value)) return value;
+        }
+        String uriFilename = filenameFromUri(metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_URI));
+        if (!isEmpty(uriFilename)) return uriFilename;
+        return filenameFromUri(metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID));
+    }
+
+    @Nullable
+    private static String filenameFromUri(@Nullable String raw) {
+        if (isEmpty(raw)) return null;
+        String last = null;
+        try {
+            android.net.Uri uri = android.net.Uri.parse(raw);
+            last = uri.getLastPathSegment();
+        } catch (Exception ignored) {
+        }
+        if (isEmpty(last)) {
+            int slash = Math.max(raw.lastIndexOf('/'), raw.lastIndexOf('\\'));
+            last = (slash >= 0 && slash < raw.length() - 1) ? raw.substring(slash + 1) : raw;
+        }
+        if (isEmpty(last)) return null;
+        int dot = last.lastIndexOf('.');
+        if (dot > 0) {
+            last = last.substring(0, dot);
+        }
+        return android.net.Uri.decode(last);
     }
 
     @Nullable

@@ -61,6 +61,7 @@
     <string name="show_gnss_satellite_badge">Показывать число спутников</string>
     <string name="show_gnss_satellite_badge_hint">Работает только с приложением GNSS Share</string>
     <string name="show_media_hint">Для отображения воспроизводимого медиа требуется доступ к уведомлениям.</string>
+    <string name="media_unknown_track">Идёт воспроизведение</string>
     <string name="grant_notification_access">Открыть настройки доступа к уведомлениям</string>
     <string name="notification_access_required">Предоставьте доступ к уведомлениям, чтобы виджет мог читать активную медиа-сессию</string>
 
