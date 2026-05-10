@@ -64,6 +64,9 @@ public final class ViewBinder {
         slider.setValue(current);
         slider.setLabelFormatter(formatter);
         slider.addOnChangeListener((s, value, fromUser) -> {
+            // Programmatic setValue (e.g. live-updating the position slider while the widget is
+            // being dragged) shouldn't write back to the pref or kick applyPreferences().
+            if (!fromUser) return;
             preference.set((int) value);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();

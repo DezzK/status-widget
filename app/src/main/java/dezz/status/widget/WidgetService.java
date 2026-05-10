@@ -185,6 +185,13 @@ public class WidgetService extends Service {
     private Context themedContext;
     private int appliedThemePref = -1;
 
+    /** Fires when the overlay's position or size changes so the settings UI can stay in sync. */
+    public interface OverlayStateListener {
+        void onOverlayStateChanged(int x, int y, int width, int height);
+    }
+
+    @Nullable private OverlayStateListener overlayStateListener;
+
     private MediaSessionManager mediaSessionManager;
     private final List<MediaController> activeMediaControllers = new ArrayList<>();
     private final MediaController.Callback mediaControllerCallback = new MediaController.Callback() {
@@ -402,6 +409,7 @@ public class WidgetService extends Service {
                 }
                 prefs.overlayX.set(params.x);
             }
+            notifyOverlayState();
         });
 
         applyPreferences();
@@ -480,6 +488,7 @@ public class WidgetService extends Service {
         applyGpsBrickSettings();
 
         applyBrickVisibility(bricksSet);
+        applyOverlayPosition();
 
         // Re-apply icon style for the current state — icon style and outline may have changed.
         updateWifiStatus();
@@ -763,6 +772,39 @@ public class WidgetService extends Service {
         Set<BrickType> set = EnumSet.noneOf(BrickType.class);
         set.addAll(BrickType.parseOrder(prefs.brickOrder.get()));
         return set;
+    }
+
+    public void setOverlayStateListener(@Nullable OverlayStateListener listener) {
+        this.overlayStateListener = listener;
+        if (listener != null) {
+            notifyOverlayState();
+        }
+    }
+
+    private void notifyOverlayState() {
+        if (overlayStateListener == null || params == null || binding == null) return;
+        overlayStateListener.onOverlayStateChanged(
+                params.x, params.y,
+                binding.getRoot().getWidth(),
+                binding.getRoot().getHeight());
+    }
+
+    /**
+     * Pushes the saved widget position into the WindowManager. Called from {@link
+     * #applyPreferences()} so the position sliders in settings move the widget live.
+     * Skipped when the widget isn't drawn yet ({@code params == null}).
+     */
+    private void applyOverlayPosition() {
+        if (params == null || binding == null || windowManager == null) return;
+        int newX = prefs.overlayX.get();
+        int newY = prefs.overlayY.get();
+        if (params.x == newX && params.y == newY) return;
+        params.x = newX;
+        params.y = newY;
+        try {
+            windowManager.updateViewLayout(binding.getRoot(), params);
+        } catch (Exception ignored) {
+        }
     }
 
     private void enableMediaTracking() {
@@ -1082,6 +1124,7 @@ public class WidgetService extends Service {
                     params.x = initialX + (int) (event.getRawX() - initialTouchX);
                     params.y = initialY + (int) (event.getRawY() - initialTouchY);
                     windowManager.updateViewLayout(binding.getRoot(), params);
+                    notifyOverlayState();
                     return true;
 
                 case MotionEvent.ACTION_UP:

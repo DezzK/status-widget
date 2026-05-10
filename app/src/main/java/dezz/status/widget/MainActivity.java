@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -47,6 +48,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.slider.Slider;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 
 import java.io.BufferedReader;
@@ -252,7 +254,18 @@ public class MainActivity extends AppCompatActivity {
 
         binding.sectionGeneral.hideInAppsButton.setOnClickListener(v -> openAppSelection());
 
+        setupPositionSliders(binder);
         setupBrickList();
+    }
+
+    private void setupPositionSliders(ViewBinder binder) {
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        binding.sectionGeneral.widgetPositionXSlider.setValueFrom(0F);
+        binding.sectionGeneral.widgetPositionXSlider.setValueTo(Math.max(1, dm.widthPixels));
+        binding.sectionGeneral.widgetPositionYSlider.setValueFrom(0F);
+        binding.sectionGeneral.widgetPositionYSlider.setValueTo(Math.max(1, dm.heightPixels));
+        binder.bindSizeSlider(binding.sectionGeneral.widgetPositionXSlider, prefs.overlayX);
+        binder.bindSizeSlider(binding.sectionGeneral.widgetPositionYSlider, prefs.overlayY);
     }
 
     private void setupBrickList() {
@@ -345,7 +358,41 @@ public class MainActivity extends AppCompatActivity {
             // Re-apply so the widget picks up state changes triggered outside the activity
             // (e.g. Notification access toggled in system settings while the activity was paused).
             WidgetService.getInstance().applyPreferences();
+            WidgetService.getInstance().setOverlayStateListener((x, y, w, h) ->
+                    runOnUiThread(() -> updatePositionSliders(x, y, w, h)));
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (WidgetService.isRunning()) {
+            WidgetService.getInstance().setOverlayStateListener(null);
+        }
+    }
+
+    private void updatePositionSliders(int x, int y, int w, int h) {
+        if (binding == null) return;
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        Slider sx = binding.sectionGeneral.widgetPositionXSlider;
+        Slider sy = binding.sectionGeneral.widgetPositionYSlider;
+        int xMin = -(w / 2);
+        int xMax = dm.widthPixels;
+        int yMin = -(h / 2);
+        int yMax = dm.heightPixels;
+        applySliderRange(sx, xMin, xMax, x);
+        applySliderRange(sy, yMin, yMax, y);
+    }
+
+    private static void applySliderRange(Slider slider, int min, int max, int value) {
+        int clamped = Math.max(min, Math.min(max, value));
+        // Material Slider validates the (from, to, value) triple on every setter, so widen the
+        // bounds first to ensure the current value stays inside the range during transitions.
+        slider.setValueFrom(Math.min(slider.getValueFrom(), Math.min(min, clamped)));
+        slider.setValueTo(Math.max(slider.getValueTo(), Math.max(max, clamped)));
+        slider.setValue(clamped);
+        slider.setValueFrom(min);
+        slider.setValueTo(max);
     }
 
     private void openAppSelection() {
