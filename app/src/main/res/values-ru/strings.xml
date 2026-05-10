@@ -24,6 +24,8 @@
     <string name="section_sizes">Размеры</string>
     <string name="section_appearance">Внешний вид</string>
     <string name="enable_widget">Включить виджет (сбросить позицию)</string>
+    <string name="widget_align_right">Привязать виджет к правому краю</string>
+    <string name="widget_align_right_hint">При изменении ширины содержимого правый край остаётся на месте, а левый сдвигается</string>
 
     <string name="icon_design">Дизайн иконок</string>
     <string-array name="icon_designs">

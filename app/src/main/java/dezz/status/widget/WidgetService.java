@@ -355,7 +355,24 @@ public class WidgetService extends Service {
         LayoutInflater layoutInflater = LayoutInflater.from(this);
         binding = OverlayStatusWidgetBinding.inflate(layoutInflater);
         binding.getRoot().setVisibility(View.VISIBLE);
-        binding.getRoot().addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> updateBackground());
+        binding.getRoot().addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            updateBackground();
+            // Right-edge anchoring: when the widget content changes its measured width, shift the
+            // window's left edge by the same amount so the right edge stays put. Done in a single
+            // updateViewLayout to avoid the "shrink then slide" two-phase animation that
+            // Gravity.RIGHT produces.
+            if (params == null) return;
+            int oldWidth = oldRight - oldLeft;
+            int newWidth = right - left;
+            if (prefs.widgetAlignRight.get() && oldWidth > 0 && newWidth > 0 && newWidth != oldWidth) {
+                params.x += oldWidth - newWidth;
+                try {
+                    windowManager.updateViewLayout(v, params);
+                } catch (Exception ignored) {
+                }
+                prefs.overlayX.set(params.x);
+            }
+        });
 
         applyPreferences();
 
@@ -376,9 +393,10 @@ public class WidgetService extends Service {
                 ,
                 PixelFormat.TRANSLUCENT
         );
-        params.gravity = Gravity.TOP | Gravity.START;
+        params.gravity = Gravity.TOP | Gravity.LEFT;
         params.x = prefs.overlayX.get();
         params.y = prefs.overlayY.get();
+        params.windowAnimations = 0;
 
         try {
             windowManager.addView(binding.getRoot(), params);
@@ -524,6 +542,7 @@ public class WidgetService extends Service {
             locationManager.unregisterGnssStatusCallback(gnssStatusCallback);
             locationManager = null;
         }
+
     }
 
     private void registerSatelliteStatusReceiver() {

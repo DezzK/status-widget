@@ -24,6 +24,8 @@
     <string name="section_sizes">Sizes</string>
     <string name="section_appearance">Appearance</string>
     <string name="enable_widget">Enable widget (reset position)</string>
+    <string name="widget_align_right">Anchor widget to right edge</string>
+    <string name="widget_align_right_hint">When the widget content changes width, the right edge stays fixed and the left edge moves</string>
 
     <string name="icon_design">Icon design</string>
     <string-array name="icon_designs">

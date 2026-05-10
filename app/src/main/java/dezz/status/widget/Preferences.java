@@ -98,6 +98,7 @@ public class Preferences {
     private final SharedPreferences prefs;
 
     public final Bool widgetEnabled = new Bool(this, "enabled", false);
+    public final Bool widgetAlignRight = new Bool(this, "widgetAlignRight", false);
     public final Int iconDesign = new Int(this, "iconDesign", 0);
     public final Int iconStyle = new Int(this, "iconStyle", 0);
     public final Bool showDate = new Bool(this, "showDate", false);

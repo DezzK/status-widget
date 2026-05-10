@@ -236,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
 
         ViewBinder binder = new ViewBinder(this);
 
+        binder.bindCheckbox(binding.sectionGeneral.widgetAlignRightSwitch, prefs.widgetAlignRight);
         binder.bindCheckbox(binding.sectionContent.showDateSwitch, prefs.showDate);
         binder.bindCheckbox(binding.sectionContent.showTimeSwitch, prefs.showTime);
         binder.bindCheckbox(binding.sectionContent.showDaySwitch, prefs.showDayOfTheWeek);

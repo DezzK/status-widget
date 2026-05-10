@@ -37,6 +37,22 @@
             android:text="@string/enable_widget"
             android:textAppearance="?attr/textAppearanceBodyLarge" />
 
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/widgetAlignRightSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/optionsLineHeight"
+            android:text="@string/widget_align_right"
+            android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/optionsMarginSmall"
+            android:text="@string/widget_align_right_hint"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/hideInAppsButton"
             style="?attr/materialButtonOutlinedStyle"
