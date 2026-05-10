@@ -677,7 +677,9 @@ public class WidgetService extends Service {
     /**
      * Rebuilds {@link #themedContext} so theme-dependent colour lookups respect the user's
      * "Widget theme" preference. Pref values: 0 = follow system, 1 = always light, 2 = always
-     * dark. Cached so we don't allocate a new Context on every {@code applyPreferences()}.
+     * dark, 3 = inverse of system. Cached so we don't allocate a new Context on every
+     * {@code applyPreferences()}; {@code onConfigurationChanged} invalidates the cache so the
+     * inverse mode picks up system theme changes too.
      */
     private void updateThemedContext() {
         int pref = prefs.widgetTheme.get();
@@ -685,10 +687,19 @@ public class WidgetService extends Service {
         if (pref == 0) {
             themedContext = this;
         } else {
+            int uiMode;
+            if (pref == 1) {
+                uiMode = Configuration.UI_MODE_NIGHT_NO;
+            } else if (pref == 2) {
+                uiMode = Configuration.UI_MODE_NIGHT_YES;
+            } else {
+                int systemNight = getResources().getConfiguration().uiMode
+                        & Configuration.UI_MODE_NIGHT_MASK;
+                uiMode = (systemNight == Configuration.UI_MODE_NIGHT_YES)
+                        ? Configuration.UI_MODE_NIGHT_NO
+                        : Configuration.UI_MODE_NIGHT_YES;
+            }
             Configuration cfg = new Configuration(getResources().getConfiguration());
-            int uiMode = (pref == 1)
-                    ? Configuration.UI_MODE_NIGHT_NO
-                    : Configuration.UI_MODE_NIGHT_YES;
             cfg.uiMode = (cfg.uiMode & ~Configuration.UI_MODE_NIGHT_MASK) | uiMode;
             themedContext = createConfigurationContext(cfg);
         }

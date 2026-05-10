@@ -44,6 +44,7 @@
         <item>Follow system</item>
         <item>Light</item>
         <item>Dark</item>
+        <item>Inverse</item>
     </string-array>
 
     <string name="show_date">Show date</string>
