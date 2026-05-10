@@ -30,10 +30,11 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -97,10 +98,46 @@ public class AppSelectionActivity extends AppCompatActivity {
             new LoadAppsTask().execute();
         } catch (Throwable t) {
             Log.e(TAG, "AppSelectionActivity onCreate failed", t);
-            Toast.makeText(getApplicationContext(),
-                    R.string.app_selection_load_failed_toast, Toast.LENGTH_LONG).show();
+            showFatalErrorDialog(t);
+        }
+    }
+
+    private void showFatalErrorDialog(@NonNull Throwable t) {
+        try {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.app_selection_load_failed_title)
+                    .setMessage(getString(R.string.app_selection_load_failed_message,
+                            describeThrowable(t)))
+                    .setCancelable(false)
+                    .setPositiveButton(android.R.string.ok, (d, w) -> finish())
+                    .show();
+        } catch (Throwable inner) {
+            Log.e(TAG, "Failed to show error dialog", inner);
             finish();
         }
+    }
+
+    private void showLoadErrorDialog(@NonNull Throwable t) {
+        try {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.app_selection_load_failed_title)
+                    .setMessage(getString(R.string.app_selection_load_failed_message,
+                            describeThrowable(t)))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+        } catch (Throwable inner) {
+            Log.e(TAG, "Failed to show error dialog", inner);
+        }
+    }
+
+    private static String describeThrowable(@NonNull Throwable t) {
+        Throwable root = t;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        String message = root.getMessage();
+        String name = root.getClass().getSimpleName();
+        return message != null && !message.isEmpty() ? name + ": " + message : name;
     }
 
     @Override
@@ -115,12 +152,15 @@ public class AppSelectionActivity extends AppCompatActivity {
     }
 
     private class LoadAppsTask extends AsyncTask<Void, Void, List<AppEntry>> {
+        @Nullable private Throwable error;
+
         @Override
         protected List<AppEntry> doInBackground(Void... voids) {
             try {
                 return loadApps();
             } catch (Throwable t) {
                 Log.e(TAG, "Failed to load installed apps", t);
+                error = t;
                 return Collections.emptyList();
             }
         }
@@ -199,9 +239,8 @@ public class AppSelectionActivity extends AppCompatActivity {
             apps.addAll(result);
             adapter.notifyDataSetChanged();
             binding.appSelectionProgress.setVisibility(View.GONE);
-            if (result.isEmpty()) {
-                Toast.makeText(getApplicationContext(),
-                        R.string.app_selection_load_failed_toast, Toast.LENGTH_LONG).show();
+            if (error != null) {
+                showLoadErrorDialog(error);
             }
         }
     }

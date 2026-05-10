@@ -284,7 +284,16 @@ public class MainActivity extends AppCompatActivity {
             openUsageAccessSettings();
             return;
         }
-        startActivity(new Intent(this, AppSelectionActivity.class));
+        try {
+            startActivity(new Intent(this, AppSelectionActivity.class));
+        } catch (Throwable t) {
+            Log.e(TAG, "Failed to launch AppSelectionActivity", t);
+            String message = t.getClass().getSimpleName()
+                    + (t.getMessage() != null ? ": " + t.getMessage() : "");
+            Toast.makeText(this,
+                    getString(R.string.app_selection_load_failed_message, message),
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private void openUsageAccessSettings() {
