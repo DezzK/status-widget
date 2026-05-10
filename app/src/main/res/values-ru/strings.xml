@@ -79,6 +79,12 @@
     <string name="brick_margin_start">Отступ слева</string>
     <string name="brick_margin_end">Отступ справа</string>
     <string name="brick_adjust_y">Сдвиг по вертикали</string>
+    <string name="brick_hide_in_apps">Скрывать в приложениях…</string>
+    <string name="brick_hide_in_apps_count">Скрывать в приложениях… (%1$d)</string>
+    <string name="brick_hide_in_apps_title">Скрывать %1$s в:</string>
+    <string name="brick_hide_apply_to">Скрывать в тех же приложениях:</string>
+    <string name="brick_hide_inherited_hint">Скрывается в тех же приложениях, что и элемент «%1$s».</string>
+    <string name="brick_hide_use_own_list">Указать отдельный список приложений для скрытия элемента</string>
 
     <string name="background_transparency">Интенсивность фона</string>
     <string name="background_corner_radius">Скругление углов фона</string>

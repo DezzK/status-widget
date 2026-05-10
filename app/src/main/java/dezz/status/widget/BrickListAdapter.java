@@ -37,6 +37,8 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.slider.LabelFormatter;
 import com.google.android.material.slider.Slider;
@@ -116,6 +118,39 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
     }
 
+    private int brickTitleRes(BrickType type) {
+        switch (type) {
+            case TIME:
+                return R.string.brick_title_time;
+            case DATE:
+                return R.string.brick_title_date;
+            case MEDIA:
+                return R.string.brick_title_media;
+            case WIFI:
+                return R.string.brick_title_wifi;
+            case GPS:
+                return R.string.brick_title_gps;
+            default:
+                return 0;
+        }
+    }
+
+    private String hideTitleFor(BrickType type) {
+        return activity.getString(R.string.brick_hide_in_apps_title,
+                activity.getString(brickTitleRes(type)));
+    }
+
+    /** True if any other brick currently inherits its hide list from {@code type}. */
+    private boolean brickHasChildren(BrickType type) {
+        for (BrickType other : BrickType.values()) {
+            if (other == type) continue;
+            if (type.name().equals(prefs.hideSourceFor(other).get())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public int getItemCount() {
         return bricks.size();
@@ -164,6 +199,13 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialSwitch brickGpsShowSatelliteBadge;
         final LinearLayout brickMediaBlock;
         final MaterialButton brickMediaPermissionButton;
+        final LinearLayout brickHideOwnBlock;
+        final MaterialButton brickHideInAppsButton;
+        final TextView brickHideApplyToLabel;
+        final ChipGroup brickHideApplyToChips;
+        final LinearLayout brickHideInheritedBlock;
+        final TextView brickHideInheritedHint;
+        final MaterialButton brickHideUseOwnButton;
         final MaterialButton brickRemoveButton;
 
         boolean expanded;
@@ -194,6 +236,13 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickGpsShowSatelliteBadge = itemView.findViewById(R.id.brickGpsShowSatelliteBadge);
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
             brickMediaPermissionButton = itemView.findViewById(R.id.brickMediaPermissionButton);
+            brickHideOwnBlock = itemView.findViewById(R.id.brickHideOwnBlock);
+            brickHideInAppsButton = itemView.findViewById(R.id.brickHideInAppsButton);
+            brickHideApplyToLabel = itemView.findViewById(R.id.brickHideApplyToLabel);
+            brickHideApplyToChips = itemView.findViewById(R.id.brickHideApplyToChips);
+            brickHideInheritedBlock = itemView.findViewById(R.id.brickHideInheritedBlock);
+            brickHideInheritedHint = itemView.findViewById(R.id.brickHideInheritedHint);
+            brickHideUseOwnButton = itemView.findViewById(R.id.brickHideUseOwnButton);
             brickRemoveButton = itemView.findViewById(R.id.brickRemoveButton);
         }
 
@@ -265,7 +314,102 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     break;
             }
 
+            bindHideBlock(type);
             applyExpandState();
+        }
+
+        private void bindHideBlock(BrickType type) {
+            String src = prefs.hideSourceFor(type).get();
+            BrickType parent = BrickType.fromName(src);
+            if (parent != null && parent != type) {
+                // This brick inherits from another brick.
+                brickHideOwnBlock.setVisibility(View.GONE);
+                brickHideInheritedBlock.setVisibility(View.VISIBLE);
+                brickHideInheritedHint.setText(activity.getString(
+                        R.string.brick_hide_inherited_hint, brickTitleString(parent)));
+                brickHideUseOwnButton.setOnClickListener(v -> {
+                    prefs.hideSourceFor(type).set("");
+                    notifyService();
+                    notifyDataSetChanged();
+                });
+            } else {
+                // This brick has its own list (and may have children inheriting from it).
+                brickHideInheritedBlock.setVisibility(View.GONE);
+                brickHideOwnBlock.setVisibility(View.VISIBLE);
+
+                int count = prefs.hideListFor(type).get().size();
+                brickHideInAppsButton.setText(count > 0
+                        ? activity.getString(R.string.brick_hide_in_apps_count, count)
+                        : activity.getString(R.string.brick_hide_in_apps));
+                brickHideInAppsButton.setOnClickListener(v -> openHideInApps(type));
+
+                bindApplyToChips(type);
+            }
+        }
+
+        private void bindApplyToChips(BrickType ownerType) {
+            brickHideApplyToChips.removeAllViews();
+            int otherCount = 0;
+            for (BrickType candidate : BrickType.values()) {
+                if (candidate == ownerType) continue;
+                otherCount++;
+                Chip chip = new Chip(activity);
+                chip.setText(brickTitleString(candidate));
+                chip.setCheckable(true);
+                String candidateSource = prefs.hideSourceFor(candidate).get();
+                boolean inheritsFromUs = ownerType.name().equals(candidateSource);
+                chip.setChecked(inheritsFromUs);
+                // A brick that already shares its list with a different parent is OK to retarget;
+                // but a brick that itself has children would create a 2-level chain — disallow.
+                boolean candidateHasChildren = brickHasChildren(candidate);
+                boolean enabled = inheritsFromUs || !candidateHasChildren;
+                chip.setEnabled(enabled);
+                chip.setOnClickListener(v -> {
+                    if (chip.isChecked()) {
+                        prefs.hideSourceFor(candidate).set(ownerType.name());
+                    } else {
+                        prefs.hideSourceFor(candidate).set("");
+                    }
+                    notifyService();
+                    notifyDataSetChanged();
+                });
+                brickHideApplyToChips.addView(chip);
+            }
+            boolean visible = otherCount > 0;
+            brickHideApplyToLabel.setVisibility(visible ? View.VISIBLE : View.GONE);
+            brickHideApplyToChips.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+
+        private void openHideInApps(BrickType type) {
+            if (!Permissions.isUsageAccessGranted(activity)) {
+                Toast.makeText(activity, R.string.usage_access_required, Toast.LENGTH_LONG).show();
+                openUsageAccessSettings();
+                return;
+            }
+            try {
+                Intent intent = new Intent(activity, AppSelectionActivity.class);
+                intent.putExtra(AppSelectionActivity.EXTRA_PREF_KEY, prefs.hideListKeyFor(type));
+                intent.putExtra(AppSelectionActivity.EXTRA_TITLE, hideTitleFor(type));
+                activity.startActivity(intent);
+            } catch (Exception ignored) {
+            }
+        }
+
+        private void openUsageAccessSettings() {
+            try {
+                Intent direct = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS,
+                        android.net.Uri.parse("package:" + activity.getPackageName()));
+                if (direct.resolveActivity(activity.getPackageManager()) != null) {
+                    activity.startActivity(direct);
+                    return;
+                }
+                activity.startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+            } catch (Exception ignored) {
+            }
+        }
+
+        private String brickTitleString(BrickType type) {
+            return activity.getString(brickTitleRes(type));
         }
 
         private CharSequence titleFor(BrickType type) {

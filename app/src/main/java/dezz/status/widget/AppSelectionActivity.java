@@ -55,8 +55,14 @@ import dezz.status.widget.databinding.ActivityAppSelectionBinding;
 public class AppSelectionActivity extends AppCompatActivity {
     private static final String TAG = "AppSelectionActivity";
 
+    /** SharedPreferences key (StringSet) of the brick-specific or global hide list to edit. */
+    public static final String EXTRA_PREF_KEY = "prefKey";
+    /** Optional pre-formatted toolbar title. */
+    public static final String EXTRA_TITLE = "title";
+
     private ActivityAppSelectionBinding binding;
     private Preferences prefs;
+    private Preferences.StringSet target;
     private Set<String> selected = new HashSet<>();
     private final List<AppEntry> apps = new ArrayList<>();
     private AppAdapter adapter;
@@ -89,7 +95,15 @@ public class AppSelectionActivity extends AppCompatActivity {
             binding.toolbar.setNavigationOnClickListener(v -> finish());
 
             prefs = new Preferences(this);
-            selected = prefs.hideInPackages.get();
+            String prefKey = getIntent().getStringExtra(EXTRA_PREF_KEY);
+            target = (prefKey != null)
+                    ? new Preferences.StringSet(prefs, prefKey)
+                    : prefs.hideInPackages;
+            String customTitle = getIntent().getStringExtra(EXTRA_TITLE);
+            if (customTitle != null && !customTitle.isEmpty()) {
+                binding.toolbar.setTitle(customTitle);
+            }
+            selected = target.get();
 
             adapter = new AppAdapter();
             binding.appList.setLayoutManager(new LinearLayoutManager(this));
@@ -143,8 +157,8 @@ public class AppSelectionActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (prefs != null) {
-            prefs.hideInPackages.set(selected);
+        if (target != null) {
+            target.set(selected);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }

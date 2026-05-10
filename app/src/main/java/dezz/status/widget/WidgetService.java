@@ -78,6 +78,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -456,6 +457,7 @@ public class WidgetService extends Service {
     @SuppressLint("MissingPermission")
     public void applyPreferences() {
         hiddenInPackages = prefs.hideInPackages.get();
+        rebuildEffectiveHideLists();
         updateForegroundAppTracking();
         updateThemedContext();
 
@@ -477,14 +479,7 @@ public class WidgetService extends Service {
         applyWifiBrickSettings();
         applyGpsBrickSettings();
 
-        // Visibility from brickOrder. The brick's view stays in the tree even when hidden.
-        binding.timeText.setVisibility(bricksSet.contains(BrickType.TIME) ? View.VISIBLE : View.GONE);
-        boolean dateActive = bricksSet.contains(BrickType.DATE)
-                && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get());
-        binding.dateText.setVisibility(dateActive ? View.VISIBLE : View.GONE);
-        // mediaContainer visibility is set by updateMediaInfo()/disableMediaTracking() below.
-        binding.wifiStatusIcon.setVisibility(bricksSet.contains(BrickType.WIFI) ? View.VISIBLE : View.GONE);
-        binding.gnssStatusIcon.setVisibility(bricksSet.contains(BrickType.GPS) ? View.VISIBLE : View.GONE);
+        applyBrickVisibility(bricksSet);
 
         // Re-apply icon style for the current state — icon style and outline may have changed.
         updateWifiStatus();
@@ -707,6 +702,58 @@ public class WidgetService extends Service {
         view.setLayoutParams(lp);
     }
 
+    private final EnumMap<BrickType, Set<String>> effectiveHideLists = new EnumMap<>(BrickType.class);
+
+    private void rebuildEffectiveHideLists() {
+        effectiveHideLists.clear();
+        for (BrickType type : BrickType.values()) {
+            BrickType source = prefs.effectiveHideSourceFor(type);
+            effectiveHideLists.put(type, prefs.hideListFor(source).get());
+        }
+    }
+
+    private boolean isBrickHiddenByApp(BrickType type) {
+        if (lastForegroundPackage == null) return false;
+        Set<String> list = effectiveHideLists.get(type);
+        return list != null && list.contains(lastForegroundPackage);
+    }
+
+    private boolean anyBrickHasHideList() {
+        for (Set<String> s : effectiveHideLists.values()) {
+            if (s != null && !s.isEmpty()) return true;
+        }
+        return false;
+    }
+
+    private void applyBrickVisibility(Set<BrickType> bricksSet) {
+        if (binding == null) return;
+        binding.timeText.setVisibility(
+                (bricksSet.contains(BrickType.TIME) && !isBrickHiddenByApp(BrickType.TIME))
+                        ? View.VISIBLE : View.GONE);
+        boolean dateActive = bricksSet.contains(BrickType.DATE)
+                && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get())
+                && !isBrickHiddenByApp(BrickType.DATE);
+        binding.dateText.setVisibility(dateActive ? View.VISIBLE : View.GONE);
+        binding.wifiStatusIcon.setVisibility(
+                (bricksSet.contains(BrickType.WIFI) && !isBrickHiddenByApp(BrickType.WIFI))
+                        ? View.VISIBLE : View.GONE);
+        binding.gnssStatusIcon.setVisibility(
+                (bricksSet.contains(BrickType.GPS) && !isBrickHiddenByApp(BrickType.GPS))
+                        ? View.VISIBLE : View.GONE);
+        // Media visibility is also gated by the active media session — see updateMediaInfo().
+        if (!bricksSet.contains(BrickType.MEDIA) || isBrickHiddenByApp(BrickType.MEDIA)) {
+            binding.mediaContainer.setVisibility(View.GONE);
+        } else {
+            updateMediaInfo();
+        }
+    }
+
+    private Set<BrickType> currentBrickSet() {
+        Set<BrickType> set = EnumSet.noneOf(BrickType.class);
+        set.addAll(BrickType.parseOrder(prefs.brickOrder.get()));
+        return set;
+    }
+
     private void enableMediaTracking() {
         if (mediaSessionManager != null) return;
         mediaSessionManager = (MediaSessionManager) getSystemService(MEDIA_SESSION_SERVICE);
@@ -750,6 +797,10 @@ public class WidgetService extends Service {
 
     private void updateMediaInfo() {
         if (binding == null) return;
+        if (!currentBrickSet().contains(BrickType.MEDIA) || isBrickHiddenByApp(BrickType.MEDIA)) {
+            binding.mediaContainer.setVisibility(View.GONE);
+            return;
+        }
         MediaController playing = pickActiveMediaController();
         if (playing == null) {
             binding.mediaContainer.setVisibility(View.GONE);
@@ -826,7 +877,8 @@ public class WidgetService extends Service {
     }
 
     private void updateForegroundAppTracking() {
-        boolean shouldTrack = !hiddenInPackages.isEmpty() && Permissions.isUsageAccessGranted(this);
+        boolean shouldTrack = (!hiddenInPackages.isEmpty() || anyBrickHasHideList())
+                && Permissions.isUsageAccessGranted(this);
         if (shouldTrack) {
             if (usageStatsManager == null) {
                 usageStatsManager = (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
@@ -867,8 +919,12 @@ public class WidgetService extends Service {
         if (latestPackage == null) {
             return;
         }
+        boolean changed = !latestPackage.equals(lastForegroundPackage);
         lastForegroundPackage = latestPackage;
         applyOverlayVisibility(hiddenInPackages.contains(latestPackage));
+        if (changed && binding != null) {
+            applyBrickVisibility(currentBrickSet());
+        }
     }
 
     private void applyOverlayVisibility(boolean hide) {

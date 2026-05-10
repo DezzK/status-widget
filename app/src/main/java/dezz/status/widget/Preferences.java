@@ -20,6 +20,8 @@ package dezz.status.widget;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import androidx.annotation.Nullable;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -114,18 +116,33 @@ public class Preferences {
 
     /** Common settings for any text-based brick. */
     public static class TextBrickPrefs {
+        public final String prefix;
         public final Int fontSize;
         public final Int outlineAlpha;
         public final Int outlineWidth;
         public final Int marginStart;
         public final Int marginEnd;
+        /** Apps where the brick should be hidden when its own list is in effect. */
+        public final StringSet hideInPackages;
+        /**
+         * If non-empty, the {@link BrickType#name()} of another brick whose list to inherit.
+         * Empty string means use {@link #hideInPackages}.
+         */
+        public final Str hideSource;
 
         public TextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
+            this.prefix = prefix;
             fontSize = new Int(p, prefix + "FontSize", defaultFontSize);
             outlineAlpha = new Int(p, prefix + "OutlineAlpha", 0xAA);
             outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
             marginStart = new Int(p, prefix + "MarginStart", 0);
             marginEnd = new Int(p, prefix + "MarginEnd", 0);
+            hideInPackages = new StringSet(p, prefix + "HideInPackages");
+            hideSource = new Str(p, prefix + "HideSource", "");
+        }
+
+        public String hideInPackagesKey() {
+            return prefix + "HideInPackages";
         }
     }
 
@@ -161,18 +178,28 @@ public class Preferences {
 
     /** Common settings for an icon brick. */
     public static class IconBrickPrefs {
+        public final String prefix;
         public final Int size;
         public final Int outlineAlpha;
         public final Int outlineWidth;
         public final Int marginStart;
         public final Int marginEnd;
+        public final StringSet hideInPackages;
+        public final Str hideSource;
 
         public IconBrickPrefs(Preferences p, String prefix) {
+            this.prefix = prefix;
             size = new Int(p, prefix + "Size", 70);
             outlineAlpha = new Int(p, prefix + "OutlineAlpha", 0xAA);
             outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
             marginStart = new Int(p, prefix + "MarginStart", 0);
             marginEnd = new Int(p, prefix + "MarginEnd", 0);
+            hideInPackages = new StringSet(p, prefix + "HideInPackages");
+            hideSource = new Str(p, prefix + "HideSource", "");
+        }
+
+        public String hideInPackagesKey() {
+            return prefix + "HideInPackages";
         }
     }
 
@@ -214,6 +241,69 @@ public class Preferences {
     public final TextBrickPrefs media = new TextBrickPrefs(this, "media", 20);
     public final IconBrickPrefs wifi = new IconBrickPrefs(this, "wifi");
     public final GpsBrickPrefs gps = new GpsBrickPrefs(this);
+
+    @Nullable
+    public TextBrickPrefs textBrickPrefs(BrickType type) {
+        switch (type) {
+            case TIME:
+                return time;
+            case DATE:
+                return date;
+            case MEDIA:
+                return media;
+            default:
+                return null;
+        }
+    }
+
+    @Nullable
+    public IconBrickPrefs iconBrickPrefs(BrickType type) {
+        switch (type) {
+            case WIFI:
+                return wifi;
+            case GPS:
+                return gps;
+            default:
+                return null;
+        }
+    }
+
+    public StringSet hideListFor(BrickType type) {
+        TextBrickPrefs t = textBrickPrefs(type);
+        if (t != null) return t.hideInPackages;
+        IconBrickPrefs i = iconBrickPrefs(type);
+        if (i != null) return i.hideInPackages;
+        throw new IllegalArgumentException("Unknown brick type: " + type);
+    }
+
+    public Str hideSourceFor(BrickType type) {
+        TextBrickPrefs t = textBrickPrefs(type);
+        if (t != null) return t.hideSource;
+        IconBrickPrefs i = iconBrickPrefs(type);
+        if (i != null) return i.hideSource;
+        throw new IllegalArgumentException("Unknown brick type: " + type);
+    }
+
+    public String hideListKeyFor(BrickType type) {
+        TextBrickPrefs t = textBrickPrefs(type);
+        if (t != null) return t.hideInPackagesKey();
+        IconBrickPrefs i = iconBrickPrefs(type);
+        if (i != null) return i.hideInPackagesKey();
+        throw new IllegalArgumentException("Unknown brick type: " + type);
+    }
+
+    /**
+     * Returns the brick whose hide-in-apps list this brick uses. {@code type} itself if the
+     * brick has its own list; another type if it inherits.
+     */
+    public BrickType effectiveHideSourceFor(BrickType type) {
+        String src = hideSourceFor(type).get();
+        BrickType resolved = BrickType.fromName(src);
+        if (resolved != null && resolved != type) {
+            return resolved;
+        }
+        return type;
+    }
 
     public Preferences(Context context) {
         final Context deviceContext = context.getApplicationContext().createDeviceProtectedStorageContext();

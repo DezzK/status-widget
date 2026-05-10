@@ -79,6 +79,12 @@
     <string name="brick_margin_start">Left spacing</string>
     <string name="brick_margin_end">Right spacing</string>
     <string name="brick_adjust_y">Vertical offset</string>
+    <string name="brick_hide_in_apps">Hide in apps…</string>
+    <string name="brick_hide_in_apps_count">Hide in apps… (%1$d)</string>
+    <string name="brick_hide_in_apps_title">Hide %1$s in:</string>
+    <string name="brick_hide_apply_to">Hide in the same apps:</string>
+    <string name="brick_hide_inherited_hint">Hidden in the same apps as the %1$s element.</string>
+    <string name="brick_hide_use_own_list">Set a separate list of apps for hiding this element</string>
 
     <string name="background_transparency">Background transparency</string>
     <string name="background_corner_radius">Background corner radius</string>
