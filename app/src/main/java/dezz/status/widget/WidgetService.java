@@ -26,9 +26,12 @@ import android.app.Service;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
@@ -39,6 +42,10 @@ import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
+import android.media.session.PlaybackState;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -69,7 +76,9 @@ import androidx.core.widget.ImageViewCompat;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -170,6 +179,22 @@ public class WidgetService extends Service {
     private Set<String> hiddenInPackages;
     private String lastForegroundPackage;
     private boolean overlayHiddenByApp = false;
+
+    private MediaSessionManager mediaSessionManager;
+    private final List<MediaController> activeMediaControllers = new ArrayList<>();
+    private final MediaController.Callback mediaControllerCallback = new MediaController.Callback() {
+        @Override
+        public void onPlaybackStateChanged(@Nullable PlaybackState state) {
+            updateMediaInfo();
+        }
+
+        @Override
+        public void onMetadataChanged(@Nullable MediaMetadata metadata) {
+            updateMediaInfo();
+        }
+    };
+    private final MediaSessionManager.OnActiveSessionsChangedListener activeSessionsChangedListener =
+            this::rebindMediaControllers;
 
     private int satellitesCount = 0;
     private long satellitesCountTimestamp = 0;
@@ -430,7 +455,8 @@ public class WidgetService extends Service {
         int iconSize = prefs.iconSize.get();
         int timeFontSize = prefs.timeFontSize.get();
         int dateFontSize = prefs.dateFontSize.get();
-        int padding = Math.max(iconSize, Math.max(timeFontSize, dateFontSize)) / 2;
+        int mediaFontSize = prefs.mediaFontSize.get();
+        int padding = Math.max(Math.max(iconSize, timeFontSize), Math.max(dateFontSize, mediaFontSize)) / 2;
 
         binding.getRoot().setPadding(padding, 0, padding, 0);
 
@@ -451,11 +477,17 @@ public class WidgetService extends Service {
         binding.timeText.setOutlineWidth(textOutlineWidthPx);
         binding.dateText.setOutlineColor(textOutlineColor);
         binding.dateText.setOutlineWidth(textOutlineWidthPx);
+        binding.mediaAppText.setOutlineColor(textOutlineColor);
+        binding.mediaAppText.setOutlineWidth(textOutlineWidthPx);
+        binding.mediaTitleText.setOutlineColor(textOutlineColor);
+        binding.mediaTitleText.setOutlineWidth(textOutlineWidthPx);
 
         // Icon styling (color, outline) is applied per-icon inside updateIconStatus().
 
         binding.timeText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.timeFontSize.get());
         binding.dateText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.dateFontSize.get());
+        binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.mediaFontSize.get());
+        binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.mediaFontSize.get());
         binding.timeText.setVisibility(prefs.showTime.get() ? View.VISIBLE : View.GONE);
         binding.dateText.setVisibility(prefs.showDate.get() || prefs.showDayOfTheWeek.get() ? View.VISIBLE : View.GONE);
 
@@ -476,9 +508,28 @@ public class WidgetService extends Service {
         boolean hasDateOrTime = prefs.showTime.get() || prefs.showDate.get() || prefs.showDayOfTheWeek.get();
         binding.dateTimeContainer.setVisibility(hasDateOrTime ? View.VISIBLE : View.GONE);
 
-        LinearLayout.LayoutParams dateTimeLayoutParams = (LinearLayout.LayoutParams) binding.dateTimeContainer.getLayoutParams();
-        dateTimeLayoutParams.setMargins(0, 0, prefs.spacingBetweenTextsAndIcons.get(), 0);
-        binding.dateTimeContainer.setLayoutParams(dateTimeLayoutParams);
+        // Spacing model: marginStart on the target block. "left of media" applies only when media
+        // is shown; "left of icons" applies on the leftmost visible icon (so when media is hidden,
+        // it acts as the spacing between date and icons).
+        int leftOfMedia = prefs.spacingLeftOfMedia.get();
+        int leftOfIcons = prefs.spacingLeftOfIcons.get();
+
+        LinearLayout.LayoutParams mediaLayoutParams = (LinearLayout.LayoutParams) binding.mediaContainer.getLayoutParams();
+        mediaLayoutParams.setMarginStart(leftOfMedia);
+        mediaLayoutParams.setMarginEnd(0);
+        binding.mediaContainer.setLayoutParams(mediaLayoutParams);
+
+        LinearLayout.LayoutParams wifiLayoutParams = (LinearLayout.LayoutParams) binding.wifiStatusIcon.getLayoutParams();
+        LinearLayout.LayoutParams gnssLayoutParams = (LinearLayout.LayoutParams) binding.gnssStatusIcon.getLayoutParams();
+        if (prefs.showWifiIcon.get()) {
+            wifiLayoutParams.setMarginStart(leftOfIcons);
+            gnssLayoutParams.setMarginStart(0);
+        } else {
+            wifiLayoutParams.setMarginStart(0);
+            gnssLayoutParams.setMarginStart(prefs.showGnssIcon.get() ? leftOfIcons : 0);
+        }
+        binding.wifiStatusIcon.setLayoutParams(wifiLayoutParams);
+        binding.gnssStatusIcon.setLayoutParams(gnssLayoutParams);
 
         binding.timeText.setTranslationY(prefs.adjustTimeY.get());
         binding.dateText.setTranslationY(prefs.adjustDateY.get());
@@ -543,6 +594,108 @@ public class WidgetService extends Service {
             locationManager = null;
         }
 
+        if (prefs.showMedia.get() && Permissions.isNotificationAccessGranted(this)) {
+            enableMediaTracking();
+        } else {
+            disableMediaTracking();
+            binding.mediaContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void enableMediaTracking() {
+        if (mediaSessionManager != null) return;
+        mediaSessionManager = (MediaSessionManager) getSystemService(MEDIA_SESSION_SERVICE);
+        if (mediaSessionManager == null) return;
+        ComponentName component = new ComponentName(this, MediaNotificationListener.class);
+        try {
+            mediaSessionManager.addOnActiveSessionsChangedListener(activeSessionsChangedListener, component, mainHandler);
+            rebindMediaControllers(mediaSessionManager.getActiveSessions(component));
+        } catch (SecurityException e) {
+            Log.w(TAG, "Notification access not granted; media tracking disabled", e);
+            mediaSessionManager = null;
+        }
+    }
+
+    private void disableMediaTracking() {
+        if (mediaSessionManager == null) return;
+        try {
+            mediaSessionManager.removeOnActiveSessionsChangedListener(activeSessionsChangedListener);
+        } catch (Exception ignored) {
+        }
+        for (MediaController c : activeMediaControllers) {
+            c.unregisterCallback(mediaControllerCallback);
+        }
+        activeMediaControllers.clear();
+        mediaSessionManager = null;
+    }
+
+    private void rebindMediaControllers(@Nullable List<MediaController> controllers) {
+        for (MediaController c : activeMediaControllers) {
+            c.unregisterCallback(mediaControllerCallback);
+        }
+        activeMediaControllers.clear();
+        if (controllers != null) {
+            for (MediaController c : controllers) {
+                activeMediaControllers.add(c);
+                c.registerCallback(mediaControllerCallback, mainHandler);
+            }
+        }
+        updateMediaInfo();
+    }
+
+    private void updateMediaInfo() {
+        if (binding == null) return;
+        MediaController playing = pickActiveMediaController();
+        if (playing == null) {
+            binding.mediaContainer.setVisibility(View.GONE);
+            return;
+        }
+        MediaMetadata metadata = playing.getMetadata();
+        String title = metadata != null ? metadata.getString(MediaMetadata.METADATA_KEY_TITLE) : null;
+        String artist = metadata != null ? metadata.getString(MediaMetadata.METADATA_KEY_ARTIST) : null;
+        String subtitle;
+        if (!isEmpty(artist) && !isEmpty(title)) {
+            subtitle = artist + " — " + title;
+        } else if (!isEmpty(title)) {
+            subtitle = title;
+        } else if (!isEmpty(artist)) {
+            subtitle = artist;
+        } else {
+            subtitle = "";
+        }
+        if (subtitle.isEmpty()) {
+            binding.mediaContainer.setVisibility(View.GONE);
+            return;
+        }
+        binding.mediaAppText.setText(getAppLabel(playing.getPackageName()));
+        binding.mediaTitleText.setText(subtitle);
+        binding.mediaContainer.setVisibility(View.VISIBLE);
+    }
+
+    @Nullable
+    private MediaController pickActiveMediaController() {
+        for (MediaController c : activeMediaControllers) {
+            PlaybackState s = c.getPlaybackState();
+            if (s != null && s.getState() == PlaybackState.STATE_PLAYING) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    private String getAppLabel(String pkg) {
+        try {
+            PackageManager pm = getPackageManager();
+            ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
+            CharSequence label = pm.getApplicationLabel(info);
+            return label != null ? label.toString() : pkg;
+        } catch (Exception e) {
+            return pkg;
+        }
+    }
+
+    private static boolean isEmpty(@Nullable String s) {
+        return s == null || s.isEmpty();
     }
 
     private void registerSatelliteStatusReceiver() {
@@ -886,6 +1039,7 @@ public class WidgetService extends Service {
         }
 
         unregisterSatelliteStatusReceiver();
+        disableMediaTracking();
     }
 
     @Nullable

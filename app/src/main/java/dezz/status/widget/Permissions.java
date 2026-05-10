@@ -19,11 +19,13 @@ package dezz.status.widget;
 
 import android.Manifest;
 import android.app.AppOpsManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Process;
 import android.provider.Settings;
+import android.text.TextUtils;
 
 import androidx.core.content.ContextCompat;
 
@@ -64,6 +66,22 @@ public class Permissions {
 
     public static boolean checkOverlayPermission(Context context) {
         return Settings.canDrawOverlays(context);
+    }
+
+    public static boolean isNotificationAccessGranted(Context context) {
+        String enabled = Settings.Secure.getString(context.getContentResolver(),
+                "enabled_notification_listeners");
+        if (TextUtils.isEmpty(enabled)) {
+            return false;
+        }
+        ComponentName component = new ComponentName(context, MediaNotificationListener.class);
+        String flatten = component.flattenToString();
+        for (String name : enabled.split(":")) {
+            if (flatten.equals(name) || component.equals(ComponentName.unflattenFromString(name))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean isUsageAccessGranted(Context context) {

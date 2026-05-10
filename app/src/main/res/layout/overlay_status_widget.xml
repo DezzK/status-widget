@@ -57,6 +57,39 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/mediaContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <dezz.status.widget.OutlineTextView
+            android:id="@+id/mediaAppText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/roboto_condensed_medium"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            tools:text="Spotify"
+            tools:visibility="visible" />
+
+        <dezz.status.widget.OutlineTextView
+            android:id="@+id/mediaTitleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/roboto_condensed_medium"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            tools:text="Track — Artist"
+            tools:visibility="visible" />
+    </LinearLayout>
+
     <!-- Wi-Fi Status -->
     <dezz.status.widget.OutlineImageView
         android:id="@+id/wifiStatusIcon"

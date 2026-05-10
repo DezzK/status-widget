@@ -246,11 +246,14 @@ public class MainActivity extends AppCompatActivity {
         binder.bindCheckbox(binding.sectionContent.showFullDayAndMonthSwitch, prefs.showFullDayAndMonth);
         binder.bindCheckbox(binding.sectionContent.dateBeforeDayOfWeekSwitch, prefs.dateBeforeDayOfWeek);
         binder.bindCheckbox(binding.sectionContent.oneLineLayoutSwitch, prefs.oneLineLayout);
+        bindShowMediaSwitch();
 
         binder.bindSizeSlider(binding.sectionSizes.iconSizeSlider, prefs.iconSize);
         binder.bindSizeSlider(binding.sectionSizes.timeFontSizeSlider, prefs.timeFontSize);
         binder.bindSizeSlider(binding.sectionSizes.dateFontSizeSlider, prefs.dateFontSize);
-        binder.bindSizeSlider(binding.sectionSizes.spacingBetweenTextsAndIconsSlider, prefs.spacingBetweenTextsAndIcons);
+        binder.bindSizeSlider(binding.sectionSizes.mediaFontSizeSlider, prefs.mediaFontSize);
+        binder.bindSizeSlider(binding.sectionSizes.spacingLeftOfMediaSlider, prefs.spacingLeftOfMedia);
+        binder.bindSizeSlider(binding.sectionSizes.spacingLeftOfIconsSlider, prefs.spacingLeftOfIcons);
         binder.bindOffsetSlider(binding.sectionSizes.adjustTimeYSlider, prefs.adjustTimeY);
         binder.bindOffsetSlider(binding.sectionSizes.adjustDateYSlider, prefs.adjustDateY);
 
@@ -277,6 +280,44 @@ public class MainActivity extends AppCompatActivity {
                 WidgetService.getInstance().applyPreferences();
             }
         });
+    }
+
+    private void bindShowMediaSwitch() {
+        boolean active = prefs.showMedia.get() && Permissions.isNotificationAccessGranted(this);
+        binding.sectionContent.showMediaSwitch.setOnCheckedChangeListener(null);
+        binding.sectionContent.showMediaSwitch.setChecked(active);
+        binding.sectionContent.showMediaSwitch.setOnCheckedChangeListener((view, isChecked) -> {
+            prefs.showMedia.set(isChecked);
+            if (isChecked && !Permissions.isNotificationAccessGranted(this)) {
+                Toast.makeText(this, R.string.notification_access_required, Toast.LENGTH_LONG).show();
+                openNotificationAccessSettings();
+            }
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
+        });
+    }
+
+    private void openNotificationAccessSettings() {
+        try {
+            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+            startActivity(intent);
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to open notification listener settings", t);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (binding != null) {
+            // Re-evaluate the media switch state so it reflects reality after the user toggled
+            // Notification access in system settings.
+            bindShowMediaSwitch();
+            if (WidgetService.isRunning()) {
+                WidgetService.getInstance().applyPreferences();
+            }
+        }
     }
 
     private void openAppSelection() {

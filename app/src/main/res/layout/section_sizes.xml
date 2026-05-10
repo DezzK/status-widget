@@ -77,11 +77,41 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/optionsMarginSmall"
-            android:text="@string/spacing_between_text_and_icons_size"
+            android:text="@string/media_font_size"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <com.google.android.material.slider.Slider
-            android:id="@+id/spacingBetweenTextsAndIconsSlider"
+            android:id="@+id/mediaFontSizeSlider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:value="50"
+            android:valueFrom="10"
+            android:valueTo="500" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/optionsMarginSmall"
+            android:text="@string/spacing_left_of_media_size"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/spacingLeftOfMediaSlider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:value="0"
+            android:valueFrom="0"
+            android:valueTo="150" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/optionsMarginSmall"
+            android:text="@string/spacing_left_of_icons_size"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/spacingLeftOfIconsSlider"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:value="0"

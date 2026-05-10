@@ -47,6 +47,7 @@
     <string name="one_line_layout">One line layout</string>
     <string name="time_font_size">Time font size</string>
     <string name="date_font_size">Date and day of the week font size</string>
+    <string name="media_font_size">Media font size</string>
     <string name="show_full_day_and_month">Show full day-of-the-week and month names</string>
     <string name="date_before_day_of_week">Date before day of the week</string>
     <string name="calendar_alignment">Calendar Alignment</string>
@@ -59,7 +60,11 @@
     <string name="show_gnss">Show GNSS icon</string>
     <string name="show_gnss_satellite_badge">Show satellite count badge</string>
     <string name="show_gnss_satellite_badge_hint">Requires GNSS Share to be running</string>
-    <string name="spacing_between_text_and_icons_size">Spacing between texts and icons</string>
+    <string name="show_media">Show currently playing media</string>
+    <string name="show_media_hint">Requires Notification access</string>
+    <string name="notification_access_required">Please grant Notification access so the widget can read the active media session</string>
+    <string name="spacing_left_of_media_size">Spacing to the left of media</string>
+    <string name="spacing_left_of_icons_size">Spacing to the left of icons</string>
     <string name="text_outline_transparency">Text outline transparency</string>
     <string name="text_outline_width">Text outline thickness</string>
     <string name="icon_outline_transparency">Icon outline transparency</string>
