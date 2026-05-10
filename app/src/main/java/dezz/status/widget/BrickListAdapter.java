@@ -198,6 +198,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final LinearLayout brickGpsBlock;
         final MaterialSwitch brickGpsShowSatelliteBadge;
         final LinearLayout brickMediaBlock;
+        final Slider brickMediaMaxWidthSlider;
         final MaterialButton brickMediaPermissionButton;
         final LinearLayout brickHideOwnBlock;
         final MaterialButton brickHideInAppsButton;
@@ -235,6 +236,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickGpsBlock = itemView.findViewById(R.id.brickGpsBlock);
             brickGpsShowSatelliteBadge = itemView.findViewById(R.id.brickGpsShowSatelliteBadge);
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
+            brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaPermissionButton = itemView.findViewById(R.id.brickMediaPermissionButton);
             brickHideOwnBlock = itemView.findViewById(R.id.brickHideOwnBlock);
             brickHideInAppsButton = itemView.findViewById(R.id.brickHideInAppsButton);
@@ -516,6 +518,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
 
         private void bindMediaBlock() {
+            brickMediaMaxWidthSlider.clearOnChangeListeners();
+            bindIntSlider(brickMediaMaxWidthSlider, prefs.media.maxWidth, sizeFormatter());
             brickMediaPermissionButton.setOnClickListener(v -> {
                 if (Permissions.isNotificationAccessGranted(activity)) {
                     Toast.makeText(activity,

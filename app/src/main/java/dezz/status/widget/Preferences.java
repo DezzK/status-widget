@@ -176,6 +176,16 @@ public class Preferences {
         }
     }
 
+    /** Media brick — has its own max-width to bound marquee scrolling. */
+    public static final class MediaBrickPrefs extends TextBrickPrefs {
+        public final Int maxWidth;
+
+        public MediaBrickPrefs(Preferences p) {
+            super(p, "media", 20);
+            maxWidth = new Int(p, "mediaMaxWidth", 500);
+        }
+    }
+
     /** Common settings for an icon brick. */
     public static class IconBrickPrefs {
         public final String prefix;
@@ -238,7 +248,7 @@ public class Preferences {
     // Per-brick settings.
     public final SingleLineTextBrickPrefs time = new SingleLineTextBrickPrefs(this, "time", 60);
     public final DateBrickPrefs date = new DateBrickPrefs(this);
-    public final TextBrickPrefs media = new TextBrickPrefs(this, "media", 20);
+    public final MediaBrickPrefs media = new MediaBrickPrefs(this);
     public final IconBrickPrefs wifi = new IconBrickPrefs(this, "wifi");
     public final GpsBrickPrefs gps = new GpsBrickPrefs(this);
 

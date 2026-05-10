@@ -83,6 +83,7 @@
     <string name="brick_margin_start">Left spacing</string>
     <string name="brick_margin_end">Right spacing</string>
     <string name="brick_adjust_y">Vertical offset</string>
+    <string name="brick_media_max_width">Media maximum width</string>
     <string name="brick_hide_in_apps">Hide in apps…</string>
     <string name="brick_hide_in_apps_count">Hide in apps… (%1$d)</string>
     <string name="brick_hide_in_apps_title">Hide %1$s in:</string>

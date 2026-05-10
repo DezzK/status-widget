@@ -652,6 +652,21 @@ public class WidgetService extends Service {
         binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
+        applyMediaMaxWidth(binding.mediaAppText);
+        applyMediaMaxWidth(binding.mediaTitleText);
+    }
+
+    private void applyMediaMaxWidth(OutlineTextView view) {
+        int maxWidth = prefs.media.maxWidth.get();
+        ViewGroup.LayoutParams lp = view.getLayoutParams();
+        lp.width = maxWidth;
+        view.setLayoutParams(lp);
+        view.setSingleLine(true);
+        view.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);
+        view.setMarqueeRepeatLimit(-1); // marquee_forever
+        // Marquee only animates while the view "is selected"; force it on so a static overlay
+        // (which never receives input focus) still scrolls long titles.
+        view.setSelected(true);
     }
 
     private void applyWifiBrickSettings() {
