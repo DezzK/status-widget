@@ -209,6 +209,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final LinearLayout brickHideInheritedBlock;
         final TextView brickHideInheritedHint;
         final MaterialButton brickHideUseOwnButton;
+        final MaterialButton brickResetButton;
         final MaterialButton brickRemoveButton;
 
         boolean expanded;
@@ -249,6 +250,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickHideInheritedBlock = itemView.findViewById(R.id.brickHideInheritedBlock);
             brickHideInheritedHint = itemView.findViewById(R.id.brickHideInheritedHint);
             brickHideUseOwnButton = itemView.findViewById(R.id.brickHideUseOwnButton);
+            brickResetButton = itemView.findViewById(R.id.brickResetButton);
             brickRemoveButton = itemView.findViewById(R.id.brickRemoveButton);
         }
 
@@ -264,6 +266,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                 return false;
             });
             brickRemoveButton.setOnClickListener(v -> removeBrick(type));
+            brickResetButton.setOnClickListener(v -> confirmResetBrick(type));
 
             // Reset listeners before rebinding (recycled holders).
             brickSizeSlider.clearOnChangeListeners();
@@ -405,6 +408,19 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             boolean visible = otherCount > 0;
             brickHideApplyToLabel.setVisibility(visible ? View.VISIBLE : View.GONE);
             brickHideApplyToChips.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+
+        private void confirmResetBrick(BrickType type) {
+            new androidx.appcompat.app.AlertDialog.Builder(activity)
+                    .setTitle(R.string.brick_reset_title)
+                    .setMessage(R.string.brick_reset_message)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.brick_reset_button, (d, w) -> {
+                        prefs.resetBrick(type);
+                        notifyService();
+                        notifyDataSetChanged();
+                    })
+                    .show();
         }
 
         private void openHideInApps(BrickType type) {

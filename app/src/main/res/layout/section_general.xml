@@ -76,6 +76,18 @@
                 android:layout_marginStart="@dimen/optionsMarginSmall"
                 android:text="@string/menu_import_settings"
                 app:icon="@drawable/ic_import" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/resetButton"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/optionsMarginSmall"
+                android:text="@string/menu_reset_settings"
+                android:textColor="?attr/colorError"
+                app:icon="@drawable/ic_reset"
+                app:iconTint="?attr/colorError"
+                app:strokeColor="?attr/colorError" />
         </LinearLayout>
 
         <com.google.android.material.materialswitch.MaterialSwitch

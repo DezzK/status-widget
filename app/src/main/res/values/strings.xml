@@ -75,6 +75,9 @@
 
     <string name="add_element">Add element</string>
     <string name="remove_element">Remove element</string>
+    <string name="brick_reset_button">Reset settings</string>
+    <string name="brick_reset_title">Reset this element?</string>
+    <string name="brick_reset_message">Settings of this element will be reverted to defaults. The element itself stays in the widget.</string>
     <string name="brick_drag_handle">Drag to reorder</string>
     <string name="brick_expand">Expand or collapse settings</string>
     <string name="brick_title_time">Time</string>
@@ -121,6 +124,10 @@
     <string name="menu_about">About</string>
     <string name="menu_export_settings">Export settings</string>
     <string name="menu_import_settings">Import settings</string>
+    <string name="menu_reset_settings">Reset settings</string>
+    <string name="reset_settings_title">Reset settings?</string>
+    <string name="reset_settings_message">All settings will be reverted to defaults and the widget will stop. This cannot be undone.</string>
+    <string name="reset_settings_confirm">Reset</string>
     <string name="export_chooser_title">Export settings</string>
     <string name="export_failed_toast">Failed to export settings</string>
     <string name="import_success_toast">Settings imported</string>

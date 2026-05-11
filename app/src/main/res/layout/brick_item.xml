@@ -373,11 +373,19 @@
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/brickRemoveButton"
+                android:id="@+id/brickResetButton"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/optionsMargin"
+                android:text="@string/brick_reset_button" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/brickRemoveButton"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMarginSmall"
                 android:text="@string/remove_element" />
         </LinearLayout>
     </LinearLayout>

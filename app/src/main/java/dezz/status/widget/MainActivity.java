@@ -35,6 +35,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -123,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
         binding.sectionGeneral.exportButton.setOnClickListener(v -> exportSettings());
         binding.sectionGeneral.importButton.setOnClickListener(v ->
                 importLauncher.launch(new String[]{EXPORT_MIME_TYPE, "*/*"}));
+        binding.sectionGeneral.resetButton.setOnClickListener(v -> confirmResetSettings());
 
         final String appVersion = VersionGetter.getAppVersionName(this);
         if (appVersion != null) {
@@ -477,6 +479,30 @@ public class MainActivity extends AppCompatActivity {
     private void stopWidgetService() {
         prefs.widgetEnabled.set(false);
         stopService(new Intent(this, WidgetService.class));
+    }
+
+    private void confirmResetSettings() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.reset_settings_title)
+                .setMessage(R.string.reset_settings_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.reset_settings_confirm, (d, w) -> resetAllSettings())
+                .show();
+    }
+
+    private void resetAllSettings() {
+        if (WidgetService.isRunning()) {
+            stopService(new Intent(this, WidgetService.class));
+        }
+        prefs.resetAll();
+        // Start a fresh MainActivity instead of recreate(): recreate() restores the View
+        // hierarchy state after our initializeViews(), and the CompoundButton listeners we
+        // attached then fire on setChecked(...) from restoreInstanceState — writing the
+        // pre-reset values straight back into the prefs we just cleared.
+        Intent restart = new Intent(this, MainActivity.class);
+        restart.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(restart);
+        finish();
     }
 
     private void requestPermissions() {

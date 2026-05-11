@@ -338,6 +338,46 @@ public class Preferences {
     }
 
     /**
+     * Wipes all stored preferences. Defaults take over on next read.
+     * Uses {@link android.content.SharedPreferences.Editor#commit()} (synchronous) instead of
+     * {@code apply()} because the caller typically kills the process immediately afterwards and
+     * an async write may not reach disk in time.
+     */
+    public void resetAll() {
+        prefs.edit().clear().commit();
+    }
+
+    /**
+     * Removes every stored pref whose storage key starts with the given brick's prefix. After
+     * removal subsequent reads return the brick's defaults. The brick stays in {@link #brickOrder}
+     * — only its own settings (font, outline, margins, hide list, alignment, type-specific flags)
+     * are reset.
+     */
+    public void resetBrick(BrickType type) {
+        String prefix = brickPrefix(type);
+        if (prefix == null) return;
+        SharedPreferences.Editor editor = prefs.edit();
+        for (String key : prefs.getAll().keySet()) {
+            if (key.startsWith(prefix)) {
+                editor.remove(key);
+            }
+        }
+        editor.apply();
+    }
+
+    @Nullable
+    private static String brickPrefix(BrickType type) {
+        switch (type) {
+            case TIME: return "time";
+            case DATE: return "date";
+            case MEDIA: return "media";
+            case WIFI: return "wifi";
+            case GPS: return "gps";
+            default: return null;
+        }
+    }
+
+    /**
      * One-shot migration from the pre-brick layout. Idempotent: re-running after the migration is
      * a no-op (detected by the presence of the {@code brickOrder} key). Also re-run after every
      * settings import in case the imported file used the legacy schema.

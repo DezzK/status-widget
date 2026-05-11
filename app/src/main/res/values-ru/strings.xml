@@ -75,6 +75,9 @@
 
     <string name="add_element">Добавить элемент</string>
     <string name="remove_element">Удалить элемент</string>
+    <string name="brick_reset_button">Сбросить настройки</string>
+    <string name="brick_reset_title">Сбросить настройки элемента?</string>
+    <string name="brick_reset_message">Все настройки этого элемента будут возвращены к значениям по умолчанию. Сам элемент останется в виджете.</string>
     <string name="brick_drag_handle">Перетаскивание для изменения порядка</string>
     <string name="brick_expand">Развернуть или свернуть настройки</string>
     <string name="brick_title_time">Время</string>
@@ -119,6 +122,10 @@
     <string name="menu_about">О приложении</string>
     <string name="menu_export_settings">Экспорт настроек</string>
     <string name="menu_import_settings">Импорт настроек</string>
+    <string name="menu_reset_settings">Сбросить настройки</string>
+    <string name="reset_settings_title">Сбросить настройки?</string>
+    <string name="reset_settings_message">Все настройки будут возвращены к значениям по умолчанию, виджет остановится. Действие нельзя отменить.</string>
+    <string name="reset_settings_confirm">Сбросить</string>
     <string name="export_chooser_title">Экспорт настроек</string>
     <string name="export_failed_toast">Не удалось экспортировать настройки</string>
     <string name="import_success_toast">Настройки импортированы</string>
