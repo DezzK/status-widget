@@ -28,35 +28,43 @@
 
         <include layout="@layout/section_header_appearance" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/optionsMarginSmall"
-            android:hint="@string/icon_design">
+            android:orientation="horizontal">
 
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/iconDesignDropdown"
-                android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:focusable="false"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_weight="1"
+                android:hint="@string/icon_design">
 
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/optionsMarginSmall"
-            android:hint="@string/icon_style">
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/iconDesignDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/iconStyleDropdown"
-                android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:focusable="false"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_marginStart="@dimen/optionsMarginSmall"
+                android:layout_weight="1"
+                android:hint="@string/icon_style">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/iconStyleDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
@@ -73,34 +81,54 @@
                 android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/optionsMargin"
-            android:text="@string/background_transparency"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
+            android:orientation="horizontal">
 
-        <com.google.android.material.slider.Slider
-            android:id="@+id/backgroundAlphaSlider"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:value="170"
-            android:valueFrom="0"
-            android:valueTo="255" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/optionsMarginSmall"
-            android:text="@string/background_corner_radius"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/background_transparency"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <com.google.android.material.slider.Slider
-            android:id="@+id/backgroundCornerRadiusSlider"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:value="100"
-            android:valueFrom="0"
-            android:valueTo="100" />
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/backgroundAlphaSlider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:value="170"
+                    android:valueFrom="0"
+                    android:valueTo="255" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/optionsMarginSmall"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/background_corner_radius"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/backgroundCornerRadiusSlider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:value="100"
+                    android:valueFrom="0"
+                    android:valueTo="100" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

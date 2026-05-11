@@ -200,7 +200,6 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final Slider brickMarginEndSlider;
         final com.google.android.material.textfield.TextInputLayout brickStatusAlignmentLayout;
         final MaterialAutoCompleteTextView brickStatusAlignmentDropdown;
-        final LinearLayout brickAdjustYBlock;
         final Slider brickAdjustYSlider;
         final LinearLayout brickDateBlock;
         final MaterialSwitch brickDateShowDate;
@@ -239,7 +238,6 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMarginEndSlider = itemView.findViewById(R.id.brickMarginEndSlider);
             brickStatusAlignmentLayout = itemView.findViewById(R.id.brickStatusAlignmentLayout);
             brickStatusAlignmentDropdown = itemView.findViewById(R.id.brickStatusAlignmentDropdown);
-            brickAdjustYBlock = itemView.findViewById(R.id.brickAdjustYBlock);
             brickAdjustYSlider = itemView.findViewById(R.id.brickAdjustYSlider);
             brickDateBlock = itemView.findViewById(R.id.brickDateBlock);
             brickDateShowDate = itemView.findViewById(R.id.brickDateShowDate);
@@ -295,14 +293,12 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             switch (type) {
                 case TIME:
                     bindTextBrick(prefs.time);
-                    showAdjustY(true);
                     showDateBlock(false);
                     showGpsBlock(false);
                     showMediaBlock(false);
                     break;
                 case DATE:
                     bindTextBrick(prefs.date);
-                    showAdjustY(true);
                     showDateBlock(true);
                     bindDateBlock();
                     showGpsBlock(false);
@@ -310,7 +306,6 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     break;
                 case MEDIA:
                     bindTextBrick(prefs.media);
-                    showAdjustY(true);
                     showDateBlock(false);
                     showGpsBlock(false);
                     showMediaBlock(true);
@@ -318,14 +313,12 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     break;
                 case WIFI:
                     bindIconBrick(prefs.wifi);
-                    showAdjustY(true);
                     showDateBlock(false);
                     showGpsBlock(false);
                     showMediaBlock(false);
                     break;
                 case GPS:
                     bindIconBrick(prefs.gps);
-                    showAdjustY(true);
                     showDateBlock(false);
                     showGpsBlock(true);
                     bindGpsBlock();
@@ -582,9 +575,6 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             });
         }
 
-        private void showAdjustY(boolean show) {
-            brickAdjustYBlock.setVisibility(show ? View.VISIBLE : View.GONE);
-        }
 
         private void showDateBlock(boolean show) {
             brickDateBlock.setVisibility(show ? View.VISIBLE : View.GONE);

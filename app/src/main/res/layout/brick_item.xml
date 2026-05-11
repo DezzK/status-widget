@@ -74,80 +74,155 @@
             android:visibility="gone"
             tools:visibility="visible">
 
-            <TextView
-                android:id="@+id/brickSizeLabel"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/brick_font_size"
-                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                android:orientation="horizontal">
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/brickSizeSlider"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:value="20"
-                android:valueFrom="10"
-                android:valueTo="500" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <TextView
+                    <TextView
+                        android:id="@+id/brickSizeLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/brick_font_size"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickSizeSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:value="20"
+                        android:valueFrom="10"
+                        android:valueTo="500" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/optionsMarginSmall"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/brick_adjust_y"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickAdjustYSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:value="0"
+                        android:valueFrom="-100"
+                        android:valueTo="100" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/optionsMarginSmall"
-                android:text="@string/brick_outline_alpha"
-                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                android:orientation="horizontal">
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/brickOutlineAlphaSlider"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:value="170"
-                android:valueFrom="0"
-                android:valueTo="255" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <TextView
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/brick_outline_alpha"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickOutlineAlphaSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:value="170"
+                        android:valueFrom="0"
+                        android:valueTo="255" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/optionsMarginSmall"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/brick_outline_width"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickOutlineWidthSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:value="2"
+                        android:valueFrom="0"
+                        android:valueTo="20" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/optionsMarginSmall"
-                android:text="@string/brick_outline_width"
-                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                android:orientation="horizontal">
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/brickOutlineWidthSlider"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:value="2"
-                android:valueFrom="0"
-                android:valueTo="20" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/optionsMarginSmall"
-                android:text="@string/brick_margin_start"
-                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/brick_margin_start"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/brickMarginStartSlider"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:value="0"
-                android:valueFrom="0"
-                android:valueTo="300" />
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickMarginStartSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:value="0"
+                        android:valueFrom="0"
+                        android:valueTo="300" />
+                </LinearLayout>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/optionsMarginSmall"
-                android:text="@string/brick_margin_end"
-                android:textAppearance="?attr/textAppearanceBodyMedium" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/optionsMarginSmall"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/brickMarginEndSlider"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:value="0"
-                android:valueFrom="0"
-                android:valueTo="300" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/brick_margin_end"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickMarginEndSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:value="0"
+                        android:valueFrom="0"
+                        android:valueTo="300" />
+                </LinearLayout>
+            </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/brickStatusAlignmentLayout"
@@ -165,29 +240,6 @@
                     android:focusable="false"
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
-
-            <LinearLayout
-                android:id="@+id/brickAdjustYBlock"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:text="@string/brick_adjust_y"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/brickAdjustYSlider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:value="0"
-                    android:valueFrom="-100"
-                    android:valueTo="100" />
-            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/brickDateBlock"
@@ -372,21 +424,29 @@
                     android:text="@string/brick_hide_use_own_list" />
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/brickResetButton"
-                style="?attr/materialButtonOutlinedStyle"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/optionsMargin"
-                android:text="@string/brick_reset_button" />
+                android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/brickRemoveButton"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/optionsMarginSmall"
-                android:text="@string/remove_element" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/brickResetButton"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/brick_reset_button" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/brickRemoveButton"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/optionsMarginSmall"
+                    android:layout_weight="1"
+                    android:text="@string/remove_element" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
