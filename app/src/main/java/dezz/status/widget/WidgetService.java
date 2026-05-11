@@ -34,6 +34,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -512,6 +513,12 @@ public class WidgetService extends Service {
         if (bricksSet.contains(BrickType.GPS)) padding = Math.max(padding, prefs.gps.size.get());
         binding.getRoot().setPadding(padding / 2, 0, padding / 2, 0);
 
+        // Lock the widget height to the tallest brick that's in the user's chosen order —
+        // including bricks currently hidden per-app. Otherwise hiding e.g. a big Time brick
+        // would let the row shrink vertically and the remaining icons would re-center up,
+        // breaking alignment with the device status bar that users carefully tune.
+        binding.getRoot().setMinimumHeight(computeMinWidgetHeight(bricksSet));
+
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         if (bricksSet.contains(BrickType.TIME) || bricksSet.contains(BrickType.DATE)) {
             long now = System.currentTimeMillis();
@@ -876,6 +883,49 @@ public class WidgetService extends Service {
         Set<BrickType> set = EnumSet.noneOf(BrickType.class);
         set.addAll(BrickType.parseOrder(prefs.brickOrder.get()));
         return set;
+    }
+
+    /**
+     * Computes the tallest brick height (in pixels) over all bricks currently in
+     * {@code brickOrder}, regardless of per-app visibility. Used as the widget's minimum height so
+     * a brick disappearing on a particular app doesn't shrink the row.
+     *
+     * Text bricks use {@link Paint#getFontMetrics()} on a copy of the TextView's paint at the
+     * given pixel size — this matches exactly the height the TextView itself would measure for a
+     * single line (with {@code includeFontPadding=true}, the default).
+     */
+    private int computeMinWidgetHeight(Set<BrickType> bricks) {
+        int h = 0;
+        if (bricks.contains(BrickType.TIME)) {
+            h = Math.max(h, textLineHeight(binding.timeText, prefs.time.fontSize.get()));
+        }
+        if (bricks.contains(BrickType.DATE)) {
+            // Two lines when day-of-week + date are both shown and not collapsed into one line.
+            int lines = (prefs.date.showDate.get() && prefs.date.showDayOfWeek.get()
+                    && !prefs.date.oneLineLayout.get()) ? 2 : 1;
+            h = Math.max(h, textLineHeight(binding.dateText, prefs.date.fontSize.get()) * lines);
+        }
+        if (bricks.contains(BrickType.MEDIA)) {
+            // Media is always two stacked lines (app name + title).
+            h = Math.max(h, textLineHeight(binding.mediaAppText, prefs.media.fontSize.get()) * 2);
+        }
+        if (bricks.contains(BrickType.WIFI)) {
+            h = Math.max(h, prefs.wifi.size.get());
+        }
+        if (bricks.contains(BrickType.GPS)) {
+            h = Math.max(h, prefs.gps.size.get());
+        }
+        return h;
+    }
+
+    private static int textLineHeight(OutlineTextView view, int fontSizePx) {
+        // Copy so we don't mutate the live drawing paint. The copy preserves typeface, which is
+        // crucial because Roboto Condensed Medium has different metrics from the default.
+        Paint p = new Paint(view.getPaint());
+        p.setTextSize(fontSizePx);
+        Paint.FontMetrics fm = p.getFontMetrics();
+        // TextView with includeFontPadding=true (default) uses top/bottom for the layout bounds.
+        return (int) Math.ceil(fm.bottom - fm.top);
     }
 
     public void setOverlayStateListener(@Nullable OverlayStateListener listener) {
