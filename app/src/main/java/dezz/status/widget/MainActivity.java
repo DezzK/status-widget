@@ -72,7 +72,8 @@ public class MainActivity extends AppCompatActivity {
     public static final int BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE = 1003;
     public static final int BACKGROUND_LOCATION_SETTINGS_REQUEST_CODE = 1004;
 
-    private static final String EXPORT_FILE_NAME = "status-widget-settings.json";
+    private static final String EXPORT_FILE_NAME_PREFIX = "status-widget-settings-";
+    private static final String EXPORT_FILE_NAME_EXT = ".json";
     private static final String EXPORT_MIME_TYPE = "application/json";
 
     private Preferences prefs;
@@ -155,7 +156,11 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.export_failed_toast, Toast.LENGTH_LONG).show();
                 return;
             }
-            File file = new File(exportsDir, EXPORT_FILE_NAME);
+            String fileName = EXPORT_FILE_NAME_PREFIX
+                    + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
+                            .format(new java.util.Date())
+                    + EXPORT_FILE_NAME_EXT;
+            File file = new File(exportsDir, fileName);
             try (FileOutputStream out = new FileOutputStream(file)) {
                 out.write(json.getBytes(StandardCharsets.UTF_8));
             }
@@ -163,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
             Intent send = new Intent(Intent.ACTION_SEND);
             send.setType(EXPORT_MIME_TYPE);
             send.putExtra(Intent.EXTRA_STREAM, uri);
-            send.putExtra(Intent.EXTRA_SUBJECT, EXPORT_FILE_NAME);
+            send.putExtra(Intent.EXTRA_SUBJECT, fileName);
             send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivity(Intent.createChooser(send, getString(R.string.export_chooser_title)));
         } catch (Exception e) {
