@@ -57,19 +57,11 @@ public class AboutActivity extends AppCompatActivity {
         ViewCompat.setOnApplyWindowInsetsListener(binding.contentLayout, (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, bars.top, bars.right, 0);
-            return windowInsets;
-        });
-        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomBar, (v, windowInsets) -> {
-            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
-                    | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, 0, bars.right, 0);
-            ((androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams)
-                    v.getLayoutParams()).bottomMargin = bars.bottom;
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return windowInsets;
         });
 
-        binding.bottomBar.setNavigationOnClickListener(v -> finish());
+        binding.backButton.setOnClickListener(v -> finish());
 
         binding.aboutFallback.setMovementMethod(LinkMovementMethod.getInstance());
         binding.aboutFallback.setText(Html.fromHtml(

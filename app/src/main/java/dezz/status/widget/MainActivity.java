@@ -25,7 +25,6 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
@@ -119,7 +118,18 @@ public class MainActivity extends AppCompatActivity {
 
         applyWindowInsets();
 
-        binding.bottomBar.setOnMenuItemClickListener(this::onMenuItemSelected);
+        binding.sectionGeneral.aboutButton.setOnClickListener(v ->
+                startActivity(new Intent(this, AboutActivity.class)));
+        binding.sectionGeneral.exportButton.setOnClickListener(v -> exportSettings());
+        binding.sectionGeneral.importButton.setOnClickListener(v ->
+                importLauncher.launch(new String[]{EXPORT_MIME_TYPE, "*/*"}));
+
+        final String appVersion = VersionGetter.getAppVersionName(this);
+        if (appVersion != null) {
+            binding.versionText.setText(appVersion);
+        } else {
+            binding.versionText.setVisibility(View.GONE);
+        }
 
         initializeViews();
 
@@ -132,34 +142,9 @@ public class MainActivity extends AppCompatActivity {
         ViewCompat.setOnApplyWindowInsetsListener(binding.scrollView, (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, bars.top, bars.right, 0);
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return windowInsets;
         });
-        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomBar, (v, windowInsets) -> {
-            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
-                    | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, 0, bars.right, 0);
-            ((androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams)
-                    v.getLayoutParams()).bottomMargin = bars.bottom;
-            return windowInsets;
-        });
-    }
-
-    private boolean onMenuItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.menu_about) {
-            startActivity(new Intent(this, AboutActivity.class));
-            return true;
-        }
-        if (id == R.id.menu_export_settings) {
-            exportSettings();
-            return true;
-        }
-        if (id == R.id.menu_import_settings) {
-            importLauncher.launch(new String[]{EXPORT_MIME_TYPE, "*/*"});
-            return true;
-        }
-        return false;
     }
 
     private void exportSettings() {
