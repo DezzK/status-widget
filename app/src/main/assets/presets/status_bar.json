@@ -1,0 +1,25 @@
+{
+  "fileType": "dezz.status.widget.settings",
+  "fileVersion": 1,
+  "preferences": {
+    "enabled": true,
+    "widgetMode": 1,
+    "brickOrder": "TIME,DATE,MEDIA,WIFI,GPS",
+    "mediaEnabled": true,
+    "backgroundAlpha": 255,
+    "backgroundCornerRadius": 0,
+    "timeFontSize": 36,
+    "timeStatusAlignment": 0,
+    "dateFontSize": 30,
+    "dateStatusAlignment": 0,
+    "dateOneLineLayout": true,
+    "dateShowFullName": false,
+    "mediaFontSize": 28,
+    "mediaStatusAlignment": 1,
+    "mediaMaxWidth": 700,
+    "wifiSize": 42,
+    "wifiStatusAlignment": 2,
+    "gpsSize": 42,
+    "gpsStatusAlignment": 2
+  }
+}

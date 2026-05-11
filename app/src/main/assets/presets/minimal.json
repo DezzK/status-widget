@@ -1,0 +1,16 @@
+{
+  "fileType": "dezz.status.widget.settings",
+  "fileVersion": 1,
+  "preferences": {
+    "enabled": true,
+    "widgetMode": 0,
+    "brickOrder": "TIME",
+    "backgroundAlpha": 0,
+    "backgroundCornerRadius": 0,
+    "overlayX": 100,
+    "overlayY": 80,
+    "timeFontSize": 100,
+    "timeOutlineWidth": 0,
+    "timeOutlineAlpha": 0
+  }
+}

@@ -132,10 +132,28 @@
     <string name="app_selection_load_failed_title">Не удалось загрузить список приложений</string>
     <string name="app_selection_load_failed_message">Произошла ошибка:\n\n%1$s</string>
     <string name="menu_about">О приложении</string>
+    <string name="menu_apply_preset">Применить пресет…</string>
     <string name="menu_export_settings">Экспорт настроек</string>
     <string name="menu_import_settings">Импорт настроек</string>
     <string name="menu_reset_settings">Сбросить настройки</string>
     <string name="menu_settings">Настройки</string>
+
+    <string name="preset_apply_title">Применить пресет?</string>
+    <string name="preset_apply_message">Текущие настройки будут заменены пресетом «%1$s». Действие нельзя отменить.</string>
+    <string name="preset_apply_confirm">Применить</string>
+    <string name="preset_apply_failed">Не удалось применить пресет</string>
+    <string name="preset_applied_toast">Пресет «%1$s» применён</string>
+
+    <string name="preset_minimal_name">Минимум</string>
+    <string name="preset_minimal_desc">Только крупные плавающие часы, без фона и обводки</string>
+    <string name="preset_standard_name">Стандартный</string>
+    <string name="preset_standard_desc">Все элементы в плавающем режиме: время, дата, медиа, Wi-Fi, GPS</string>
+    <string name="preset_status_bar_name">Статусная строка</string>
+    <string name="preset_status_bar_desc">Компактная полоса во всю ширину сверху экрана</string>
+    <string name="preset_sunlight_name">Под солнцем</string>
+    <string name="preset_sunlight_desc">Высококонтрастная тёмная тема с толстой обводкой для яркого дня</string>
+    <string name="preset_retro_name">Ретро</string>
+    <string name="preset_retro_desc">Крупные моноширинные жирные цифры — классические электронные часы</string>
 
     <string name="crash_report_title">Приложение упало в прошлый раз</string>
     <string name="crash_report_copy">Копировать</string>

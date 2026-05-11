@@ -1,0 +1,28 @@
+{
+  "fileType": "dezz.status.widget.settings",
+  "fileVersion": 1,
+  "preferences": {
+    "enabled": true,
+    "widgetMode": 0,
+    "widgetTheme": 2,
+    "brickOrder": "TIME,DATE,WIFI,GPS",
+    "backgroundAlpha": 0,
+    "backgroundCornerRadius": 0,
+    "overlayX": 100,
+    "overlayY": 80,
+    "timeFontSize": 80,
+    "timeFontBold": true,
+    "timeOutlineAlpha": 255,
+    "timeOutlineWidth": 10,
+    "dateFontSize": 26,
+    "dateFontBold": true,
+    "dateOutlineAlpha": 255,
+    "dateOutlineWidth": 8,
+    "wifiSize": 80,
+    "wifiOutlineAlpha": 255,
+    "wifiOutlineWidth": 8,
+    "gpsSize": 80,
+    "gpsOutlineAlpha": 255,
+    "gpsOutlineWidth": 8
+  }
+}

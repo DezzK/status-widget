@@ -1,0 +1,25 @@
+{
+  "fileType": "dezz.status.widget.settings",
+  "fileVersion": 1,
+  "preferences": {
+    "enabled": true,
+    "widgetMode": 0,
+    "widgetTheme": 2,
+    "brickOrder": "TIME,DATE",
+    "backgroundAlpha": 200,
+    "backgroundCornerRadius": 30,
+    "overlayX": 150,
+    "overlayY": 100,
+    "timeFontSize": 100,
+    "timeFontFamily": "monospace",
+    "timeFontBold": true,
+    "timeOutlineWidth": 0,
+    "timeOutlineAlpha": 0,
+    "dateFontSize": 28,
+    "dateFontFamily": "monospace",
+    "dateOneLineLayout": true,
+    "dateAlignment": 1,
+    "dateOutlineWidth": 0,
+    "dateOutlineAlpha": 0
+  }
+}

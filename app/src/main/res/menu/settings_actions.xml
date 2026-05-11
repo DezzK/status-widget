@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/menu_apply_preset"
+        android:icon="@drawable/ic_preset"
+        android:title="@string/menu_apply_preset" />
+    <item
         android:id="@+id/menu_export"
         android:icon="@drawable/ic_export"
         android:title="@string/menu_export_settings" />

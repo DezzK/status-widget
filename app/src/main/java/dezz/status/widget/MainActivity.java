@@ -560,6 +560,10 @@ public class MainActivity extends AppCompatActivity {
         }
         menu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
+            if (id == R.id.menu_apply_preset) {
+                showPresetsDialog();
+                return true;
+            }
             if (id == R.id.menu_export) {
                 exportSettings();
                 return true;
@@ -575,6 +579,70 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
         menu.show();
+    }
+
+    private void showPresetsDialog() {
+        final List<Presets.Preset> presets = Presets.ALL;
+        ArrayAdapter<Presets.Preset> adapter = new ArrayAdapter<Presets.Preset>(
+                this, android.R.layout.simple_list_item_2, android.R.id.text1, presets) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull android.view.ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                Presets.Preset p = presets.get(position);
+                ((android.widget.TextView) view.findViewById(android.R.id.text1)).setText(p.nameRes);
+                ((android.widget.TextView) view.findViewById(android.R.id.text2)).setText(p.descRes);
+                return view;
+            }
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.menu_apply_preset)
+                .setAdapter(adapter, (d, which) -> confirmApplyPreset(presets.get(which)))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void confirmApplyPreset(Presets.Preset preset) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.preset_apply_title)
+                .setMessage(getString(R.string.preset_apply_message, getString(preset.nameRes)))
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.preset_apply_confirm, (d, w) -> applyPreset(preset))
+                .show();
+    }
+
+    private void applyPreset(Presets.Preset preset) {
+        String json;
+        try {
+            json = Presets.readJson(this, preset);
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to read preset asset " + preset.assetFile, e);
+            Toast.makeText(this, R.string.preset_apply_failed, Toast.LENGTH_LONG).show();
+            return;
+        }
+        try {
+            prefs.importFromJson(json);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to apply preset " + preset.id, e);
+            Toast.makeText(this, R.string.preset_apply_failed, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (WidgetService.isRunning()) {
+            stopService(new Intent(this, WidgetService.class));
+        }
+        // Presets always set widgetEnabled=true. Auto-start the service if permissions allow so
+        // the new look takes effect immediately instead of waiting for a manual toggle.
+        if (prefs.widgetEnabled.get() && Permissions.allPermissionsGranted(this)) {
+            startForegroundService(new Intent(this, WidgetService.class));
+        }
+        Toast.makeText(this, getString(R.string.preset_applied_toast, getString(preset.nameRes)),
+                Toast.LENGTH_SHORT).show();
+        // Same restart pattern as resetAllSettings: a brand-new MainActivity avoids the View
+        // state-restoration footgun where attached listeners write the old values back.
+        Intent restart = new Intent(this, MainActivity.class);
+        restart.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(restart);
+        finish();
     }
 
     private void confirmResetSettings() {

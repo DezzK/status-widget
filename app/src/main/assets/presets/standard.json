@@ -1,0 +1,20 @@
+{
+  "fileType": "dezz.status.widget.settings",
+  "fileVersion": 1,
+  "preferences": {
+    "enabled": true,
+    "widgetMode": 0,
+    "brickOrder": "TIME,DATE,MEDIA,WIFI,GPS",
+    "mediaEnabled": true,
+    "backgroundAlpha": 170,
+    "backgroundCornerRadius": 100,
+    "overlayX": 200,
+    "overlayY": 100,
+    "timeFontSize": 70,
+    "dateFontSize": 22,
+    "mediaFontSize": 22,
+    "mediaMaxWidth": 500,
+    "wifiSize": 70,
+    "gpsSize": 70
+  }
+}
