@@ -119,12 +119,7 @@ public class MainActivity extends AppCompatActivity {
 
         applyWindowInsets();
 
-        binding.toolbar.setOnMenuItemClickListener(this::onMenuItemSelected);
-
-        final String appVersion = VersionGetter.getAppVersionName(this);
-        if (appVersion != null) {
-            binding.toolbar.setSubtitle(appVersion);
-        }
+        binding.bottomBar.setOnMenuItemClickListener(this::onMenuItemSelected);
 
         initializeViews();
 
@@ -134,16 +129,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyWindowInsets() {
-        ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout, (v, windowInsets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.scrollView, (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(bars.left, bars.top, bars.right, 0);
             return windowInsets;
         });
-        ViewCompat.setOnApplyWindowInsetsListener(binding.scrollView, (v, windowInsets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomBar, (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, 0, bars.right, bars.bottom);
+            v.setPadding(bars.left, 0, bars.right, 0);
+            ((androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams)
+                    v.getLayoutParams()).bottomMargin = bars.bottom;
             return windowInsets;
         });
     }
@@ -381,24 +378,34 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private final android.os.Handler overlayRegisterHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+
     @Override
     protected void onResume() {
         super.onResume();
-        if (binding != null && WidgetService.isRunning()) {
-            // Re-apply so the widget picks up state changes triggered outside the activity
-            // (e.g. Notification access toggled in system settings while the activity was paused).
-            WidgetService.getInstance().applyPreferences();
-            WidgetService.getInstance().setOverlayStateListener((x, y, w, h) ->
-                    runOnUiThread(() -> updatePositionSliders(x, y, w, h)));
-        }
+        registerOverlayListener();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        overlayRegisterHandler.removeCallbacksAndMessages(null);
         if (WidgetService.isRunning()) {
             WidgetService.getInstance().setOverlayStateListener(null);
         }
+    }
+
+    private void registerOverlayListener() {
+        if (binding == null) return;
+        if (!WidgetService.isRunning()) {
+            // Service starts asynchronously after onCreate's startForegroundService; poll
+            // until it's up so the position sliders + status-bar padding pick up its state.
+            overlayRegisterHandler.postDelayed(this::registerOverlayListener, 200);
+            return;
+        }
+        WidgetService.getInstance().applyPreferences();
+        WidgetService.getInstance().setOverlayStateListener((x, y, w, h) ->
+                runOnUiThread(() -> updatePositionSliders(x, y, w, h)));
     }
 
     private void updatePositionSliders(int x, int y, int w, int h) {
@@ -412,6 +419,25 @@ public class MainActivity extends AppCompatActivity {
         int yMax = dm.heightPixels;
         applySliderRange(sx, xMin, xMax, x);
         applySliderRange(sy, yMin, yMax, y);
+        updateStatusBarPadding(h);
+    }
+
+    /**
+     * In status-bar widget mode the floating widget sits at y=0 full-width and would cover the
+     * top of the settings cards. Push the scroll content down by the widget's height (on top of
+     * the normal section spacing).
+     */
+    private void updateStatusBarPadding(int widgetHeight) {
+        if (binding == null) return;
+        View child = binding.scrollView.getChildAt(0);
+        if (child == null) return;
+        int basePaddingTop = getResources().getDimensionPixelSize(R.dimen.sectionSpacing);
+        int extra = (prefs.widgetMode.get() == 1) ? widgetHeight : 0;
+        child.setPadding(
+                child.getPaddingLeft(),
+                basePaddingTop + extra,
+                child.getPaddingRight(),
+                child.getPaddingBottom());
     }
 
     private static void applySliderRange(Slider slider, int min, int max, int value) {

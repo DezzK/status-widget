@@ -79,20 +79,22 @@ public class AppSelectionActivity extends AppCompatActivity {
             binding = ActivityAppSelectionBinding.inflate(getLayoutInflater());
             setContentView(binding.getRoot());
 
-            ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout, (v, windowInsets) -> {
+            ViewCompat.setOnApplyWindowInsetsListener(binding.contentLayout, (v, windowInsets) -> {
                 Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                         | WindowInsetsCompat.Type.displayCutout());
                 v.setPadding(bars.left, bars.top, bars.right, 0);
                 return windowInsets;
             });
-            ViewCompat.setOnApplyWindowInsetsListener(binding.appList, (v, windowInsets) -> {
+            ViewCompat.setOnApplyWindowInsetsListener(binding.bottomBar, (v, windowInsets) -> {
                 Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                         | WindowInsetsCompat.Type.displayCutout());
-                v.setPadding(bars.left, 0, bars.right, bars.bottom);
+                v.setPadding(bars.left, 0, bars.right, 0);
+                ((androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams)
+                        v.getLayoutParams()).bottomMargin = bars.bottom;
                 return windowInsets;
             });
 
-            binding.toolbar.setNavigationOnClickListener(v -> finish());
+            binding.bottomBar.setNavigationOnClickListener(v -> finish());
 
             prefs = new Preferences(this);
             String prefKey = getIntent().getStringExtra(EXTRA_PREF_KEY);
@@ -101,7 +103,7 @@ public class AppSelectionActivity extends AppCompatActivity {
                     : prefs.hideInPackages;
             String customTitle = getIntent().getStringExtra(EXTRA_TITLE);
             if (customTitle != null && !customTitle.isEmpty()) {
-                binding.toolbar.setTitle(customTitle);
+                binding.titleText.setText(customTitle);
             }
             selected = target.get();
 
