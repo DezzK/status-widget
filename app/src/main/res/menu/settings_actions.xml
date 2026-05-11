@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_export"
+        android:icon="@drawable/ic_export"
+        android:title="@string/menu_export_settings" />
+    <item
+        android:id="@+id/menu_import"
+        android:icon="@drawable/ic_import"
+        android:title="@string/menu_import_settings" />
+    <item
+        android:id="@+id/menu_reset"
+        android:icon="@drawable/ic_reset"
+        android:title="@string/menu_reset_settings" />
+</menu>

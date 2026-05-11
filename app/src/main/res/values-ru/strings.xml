@@ -123,6 +123,7 @@
     <string name="menu_export_settings">Экспорт настроек</string>
     <string name="menu_import_settings">Импорт настроек</string>
     <string name="menu_reset_settings">Сбросить настройки</string>
+    <string name="menu_settings">Настройки</string>
     <string name="reset_settings_title">Сбросить настройки?</string>
     <string name="reset_settings_message">Все настройки будут возвращены к значениям по умолчанию, виджет остановится. Действие нельзя отменить.</string>
     <string name="reset_settings_confirm">Сбросить</string>

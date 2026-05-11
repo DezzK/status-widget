@@ -125,6 +125,7 @@
     <string name="menu_export_settings">Export settings</string>
     <string name="menu_import_settings">Import settings</string>
     <string name="menu_reset_settings">Reset settings</string>
+    <string name="menu_settings">Settings</string>
     <string name="reset_settings_title">Reset settings?</string>
     <string name="reset_settings_message">All settings will be reverted to defaults and the widget will stop. This cannot be undone.</string>
     <string name="reset_settings_confirm">Reset</string>

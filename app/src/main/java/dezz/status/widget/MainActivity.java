@@ -28,6 +28,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -121,10 +122,7 @@ public class MainActivity extends AppCompatActivity {
 
         binding.sectionGeneral.aboutButton.setOnClickListener(v ->
                 startActivity(new Intent(this, AboutActivity.class)));
-        binding.sectionGeneral.exportButton.setOnClickListener(v -> exportSettings());
-        binding.sectionGeneral.importButton.setOnClickListener(v ->
-                importLauncher.launch(new String[]{EXPORT_MIME_TYPE, "*/*"}));
-        binding.sectionGeneral.resetButton.setOnClickListener(v -> confirmResetSettings());
+        binding.sectionGeneral.settingsButton.setOnClickListener(this::showSettingsMenu);
 
         final String appVersion = VersionGetter.getAppVersionName(this);
         if (appVersion != null) {
@@ -479,6 +477,39 @@ public class MainActivity extends AppCompatActivity {
     private void stopWidgetService() {
         prefs.widgetEnabled.set(false);
         stopService(new Intent(this, WidgetService.class));
+    }
+
+    private void showSettingsMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor);
+        menu.getMenuInflater().inflate(R.menu.settings_actions, menu.getMenu());
+        // Show icons next to titles. PopupMenu hides them by default; this reaches into the
+        // private menu helper to force-show, which Material's PopupMenu supports.
+        try {
+            java.lang.reflect.Field f = menu.getClass().getDeclaredField("mPopup");
+            f.setAccessible(true);
+            Object popup = f.get(menu);
+            popup.getClass()
+                    .getDeclaredMethod("setForceShowIcon", boolean.class)
+                    .invoke(popup, true);
+        } catch (Exception ignored) {
+        }
+        menu.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.menu_export) {
+                exportSettings();
+                return true;
+            }
+            if (id == R.id.menu_import) {
+                importLauncher.launch(new String[]{EXPORT_MIME_TYPE, "*/*"});
+                return true;
+            }
+            if (id == R.id.menu_reset) {
+                confirmResetSettings();
+                return true;
+            }
+            return false;
+        });
+        menu.show();
     }
 
     private void confirmResetSettings() {
