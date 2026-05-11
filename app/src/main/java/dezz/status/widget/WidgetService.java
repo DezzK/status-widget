@@ -735,6 +735,7 @@ public class WidgetService extends Service {
         binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
+        binding.mediaContainer.setTranslationY(prefs.media.adjustY.get());
         applyMediaMaxWidth(binding.mediaAppText);
         applyMediaMaxWidth(binding.mediaTitleText);
     }
@@ -758,6 +759,7 @@ public class WidgetService extends Service {
         ip.height = prefs.wifi.size.get();
         binding.wifiStatusIcon.setLayoutParams(ip);
         applyHorizontalMargins(binding.wifiStatusIcon, prefs.wifi.marginStart.get(), prefs.wifi.marginEnd.get());
+        binding.wifiStatusIcon.setTranslationY(prefs.wifi.adjustY.get());
     }
 
     private void applyGpsBrickSettings() {
@@ -766,9 +768,10 @@ public class WidgetService extends Service {
         ip.height = prefs.gps.size.get();
         binding.gnssStatusIcon.setLayoutParams(ip);
         applyHorizontalMargins(binding.gnssStatusIcon, prefs.gps.marginStart.get(), prefs.gps.marginEnd.get());
+        binding.gnssStatusIcon.setTranslationY(prefs.gps.adjustY.get());
     }
 
-    private void applySingleLineTextBrick(OutlineTextView view, Preferences.SingleLineTextBrickPrefs p) {
+    private void applySingleLineTextBrick(OutlineTextView view, Preferences.TextBrickPrefs p) {
         view.setTextColor(ContextCompat.getColor(themedContext, R.color.text_primary));
         view.setOutlineColor(textOutlineColor(p.outlineAlpha.get()));
         view.setOutlineWidth(p.outlineWidth.get());

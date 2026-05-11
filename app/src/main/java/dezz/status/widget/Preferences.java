@@ -122,6 +122,7 @@ public class Preferences {
         public final Int outlineWidth;
         public final Int marginStart;
         public final Int marginEnd;
+        public final Int adjustY;
         /** Apps where the brick should be hidden when its own list is in effect. */
         public final StringSet hideInPackages;
         /**
@@ -139,6 +140,7 @@ public class Preferences {
             outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
             marginStart = new Int(p, prefix + "MarginStart", 0);
             marginEnd = new Int(p, prefix + "MarginEnd", 0);
+            adjustY = new Int(p, prefix + "AdjustY", 0);
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
@@ -149,18 +151,8 @@ public class Preferences {
         }
     }
 
-    /** Single-line text brick (Time, Date) — adds vertical adjust. */
-    public static class SingleLineTextBrickPrefs extends TextBrickPrefs {
-        public final Int adjustY;
-
-        public SingleLineTextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
-            super(p, prefix, defaultFontSize);
-            adjustY = new Int(p, prefix + "AdjustY", 0);
-        }
-    }
-
     /** Date brick — date number, day of week, formatting and ordering options. */
-    public static final class DateBrickPrefs extends SingleLineTextBrickPrefs {
+    public static final class DateBrickPrefs extends TextBrickPrefs {
         public final Bool showDate;
         public final Bool showDayOfWeek;
         public final Bool showFullName;
@@ -197,6 +189,7 @@ public class Preferences {
         public final Int outlineWidth;
         public final Int marginStart;
         public final Int marginEnd;
+        public final Int adjustY;
         public final StringSet hideInPackages;
         public final Str hideSource;
         /** Position group inside status-bar mode: 0 = start, 1 = center, 2 = end. */
@@ -209,6 +202,7 @@ public class Preferences {
             outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
             marginStart = new Int(p, prefix + "MarginStart", 0);
             marginEnd = new Int(p, prefix + "MarginEnd", 0);
+            adjustY = new Int(p, prefix + "AdjustY", 0);
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
@@ -254,7 +248,7 @@ public class Preferences {
     public final Bool mediaEnabled = new Bool(this, "mediaEnabled", false);
 
     // Per-brick settings.
-    public final SingleLineTextBrickPrefs time = new SingleLineTextBrickPrefs(this, "time", 60);
+    public final TextBrickPrefs time = new TextBrickPrefs(this, "time", 60);
     public final DateBrickPrefs date = new DateBrickPrefs(this);
     public final MediaBrickPrefs media = new MediaBrickPrefs(this);
     public final IconBrickPrefs wifi = new IconBrickPrefs(this, "wifi");

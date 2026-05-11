@@ -300,7 +300,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     break;
                 case MEDIA:
                     bindTextBrick(prefs.media);
-                    showAdjustY(false);
+                    showAdjustY(true);
                     showDateBlock(false);
                     showGpsBlock(false);
                     showMediaBlock(true);
@@ -308,14 +308,14 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     break;
                 case WIFI:
                     bindIconBrick(prefs.wifi);
-                    showAdjustY(false);
+                    showAdjustY(true);
                     showDateBlock(false);
                     showGpsBlock(false);
                     showMediaBlock(false);
                     break;
                 case GPS:
                     bindIconBrick(prefs.gps);
-                    showAdjustY(false);
+                    showAdjustY(true);
                     showDateBlock(false);
                     showGpsBlock(true);
                     bindGpsBlock();
@@ -484,7 +484,6 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
 
         private void bindTextBrick(Preferences.TextBrickPrefs p) {
             brickSizeLabel.setText(R.string.brick_font_size);
-            // Time gets a wider range because it is typically the largest element.
             brickSizeSlider.setValueFrom(10);
             brickSizeSlider.setValueTo(500);
             bindIntSlider(brickSizeSlider, p.fontSize, sizeFormatter());
@@ -492,10 +491,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             bindIntSlider(brickOutlineWidthSlider, p.outlineWidth, sizeFormatter());
             bindIntSlider(brickMarginStartSlider, p.marginStart, sizeFormatter());
             bindIntSlider(brickMarginEndSlider, p.marginEnd, sizeFormatter());
-            if (p instanceof Preferences.SingleLineTextBrickPrefs) {
-                Preferences.SingleLineTextBrickPrefs sp = (Preferences.SingleLineTextBrickPrefs) p;
-                bindIntSlider(brickAdjustYSlider, sp.adjustY, offsetFormatter());
-            }
+            bindIntSlider(brickAdjustYSlider, p.adjustY, offsetFormatter());
         }
 
         private void bindIconBrick(Preferences.IconBrickPrefs p) {
@@ -507,6 +503,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             bindIntSlider(brickOutlineWidthSlider, p.outlineWidth, sizeFormatter());
             bindIntSlider(brickMarginStartSlider, p.marginStart, sizeFormatter());
             bindIntSlider(brickMarginEndSlider, p.marginEnd, sizeFormatter());
+            bindIntSlider(brickAdjustYSlider, p.adjustY, offsetFormatter());
         }
 
         private void bindDateBlock() {
