@@ -58,6 +58,9 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
     private final OrderChangedListener orderChangedListener;
     private final List<BrickType> bricks;
     private ItemTouchHelper itemTouchHelper;
+    /** Currently expanded brick — only one panel is open at a time. {@code null} = all collapsed. */
+    @androidx.annotation.Nullable
+    private BrickType expandedType;
 
     public BrickListAdapter(AppCompatActivity activity, Preferences prefs,
                             OrderChangedListener orderChangedListener) {
@@ -110,6 +113,15 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         if (orderChangedListener != null) {
             orderChangedListener.onOrderChanged();
         }
+    }
+
+    private void toggleExpanded(BrickType type) {
+        if (type == expandedType) {
+            expandedType = null;
+        } else {
+            expandedType = type;
+        }
+        notifyDataSetChanged();
     }
 
     private void notifyService() {
@@ -212,8 +224,6 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialButton brickResetButton;
         final MaterialButton brickRemoveButton;
 
-        boolean expanded;
-
         BrickViewHolder(@NonNull View itemView) {
             super(itemView);
             brickTitle = itemView.findViewById(R.id.brickTitle);
@@ -257,8 +267,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         @SuppressLint("ClickableViewAccessibility")
         void bind(BrickType type) {
             brickTitle.setText(titleFor(type));
-            brickHeader.setOnClickListener(v -> setExpanded(!expanded));
-            brickExpand.setOnClickListener(v -> setExpanded(!expanded));
+            brickHeader.setOnClickListener(v -> toggleExpanded(type));
+            brickExpand.setOnClickListener(v -> toggleExpanded(type));
             brickDragHandle.setOnTouchListener((v, event) -> {
                 if (event.getActionMasked() == MotionEvent.ACTION_DOWN && itemTouchHelper != null) {
                     itemTouchHelper.startDrag(this);
@@ -325,7 +335,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
 
             bindHideBlock(type);
             bindStatusAlignment(type);
-            applyExpandState();
+            applyExpandState(type);
         }
 
         private void bindStatusAlignment(BrickType type) {
@@ -472,12 +482,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             }
         }
 
-        private void setExpanded(boolean expand) {
-            expanded = expand;
-            applyExpandState();
-        }
-
-        private void applyExpandState() {
+        private void applyExpandState(BrickType type) {
+            boolean expanded = (type == expandedType);
             brickPanel.setVisibility(expanded ? View.VISIBLE : View.GONE);
             brickExpand.setImageResource(expanded ? R.drawable.ic_expand_less : R.drawable.ic_expand_more);
         }
