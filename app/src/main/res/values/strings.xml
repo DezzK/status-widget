@@ -93,6 +93,18 @@
     <string name="brick_margin_end">Right spacing</string>
     <string name="brick_adjust_y">Vertical offset</string>
     <string name="brick_media_max_width">Media maximum width</string>
+    <string name="brick_font_family">Font</string>
+    <string name="brick_font_bold">Bold</string>
+    <string name="brick_font_italic">Italic</string>
+    <string name="brick_font_bold_short">B</string>
+    <string name="brick_font_italic_short">I</string>
+    <string name="font_roboto_condensed">Roboto Condensed</string>
+    <string name="font_sans_serif">Sans Serif</string>
+    <string name="font_sans_serif_condensed">Sans Serif Condensed</string>
+    <string name="font_sans_serif_light">Sans Serif Light</string>
+    <string name="font_sans_serif_medium">Sans Serif Medium</string>
+    <string name="font_serif">Serif</string>
+    <string name="font_monospace">Monospace</string>
     <string name="brick_status_alignment">Status bar alignment</string>
     <string-array name="brick_status_alignments">
         <item>Start</item>

@@ -37,6 +37,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
@@ -213,6 +214,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final LinearLayout brickMediaBlock;
         final Slider brickMediaMaxWidthSlider;
         final MaterialButton brickMediaPermissionButton;
+        final LinearLayout brickFontBlock;
+        final MaterialAutoCompleteTextView brickFontFamilyDropdown;
+        final MaterialButtonToggleGroup brickFontStyleGroup;
+        final MaterialButton brickFontBold;
+        final MaterialButton brickFontItalic;
         final LinearLayout brickHideOwnBlock;
         final MaterialButton brickHideInAppsButton;
         final TextView brickHideApplyToLabel;
@@ -251,6 +257,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaPermissionButton = itemView.findViewById(R.id.brickMediaPermissionButton);
+            brickFontBlock = itemView.findViewById(R.id.brickFontBlock);
+            brickFontFamilyDropdown = itemView.findViewById(R.id.brickFontFamilyDropdown);
+            brickFontStyleGroup = itemView.findViewById(R.id.brickFontStyleGroup);
+            brickFontBold = itemView.findViewById(R.id.brickFontBold);
+            brickFontItalic = itemView.findViewById(R.id.brickFontItalic);
             brickHideOwnBlock = itemView.findViewById(R.id.brickHideOwnBlock);
             brickHideInAppsButton = itemView.findViewById(R.id.brickHideInAppsButton);
             brickHideApplyToLabel = itemView.findViewById(R.id.brickHideApplyToLabel);
@@ -289,6 +300,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickDateBeforeDayOfWeek.setOnCheckedChangeListener(null);
             brickDateOneLineLayout.setOnCheckedChangeListener(null);
             brickGpsShowSatelliteBadge.setOnCheckedChangeListener(null);
+            brickFontStyleGroup.clearOnButtonCheckedListeners();
 
             switch (type) {
                 case TIME:
@@ -498,6 +510,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             bindIntSlider(brickMarginStartSlider, p.marginStart, sizeFormatter());
             bindIntSlider(brickMarginEndSlider, p.marginEnd, sizeFormatter());
             bindIntSlider(brickAdjustYSlider, p.adjustY, offsetFormatter());
+            bindFontBlock(p);
         }
 
         private void bindIconBrick(Preferences.IconBrickPrefs p) {
@@ -510,6 +523,48 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             bindIntSlider(brickMarginStartSlider, p.marginStart, sizeFormatter());
             bindIntSlider(brickMarginEndSlider, p.marginEnd, sizeFormatter());
             bindIntSlider(brickAdjustYSlider, p.adjustY, offsetFormatter());
+            brickFontBlock.setVisibility(View.GONE);
+        }
+
+        private void bindFontBlock(Preferences.TextBrickPrefs p) {
+            brickFontBlock.setVisibility(View.VISIBLE);
+
+            String[] labels = new String[Fonts.ALL.size()];
+            for (int i = 0; i < Fonts.ALL.size(); i++) {
+                labels[i] = activity.getString(Fonts.ALL.get(i).labelRes);
+            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    activity,
+                    com.google.android.material.R.layout.m3_auto_complete_simple_item,
+                    labels);
+            brickFontFamilyDropdown.setAdapter(adapter);
+            int currentIdx = 0;
+            String currentKey = p.fontFamily.get();
+            for (int i = 0; i < Fonts.ALL.size(); i++) {
+                if (Fonts.ALL.get(i).key.equals(currentKey)) {
+                    currentIdx = i;
+                    break;
+                }
+            }
+            brickFontFamilyDropdown.setText(labels[currentIdx], false);
+            brickFontFamilyDropdown.setOnItemClickListener((parent, view, position, id) -> {
+                p.fontFamily.set(Fonts.ALL.get(position).key);
+                notifyService();
+            });
+
+            // Set checked state BEFORE attaching the listener so seeding doesn't fire it.
+            brickFontBold.setChecked(p.fontBold.get());
+            brickFontItalic.setChecked(p.fontItalic.get());
+            brickFontStyleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+                if (checkedId == R.id.brickFontBold) {
+                    p.fontBold.set(isChecked);
+                } else if (checkedId == R.id.brickFontItalic) {
+                    p.fontItalic.set(isChecked);
+                } else {
+                    return;
+                }
+                notifyService();
+            });
         }
 
         private void bindDateBlock() {

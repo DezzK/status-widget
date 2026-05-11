@@ -37,6 +37,7 @@ import android.content.res.Configuration;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.location.GnssStatus;
@@ -733,12 +734,16 @@ public class WidgetService extends Service {
     private void applyMediaBrickSettings() {
         int outlineColor = textOutlineColor(prefs.media.outlineAlpha.get());
         int textColor = ContextCompat.getColor(themedContext, R.color.text_primary);
+        Typeface typeface = Fonts.resolve(this, prefs.media.fontFamily.get(),
+                prefs.media.fontBold.get(), prefs.media.fontItalic.get());
         binding.mediaAppText.setOutlineColor(outlineColor);
         binding.mediaAppText.setOutlineWidth(prefs.media.outlineWidth.get());
         binding.mediaAppText.setTextColor(textColor);
+        binding.mediaAppText.setTypeface(typeface);
         binding.mediaTitleText.setOutlineColor(outlineColor);
         binding.mediaTitleText.setOutlineWidth(prefs.media.outlineWidth.get());
         binding.mediaTitleText.setTextColor(textColor);
+        binding.mediaTitleText.setTypeface(typeface);
         binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
@@ -785,6 +790,7 @@ public class WidgetService extends Service {
         view.setTextColor(ContextCompat.getColor(themedContext, R.color.text_primary));
         view.setOutlineColor(textOutlineColor(p.outlineAlpha.get()));
         view.setOutlineWidth(p.outlineWidth.get());
+        view.setTypeface(Fonts.resolve(this, p.fontFamily.get(), p.fontBold.get(), p.fontItalic.get()));
         view.setTextSize(TypedValue.COMPLEX_UNIT_PX, p.fontSize.get());
         view.setTranslationY(p.adjustY.get());
         applyHorizontalMargins(view, p.marginStart.get(), p.marginEnd.get());

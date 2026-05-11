@@ -123,6 +123,10 @@ public class Preferences {
         public final Int marginStart;
         public final Int marginEnd;
         public final Int adjustY;
+        /** {@link Fonts.Family#key} of the chosen font family. */
+        public final Str fontFamily;
+        public final Bool fontBold;
+        public final Bool fontItalic;
         /** Apps where the brick should be hidden when its own list is in effect. */
         public final StringSet hideInPackages;
         /**
@@ -141,6 +145,9 @@ public class Preferences {
             marginStart = new Int(p, prefix + "MarginStart", 0);
             marginEnd = new Int(p, prefix + "MarginEnd", 0);
             adjustY = new Int(p, prefix + "AdjustY", 0);
+            fontFamily = new Str(p, prefix + "FontFamily", Fonts.DEFAULT_KEY);
+            fontBold = new Bool(p, prefix + "FontBold", false);
+            fontItalic = new Bool(p, prefix + "FontItalic", false);
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
