@@ -743,8 +743,11 @@ public class WidgetService extends Service {
     private void applyMediaMaxWidth(OutlineTextView view) {
         int maxWidth = prefs.media.maxWidth.get();
         ViewGroup.LayoutParams lp = view.getLayoutParams();
-        lp.width = maxWidth;
+        // Wrap to content but never exceed the user-chosen maximum — short texts stay short,
+        // long ones cap at maxWidth and switch to marquee scrolling.
+        lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
         view.setLayoutParams(lp);
+        view.setMaxWidth(maxWidth);
         view.setSingleLine(true);
         view.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);
         view.setMarqueeRepeatLimit(-1); // marquee_forever
