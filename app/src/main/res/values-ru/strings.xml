@@ -124,6 +124,13 @@
     <string name="menu_import_settings">Импорт настроек</string>
     <string name="menu_reset_settings">Сбросить настройки</string>
     <string name="menu_settings">Настройки</string>
+
+    <string name="crash_report_title">Приложение упало в прошлый раз</string>
+    <string name="crash_report_copy">Копировать</string>
+    <string name="crash_report_share">Отправить</string>
+    <string name="crash_report_dismiss">Отклонить</string>
+    <string name="crash_report_copied">Скопировано в буфер обмена</string>
+    <string name="crash_report_chooser">Отправить отчёт о сбое</string>
     <string name="reset_settings_title">Сбросить настройки?</string>
     <string name="reset_settings_message">Все настройки будут возвращены к значениям по умолчанию, виджет остановится. Действие нельзя отменить.</string>
     <string name="reset_settings_confirm">Сбросить</string>

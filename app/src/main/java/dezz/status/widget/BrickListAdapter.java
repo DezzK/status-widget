@@ -427,17 +427,24 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
 
         private void openHideInApps(BrickType type) {
-            if (!Permissions.isUsageAccessGranted(activity)) {
-                Toast.makeText(activity, R.string.usage_access_required, Toast.LENGTH_LONG).show();
-                openUsageAccessSettings();
-                return;
-            }
             try {
+                if (!Permissions.isUsageAccessGranted(activity)) {
+                    Toast.makeText(activity, R.string.usage_access_required, Toast.LENGTH_LONG).show();
+                    openUsageAccessSettings();
+                    return;
+                }
                 Intent intent = new Intent(activity, AppSelectionActivity.class);
                 intent.putExtra(AppSelectionActivity.EXTRA_PREF_KEY, prefs.hideListKeyFor(type));
                 intent.putExtra(AppSelectionActivity.EXTRA_TITLE, hideTitleFor(type));
                 activity.startActivity(intent);
-            } catch (Exception ignored) {
+            } catch (Throwable t) {
+                // Previously this was a silent catch — but several users reported the app crashing
+                // here on certain OEM ROMs. Surface the error in a toast so they can report it.
+                String msg = t.getClass().getSimpleName()
+                        + (t.getMessage() != null ? ": " + t.getMessage() : "");
+                Toast.makeText(activity,
+                        activity.getString(R.string.app_selection_load_failed_message, msg),
+                        Toast.LENGTH_LONG).show();
             }
         }
 

@@ -126,6 +126,13 @@
     <string name="menu_import_settings">Import settings</string>
     <string name="menu_reset_settings">Reset settings</string>
     <string name="menu_settings">Settings</string>
+
+    <string name="crash_report_title">App crashed previously</string>
+    <string name="crash_report_copy">Copy</string>
+    <string name="crash_report_share">Share</string>
+    <string name="crash_report_dismiss">Dismiss</string>
+    <string name="crash_report_copied">Copied to clipboard</string>
+    <string name="crash_report_chooser">Send crash report</string>
     <string name="reset_settings_title">Reset settings?</string>
     <string name="reset_settings_message">All settings will be reverted to defaults and the widget will stop. This cannot be undone.</string>
     <string name="reset_settings_confirm">Reset</string>

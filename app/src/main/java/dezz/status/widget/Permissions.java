@@ -65,38 +65,53 @@ public class Permissions {
     }
 
     public static boolean checkOverlayPermission(Context context) {
-        return Settings.canDrawOverlays(context);
+        try {
+            return Settings.canDrawOverlays(context);
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     public static boolean isNotificationAccessGranted(Context context) {
-        String enabled = Settings.Secure.getString(context.getContentResolver(),
-                "enabled_notification_listeners");
-        if (TextUtils.isEmpty(enabled)) {
+        try {
+            String enabled = Settings.Secure.getString(context.getContentResolver(),
+                    "enabled_notification_listeners");
+            if (TextUtils.isEmpty(enabled)) {
+                return false;
+            }
+            ComponentName component = new ComponentName(context, MediaNotificationListener.class);
+            String flatten = component.flattenToString();
+            for (String name : enabled.split(":")) {
+                if (flatten.equals(name) || component.equals(ComponentName.unflattenFromString(name))) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Throwable t) {
             return false;
         }
-        ComponentName component = new ComponentName(context, MediaNotificationListener.class);
-        String flatten = component.flattenToString();
-        for (String name : enabled.split(":")) {
-            if (flatten.equals(name) || component.equals(ComponentName.unflattenFromString(name))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static boolean isUsageAccessGranted(Context context) {
-        AppOpsManager appOps = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
-        if (appOps == null) {
+        // AppOpsManager.unsafeCheckOpNoThrow promises not to throw, but on some custom OEM ROMs
+        // (MIUI/EMUI/Magic OS) it has been observed throwing SecurityException or returning a
+        // null AppOpsManager. Guard everything.
+        try {
+            AppOpsManager appOps = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
+            if (appOps == null) {
+                return false;
+            }
+            int mode;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                mode = appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                        Process.myUid(), context.getPackageName());
+            } else {
+                mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                        Process.myUid(), context.getPackageName());
+            }
+            return mode == AppOpsManager.MODE_ALLOWED;
+        } catch (Throwable t) {
             return false;
         }
-        int mode;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            mode = appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(), context.getPackageName());
-        } else {
-            mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(), context.getPackageName());
-        }
-        return mode == AppOpsManager.MODE_ALLOWED;
     }
 }

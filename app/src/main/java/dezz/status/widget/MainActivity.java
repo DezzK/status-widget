@@ -137,6 +137,66 @@ public class MainActivity extends AppCompatActivity {
         if (prefs.widgetEnabled.get() && Permissions.allPermissionsGranted(this)) {
             startWidgetService();
         }
+
+        maybeShowCrashReport();
+    }
+
+    private void maybeShowCrashReport() {
+        File crashFile = new File(getCacheDir(), StatusWidgetApplication.CRASH_FILE);
+        if (!crashFile.exists() || !crashFile.canRead()) {
+            return;
+        }
+        String content;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new java.io.FileInputStream(crashFile), StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append('\n');
+            }
+            content = sb.toString();
+        } catch (IOException e) {
+            // Unreadable — best we can do is delete and bail.
+            //noinspection ResultOfMethodCallIgnored
+            crashFile.delete();
+            return;
+        }
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.crash_report_title)
+                .setMessage(content)
+                .setNeutralButton(R.string.crash_report_copy, (d, w) -> {
+                    android.content.ClipboardManager cm =
+                            (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    if (cm != null) {
+                        cm.setPrimaryClip(android.content.ClipData.newPlainText(
+                                "Status Widget crash", content));
+                    }
+                    Toast.makeText(this, R.string.crash_report_copied, Toast.LENGTH_SHORT).show();
+                    //noinspection ResultOfMethodCallIgnored
+                    crashFile.delete();
+                })
+                .setPositiveButton(R.string.crash_report_share, (d, w) -> shareCrashReport(crashFile))
+                .setNegativeButton(R.string.crash_report_dismiss, (d, w) -> {
+                    //noinspection ResultOfMethodCallIgnored
+                    crashFile.delete();
+                })
+                .show();
+    }
+
+    private void shareCrashReport(File crashFile) {
+        try {
+            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", crashFile);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.putExtra(Intent.EXTRA_SUBJECT, "Status Widget crash");
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(send, getString(R.string.crash_report_chooser)));
+            // File stays on disk until the user comes back; on next maybeShowCrashReport() they can
+            // dismiss/copy/share again.
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to share crash report", t);
+        }
     }
 
     private void applyWindowInsets() {
