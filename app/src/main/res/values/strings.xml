@@ -93,6 +93,7 @@
     <string name="brick_margin_end">Right spacing</string>
     <string name="brick_adjust_y">Vertical offset</string>
     <string name="brick_media_max_width">Media maximum width</string>
+    <string name="brick_media_show_source">Show source app</string>
     <string name="brick_font_family">Font</string>
     <string name="brick_font_bold">Bold</string>
     <string name="brick_font_italic">Italic</string>

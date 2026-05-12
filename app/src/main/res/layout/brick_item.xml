@@ -420,6 +420,15 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickMediaShowSource"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/brick_media_show_source"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

@@ -93,6 +93,7 @@
     <string name="brick_margin_end">Отступ справа</string>
     <string name="brick_adjust_y">Сдвиг по вертикали</string>
     <string name="brick_media_max_width">Максимальная ширина медиа</string>
+    <string name="brick_media_show_source">Показывать источник</string>
     <string name="brick_font_family">Шрифт</string>
     <string name="brick_font_bold">Жирный</string>
     <string name="brick_font_italic">Курсив</string>

@@ -931,8 +931,9 @@ public class WidgetService extends Service {
             h = Math.max(h, textLineHeight(binding.dateText, prefs.date.fontSize.get()) * lines);
         }
         if (bricks.contains(BrickType.MEDIA)) {
-            // Media is always two stacked lines (app name + title).
-            h = Math.max(h, textLineHeight(binding.mediaAppText, prefs.media.fontSize.get()) * 2);
+            // Media is one or two stacked lines depending on showSource (app name + title).
+            int mediaLines = prefs.media.showSource.get() ? 2 : 1;
+            h = Math.max(h, textLineHeight(binding.mediaAppText, prefs.media.fontSize.get()) * mediaLines);
         }
         if (bricks.contains(BrickType.WIFI)) {
             h = Math.max(h, prefs.wifi.size.get());
@@ -1059,6 +1060,7 @@ public class WidgetService extends Service {
             subtitle = getString(R.string.media_unknown_track);
         }
         binding.mediaAppText.setText(getAppLabel(playing.getPackageName()));
+        binding.mediaAppText.setVisibility(prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
         binding.mediaTitleText.setText(subtitle);
         binding.mediaContainer.setVisibility(View.VISIBLE);
     }

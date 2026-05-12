@@ -214,6 +214,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final LinearLayout brickGpsBlock;
         final MaterialSwitch brickGpsShowSatelliteBadge;
         final LinearLayout brickMediaBlock;
+        final MaterialSwitch brickMediaShowSource;
         final Slider brickMediaMaxWidthSlider;
         final com.google.android.material.textfield.TextInputLayout brickMediaStatusAlignmentLayout;
         final MaterialAutoCompleteTextView brickMediaStatusAlignmentDropdown;
@@ -262,6 +263,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickGpsBlock = itemView.findViewById(R.id.brickGpsBlock);
             brickGpsShowSatelliteBadge = itemView.findViewById(R.id.brickGpsShowSatelliteBadge);
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
+            brickMediaShowSource = itemView.findViewById(R.id.brickMediaShowSource);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaStatusAlignmentLayout = itemView.findViewById(R.id.brickMediaStatusAlignmentLayout);
             brickMediaStatusAlignmentDropdown = itemView.findViewById(R.id.brickMediaStatusAlignmentDropdown);
@@ -310,6 +312,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickDateBeforeDayOfWeek.setOnCheckedChangeListener(null);
             brickDateOneLineLayout.setOnCheckedChangeListener(null);
             brickGpsShowSatelliteBadge.setOnCheckedChangeListener(null);
+            brickMediaShowSource.setOnCheckedChangeListener(null);
             brickFontStyleGroup.clearOnButtonCheckedListeners();
 
             switch (type) {
@@ -661,6 +664,12 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
 
         private void bindMediaBlock() {
+            brickMediaShowSource.setChecked(prefs.media.showSource.get());
+            brickMediaShowSource.setOnCheckedChangeListener((v, c) -> {
+                prefs.media.showSource.set(c);
+                notifyService();
+            });
+
             brickMediaMaxWidthSlider.clearOnChangeListeners();
             // Upper bound = 80% of the current screen width — gives a useful range on both phones
             // and car head units without locking it to the XML default.
