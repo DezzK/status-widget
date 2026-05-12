@@ -246,7 +246,7 @@ public class Preferences {
     public final Int widgetMode = new Int(this, "widgetMode", 0);
     public final Int iconDesign = new Int(this, "iconDesign", 0);
     public final Int iconStyle = new Int(this, "iconStyle", 0);
-    // 0 = follow system, 1 = always light, 2 = always dark, 3 = inverse of system.
+    /** 0 = follow system, 1 = always light, 2 = always dark, 3 = inverse of system. */
     public final Int widgetTheme = new Int(this, "widgetTheme", 0);
     public final Int backgroundAlpha = new Int(this, "backgroundAlpha", 0xAA);
     public final Int backgroundCornerRadius = new Int(this, "backgroundCornerRadius", 100);
@@ -259,11 +259,13 @@ public class Preferences {
     public final Int paddingBottom = new Int(this, "paddingBottom", 0);
     public final StringSet hideInPackages = new StringSet(this, "hideInPackages");
 
-    // Layout: the comma-separated list of brick types in display order. Missing types are hidden.
+    /** Comma-separated list of brick types in display order. Missing types are hidden. */
     public final Str brickOrder = new Str(this, "brickOrder", "TIME,DATE,WIFI,GPS");
 
-    // Whether the user has been shown the notification access prompt at least once. Used to keep
-    // the media brick "active" only when the user has explicitly granted access.
+    /**
+     * Whether the user has been shown the notification access prompt at least once. Used to keep
+     * the media brick "active" only when the user has explicitly granted access.
+     */
     public final Bool mediaEnabled = new Bool(this, "mediaEnabled", false);
 
     // Per-brick settings.

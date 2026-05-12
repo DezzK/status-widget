@@ -1460,7 +1460,6 @@ public class WidgetService extends Service {
         return new NotificationCompat.Builder(this, CHANNEL_ID).setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.notification_content)).setSmallIcon(R.drawable.ic_status_gps_good).setContentIntent(pendingIntent).setOngoing(true).build();
     }
 
-    // Add this method to save position
     private void savePosition() {
         if (params != null) {
             prefs.overlayX.set(params.x);
