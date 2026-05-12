@@ -143,6 +143,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                 return R.string.brick_title_wifi;
             case GPS:
                 return R.string.brick_title_gps;
+            case BLUETOOTH:
+                return R.string.brick_title_bluetooth;
             default:
                 return 0;
         }
@@ -213,6 +215,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialAutoCompleteTextView brickDateAlignmentDropdown;
         final LinearLayout brickGpsBlock;
         final MaterialSwitch brickGpsShowSatelliteBadge;
+        final LinearLayout brickBluetoothBlock;
+        final MaterialSwitch brickBluetoothShowDeviceCountBadge;
         final LinearLayout brickMediaBlock;
         final MaterialSwitch brickMediaShowSource;
         final Slider brickMediaMaxWidthSlider;
@@ -262,6 +266,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickDateAlignmentDropdown = itemView.findViewById(R.id.brickDateAlignmentDropdown);
             brickGpsBlock = itemView.findViewById(R.id.brickGpsBlock);
             brickGpsShowSatelliteBadge = itemView.findViewById(R.id.brickGpsShowSatelliteBadge);
+            brickBluetoothBlock = itemView.findViewById(R.id.brickBluetoothBlock);
+            brickBluetoothShowDeviceCountBadge = itemView.findViewById(R.id.brickBluetoothShowDeviceCountBadge);
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
             brickMediaShowSource = itemView.findViewById(R.id.brickMediaShowSource);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
@@ -312,6 +318,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickDateBeforeDayOfWeek.setOnCheckedChangeListener(null);
             brickDateOneLineLayout.setOnCheckedChangeListener(null);
             brickGpsShowSatelliteBadge.setOnCheckedChangeListener(null);
+            brickBluetoothShowDeviceCountBadge.setOnCheckedChangeListener(null);
             brickMediaShowSource.setOnCheckedChangeListener(null);
             brickFontStyleGroup.clearOnButtonCheckedListeners();
 
@@ -320,6 +327,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     bindTextBrick(prefs.time);
                     showDateBlock(false);
                     showGpsBlock(false);
+                    showBluetoothBlock(false);
                     showMediaBlock(false);
                     break;
                 case DATE:
@@ -327,12 +335,14 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     showDateBlock(true);
                     bindDateBlock();
                     showGpsBlock(false);
+                    showBluetoothBlock(false);
                     showMediaBlock(false);
                     break;
                 case MEDIA:
                     bindTextBrick(prefs.media);
                     showDateBlock(false);
                     showGpsBlock(false);
+                    showBluetoothBlock(false);
                     showMediaBlock(true);
                     bindMediaBlock();
                     break;
@@ -340,6 +350,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     bindIconBrick(prefs.wifi);
                     showDateBlock(false);
                     showGpsBlock(false);
+                    showBluetoothBlock(false);
                     showMediaBlock(false);
                     break;
                 case GPS:
@@ -347,6 +358,15 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     showDateBlock(false);
                     showGpsBlock(true);
                     bindGpsBlock();
+                    showBluetoothBlock(false);
+                    showMediaBlock(false);
+                    break;
+                case BLUETOOTH:
+                    bindIconBrick(prefs.bluetooth);
+                    showDateBlock(false);
+                    showGpsBlock(false);
+                    showBluetoothBlock(true);
+                    bindBluetoothBlock();
                     showMediaBlock(false);
                     break;
             }
@@ -533,6 +553,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     return activity.getString(R.string.brick_title_wifi);
                 case GPS:
                     return activity.getString(R.string.brick_title_gps);
+                case BLUETOOTH:
+                    return activity.getString(R.string.brick_title_bluetooth);
                 default:
                     return "";
             }
@@ -663,6 +685,14 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             });
         }
 
+        private void bindBluetoothBlock() {
+            brickBluetoothShowDeviceCountBadge.setChecked(prefs.bluetooth.showDeviceCountBadge.get());
+            brickBluetoothShowDeviceCountBadge.setOnCheckedChangeListener((v, c) -> {
+                prefs.bluetooth.showDeviceCountBadge.set(c);
+                notifyService();
+            });
+        }
+
         private void bindMediaBlock() {
             brickMediaShowSource.setChecked(prefs.media.showSource.get());
             brickMediaShowSource.setOnCheckedChangeListener((v, c) -> {
@@ -714,6 +744,10 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
 
         private void showGpsBlock(boolean show) {
             brickGpsBlock.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+
+        private void showBluetoothBlock(boolean show) {
+            brickBluetoothBlock.setVisibility(show ? View.VISIBLE : View.GONE);
         }
 
         private void showMediaBlock(boolean show) {

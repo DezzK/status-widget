@@ -426,6 +426,8 @@ public class MainActivity extends AppCompatActivity {
                 return getString(R.string.brick_title_wifi);
             case GPS:
                 return getString(R.string.brick_title_gps);
+            case BLUETOOTH:
+                return getString(R.string.brick_title_bluetooth);
             default:
                 return "";
         }

@@ -414,6 +414,23 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/brickBluetoothBlock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickBluetoothShowDeviceCountBadge"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/show_bluetooth_device_count_badge"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/brickMediaBlock"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

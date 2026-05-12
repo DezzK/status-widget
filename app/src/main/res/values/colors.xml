@@ -29,4 +29,5 @@
     <color name="status_warning">#F9A825</color>
     <color name="status_error">#E53935</color>
     <color name="status_off">#8E8E8E</color>
+    <color name="status_bluetooth">#0082FC</color>
 </resources>

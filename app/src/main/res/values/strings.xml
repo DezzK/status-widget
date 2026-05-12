@@ -89,6 +89,8 @@
     <string name="brick_title_media">Now playing</string>
     <string name="brick_title_wifi">Wi-Fi</string>
     <string name="brick_title_gps">GPS</string>
+    <string name="brick_title_bluetooth">Bluetooth</string>
+    <string name="show_bluetooth_device_count_badge">Show connected device count badge</string>
     <string name="brick_font_size">Font size</string>
     <string name="brick_size">Size</string>
     <string name="brick_outline_alpha">Outline transparency</string>

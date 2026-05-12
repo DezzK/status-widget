@@ -25,6 +25,9 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -82,6 +85,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -97,7 +101,11 @@ public class WidgetService extends Service {
         OFF, NO_INTERNET, LIMITED_INTERNET, INTERNET
     }
 
-    // Icon designs: 4 Wi-Fi states (OFF, NO_INTERNET, LIMITED_INTERNET, INTERNET) and 3 GNSS states.
+    enum BluetoothState {
+        OFF, NO_DEVICE, CONNECTED
+    }
+
+    // Icon designs: 4 Wi-Fi states, 3 GNSS states, 3 Bluetooth states.
     private static final int[][] DESIGN_CLASSIC = {
             {
                     R.drawable.ic_status_wifi_off,
@@ -105,7 +113,8 @@ public class WidgetService extends Service {
                     R.drawable.ic_status_wifi_whitelist,
                     R.drawable.ic_status_wifi_internet
             },
-            { R.drawable.ic_status_gps_off, R.drawable.ic_status_gps_bad, R.drawable.ic_status_gps_good }
+            { R.drawable.ic_status_gps_off, R.drawable.ic_status_gps_bad, R.drawable.ic_status_gps_good },
+            { R.drawable.ic_status_bt_off, R.drawable.ic_status_bt_no_device, R.drawable.ic_status_bt_connected }
     };
     private static final int[][] DESIGN_SOLID = {
             {
@@ -114,7 +123,8 @@ public class WidgetService extends Service {
                     R.drawable.ic_status_filled_wifi_whitelist,
                     R.drawable.ic_status_filled_wifi_internet
             },
-            { R.drawable.ic_status_filled_gps_off, R.drawable.ic_status_filled_gps_bad, R.drawable.ic_status_filled_gps_good }
+            { R.drawable.ic_status_filled_gps_off, R.drawable.ic_status_filled_gps_bad, R.drawable.ic_status_filled_gps_good },
+            { R.drawable.ic_status_filled_bt_off, R.drawable.ic_status_filled_bt_no_device, R.drawable.ic_status_filled_bt_connected }
     };
     private static final int[][] DESIGN_BARS = {
             {
@@ -123,12 +133,14 @@ public class WidgetService extends Service {
                     R.drawable.ic_status_bars_wifi_whitelist,
                     R.drawable.ic_status_bars_wifi_internet
             },
-            { R.drawable.ic_status_bars_gps_off, R.drawable.ic_status_bars_gps_bad, R.drawable.ic_status_bars_gps_good }
+            { R.drawable.ic_status_bars_gps_off, R.drawable.ic_status_bars_gps_bad, R.drawable.ic_status_bars_gps_good },
+            { R.drawable.ic_status_bars_bt_off, R.drawable.ic_status_bars_bt_no_device, R.drawable.ic_status_bars_bt_connected }
     };
     private static final int[][][] ICON_DESIGNS = { DESIGN_CLASSIC, DESIGN_SOLID, DESIGN_BARS };
 
     private static final int ICON_TYPE_WIFI = 0;
     private static final int ICON_TYPE_GNSS = 1;
+    private static final int ICON_TYPE_BT = 2;
 
     private static final int WIDGET_MODE_FLOATING = 0;
     private static final int WIDGET_MODE_STATUS_BAR = 1;
@@ -166,6 +178,9 @@ public class WidgetService extends Service {
     private float initialTouchY;
     private GnssState gnssState = GnssState.OFF;
     private WiFiState wifiState = WiFiState.OFF;
+    private BluetoothState bluetoothState = BluetoothState.OFF;
+    private final Set<String> btConnectedAddrs = new HashSet<>();
+    private boolean btReceiverRegistered = false;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private LocationManager locationManager = null;
@@ -231,6 +246,33 @@ public class WidgetService extends Service {
     private final Runnable satellitesCountResetRunnable = () -> {
         satellitesCount = 0;
         updateGnssStatus();
+    };
+
+    private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action == null) return;
+            if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+                if (state == BluetoothAdapter.STATE_OFF || state == BluetoothAdapter.STATE_TURNING_OFF) {
+                    btConnectedAddrs.clear();
+                } else if (state == BluetoothAdapter.STATE_ON) {
+                    refreshBtConnectedFromProxies();
+                }
+            } else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                if (device != null && device.getAddress() != null) {
+                    btConnectedAddrs.add(device.getAddress());
+                }
+            } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                if (device != null && device.getAddress() != null) {
+                    btConnectedAddrs.remove(device.getAddress());
+                }
+            }
+            updateBluetoothStatus();
+        }
     };
 
     private final Runnable updateDateTimeRunnable = new Runnable() {
@@ -495,6 +537,7 @@ public class WidgetService extends Service {
         applyMediaBrickSettings();
         applyWifiBrickSettings();
         applyGpsBrickSettings();
+        applyBluetoothBrickSettings();
 
         applyBrickVisibility(bricksSet);
         applyOverlayPosition();
@@ -502,6 +545,7 @@ public class WidgetService extends Service {
         // Re-apply icon style for the current state — icon style and outline may have changed.
         updateWifiStatus();
         updateGnssStatus();
+        updateBluetoothStatus();
 
         // User-controllable global padding around the widget content (four independent sides).
         // Was previously auto-computed as half of the largest brick dimension — many users found
@@ -578,6 +622,15 @@ public class WidgetService extends Service {
             locationManager.unregisterGnssStatusCallback(gnssStatusCallback);
             locationManager = null;
         }
+
+        if (bricksSet.contains(BrickType.BLUETOOTH)) {
+            registerBluetoothReceiver();
+            refreshBtConnectedFromProxies();
+        } else {
+            unregisterBluetoothReceiver();
+            btConnectedAddrs.clear();
+        }
+        updateBluetoothStatus();
 
         if (bricksSet.contains(BrickType.MEDIA) && Permissions.isNotificationAccessGranted(this)) {
             enableMediaTracking();
@@ -706,6 +759,8 @@ public class WidgetService extends Service {
                 return binding.wifiStatusIcon;
             case GPS:
                 return binding.gnssStatusIcon;
+            case BLUETOOTH:
+                return binding.bluetoothStatusIcon;
             default:
                 return null;
         }
@@ -804,6 +859,16 @@ public class WidgetService extends Service {
         binding.gnssStatusIcon.setTranslationY(prefs.gps.adjustY.get());
     }
 
+    private void applyBluetoothBrickSettings() {
+        ViewGroup.LayoutParams ip = binding.bluetoothStatusIcon.getLayoutParams();
+        ip.width = prefs.bluetooth.size.get();
+        ip.height = prefs.bluetooth.size.get();
+        binding.bluetoothStatusIcon.setLayoutParams(ip);
+        applyHorizontalMargins(binding.bluetoothStatusIcon,
+                prefs.bluetooth.marginStart.get(), prefs.bluetooth.marginEnd.get());
+        binding.bluetoothStatusIcon.setTranslationY(prefs.bluetooth.adjustY.get());
+    }
+
     private void applySingleLineTextBrick(OutlineTextView view, Preferences.TextBrickPrefs p) {
         view.setTextColor(ContextCompat.getColor(themedContext, R.color.text_primary));
         view.setOutlineColor(textOutlineColor(p.outlineAlpha.get()));
@@ -895,6 +960,9 @@ public class WidgetService extends Service {
         binding.gnssStatusIcon.setVisibility(
                 (bricksSet.contains(BrickType.GPS) && !isBrickHiddenByApp(BrickType.GPS))
                         ? View.VISIBLE : View.GONE);
+        binding.bluetoothStatusIcon.setVisibility(
+                (bricksSet.contains(BrickType.BLUETOOTH) && !isBrickHiddenByApp(BrickType.BLUETOOTH))
+                        ? View.VISIBLE : View.GONE);
         // Media visibility is also gated by the active media session — see updateMediaInfo().
         if (!bricksSet.contains(BrickType.MEDIA) || isBrickHiddenByApp(BrickType.MEDIA)) {
             binding.mediaContainer.setVisibility(View.GONE);
@@ -939,6 +1007,9 @@ public class WidgetService extends Service {
         }
         if (bricks.contains(BrickType.GPS)) {
             h = Math.max(h, prefs.gps.size.get());
+        }
+        if (bricks.contains(BrickType.BLUETOOTH)) {
+            h = Math.max(h, prefs.bluetooth.size.get());
         }
         return h;
     }
@@ -1154,6 +1225,108 @@ public class WidgetService extends Service {
         satelliteReceiverRegistered = false;
         mainHandler.removeCallbacks(satellitesCountResetRunnable);
         satellitesCount = 0;
+    }
+
+    private void registerBluetoothReceiver() {
+        if (btReceiverRegistered) return;
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
+        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+        try {
+            registerReceiver(bluetoothReceiver, filter);
+            btReceiverRegistered = true;
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to register Bluetooth receiver", t);
+        }
+    }
+
+    private void unregisterBluetoothReceiver() {
+        if (!btReceiverRegistered) return;
+        try {
+            unregisterReceiver(bluetoothReceiver);
+        } catch (IllegalArgumentException ignored) {
+        }
+        btReceiverRegistered = false;
+    }
+
+    @Nullable
+    private static BluetoothAdapter getBluetoothAdapter() {
+        try {
+            return BluetoothAdapter.getDefaultAdapter();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
+     * Seed the connected-device set from profile proxies. ACL_CONNECTED broadcasts only fire on
+     * link change — devices that are already connected when the receiver registers wouldn't show
+     * up otherwise. Query HEADSET + A2DP (the common car-HU profiles) asynchronously and union
+     * their {@code getConnectedDevices()} lists into {@link #btConnectedAddrs}.
+     */
+    private void refreshBtConnectedFromProxies() {
+        BluetoothAdapter adapter = getBluetoothAdapter();
+        if (adapter == null) return;
+        try {
+            if (!adapter.isEnabled()) {
+                btConnectedAddrs.clear();
+                return;
+            }
+        } catch (Throwable t) {
+            return;
+        }
+        BluetoothProfile.ServiceListener listener = new BluetoothProfile.ServiceListener() {
+            @Override
+            public void onServiceConnected(int profile, BluetoothProfile proxy) {
+                try {
+                    for (BluetoothDevice d : proxy.getConnectedDevices()) {
+                        if (d != null && d.getAddress() != null) {
+                            btConnectedAddrs.add(d.getAddress());
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+                try {
+                    adapter.closeProfileProxy(profile, proxy);
+                } catch (Throwable ignored) {
+                }
+                updateBluetoothStatus();
+            }
+
+            @Override
+            public void onServiceDisconnected(int profile) {
+            }
+        };
+        try {
+            adapter.getProfileProxy(this, listener, BluetoothProfile.HEADSET);
+            adapter.getProfileProxy(this, listener, BluetoothProfile.A2DP);
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to query Bluetooth profile proxies", t);
+        }
+    }
+
+    private void updateBluetoothStatus() {
+        BluetoothAdapter adapter = getBluetoothAdapter();
+        boolean enabled;
+        try {
+            enabled = adapter != null && adapter.isEnabled();
+        } catch (Throwable t) {
+            enabled = false;
+        }
+        BluetoothState newState;
+        if (!enabled) {
+            newState = BluetoothState.OFF;
+            btConnectedAddrs.clear();
+        } else if (btConnectedAddrs.isEmpty()) {
+            newState = BluetoothState.NO_DEVICE;
+        } else {
+            newState = BluetoothState.CONNECTED;
+        }
+        bluetoothState = newState;
+        if (binding != null) {
+            updateIconStatus(ICON_TYPE_BT, binding.bluetoothStatusIcon, bluetoothState.ordinal());
+        }
     }
 
     private void updateForegroundAppTracking() {
@@ -1392,13 +1565,28 @@ public class WidgetService extends Service {
         icon.setDrawIcon(true);
 
         int iconStyle = Math.min(Math.max(0, prefs.iconStyle.get()), 1);
-        int[] colorRes = (iconType == ICON_TYPE_WIFI) ? WIFI_STATE_COLOR_RES : GNSS_STATE_COLOR_RES;
+        int[] colorRes;
+        Preferences.IconBrickPrefs iconPrefs;
+        switch (iconType) {
+            case ICON_TYPE_GNSS:
+                colorRes = GNSS_STATE_COLOR_RES;
+                iconPrefs = prefs.gps;
+                break;
+            case ICON_TYPE_BT:
+                colorRes = BT_STATE_COLOR_RES;
+                iconPrefs = prefs.bluetooth;
+                break;
+            case ICON_TYPE_WIFI:
+            default:
+                colorRes = WIFI_STATE_COLOR_RES;
+                iconPrefs = prefs.wifi;
+                break;
+        }
         int tint = (iconStyle == STYLE_COLOR)
                 ? ContextCompat.getColor(themedContext, colorRes[stateIdx])
                 : ContextCompat.getColor(themedContext, R.color.text_primary);
         ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
 
-        Preferences.IconBrickPrefs iconPrefs = (iconType == ICON_TYPE_WIFI) ? prefs.wifi : prefs.gps;
         int outlineAlpha = iconPrefs.outlineAlpha.get();
         if (outlineAlpha > 0) {
             int haloColor = (ContextCompat.getColor(themedContext, R.color.text_outline) & 0x00FFFFFF)
@@ -1418,14 +1606,21 @@ public class WidgetService extends Service {
             icon.setBadgeDrawable(null);
         }
 
-        // GNSS Share satellite count — show as a text badge on the GPS icon.
+        // Text badge: GNSS Share satellite count for GPS, connected-device count for Bluetooth.
+        String badgeText = null;
         if (iconType == ICON_TYPE_GNSS && prefs.gps.showSatelliteBadge.get() && satellitesCount > 0
                 && System.currentTimeMillis() - satellitesCountTimestamp < GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS) {
+            badgeText = String.valueOf(satellitesCount);
+        } else if (iconType == ICON_TYPE_BT && prefs.bluetooth.showDeviceCountBadge.get()
+                && bluetoothState == BluetoothState.CONNECTED && !btConnectedAddrs.isEmpty()) {
+            badgeText = String.valueOf(btConnectedAddrs.size());
+        }
+        if (badgeText != null) {
             int bgColor = (iconStyle == STYLE_COLOR)
                     ? ContextCompat.getColor(themedContext, colorRes[stateIdx])
                     : ContextCompat.getColor(themedContext, R.color.text_primary);
             int fgColor = ContextCompat.getColor(themedContext, R.color.text_outline) | 0xFF000000;
-            icon.setBadgeText(String.valueOf(satellitesCount), bgColor, fgColor);
+            icon.setBadgeText(badgeText, bgColor, fgColor);
         } else {
             icon.setBadgeText(null, 0, 0);
         }
@@ -1443,6 +1638,12 @@ public class WidgetService extends Service {
             R.color.status_off,
             R.color.status_warning,
             R.color.status_ok
+    };
+    // Bluetooth state colours by ordinal (OFF, NO_DEVICE, CONNECTED).
+    private static final int[] BT_STATE_COLOR_RES = {
+            R.color.status_off,
+            R.color.status_off,
+            R.color.status_bluetooth
     };
 
     private void createNotificationChannel() {
@@ -1496,6 +1697,7 @@ public class WidgetService extends Service {
         }
 
         unregisterSatelliteStatusReceiver();
+        unregisterBluetoothReceiver();
         disableMediaTracking();
     }
 

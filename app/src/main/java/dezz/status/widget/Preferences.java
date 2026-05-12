@@ -237,6 +237,16 @@ public class Preferences {
         }
     }
 
+    /** Bluetooth brick adds the connected-device-count badge toggle. */
+    public static final class BluetoothBrickPrefs extends IconBrickPrefs {
+        public final Bool showDeviceCountBadge;
+
+        public BluetoothBrickPrefs(Preferences p) {
+            super(p, "bluetooth");
+            showDeviceCountBadge = new Bool(p, "bluetoothShowDeviceCountBadge", true);
+        }
+    }
+
     private final SharedPreferences prefs;
 
     // Global widget settings.
@@ -274,6 +284,7 @@ public class Preferences {
     public final MediaBrickPrefs media = new MediaBrickPrefs(this);
     public final IconBrickPrefs wifi = new IconBrickPrefs(this, "wifi");
     public final GpsBrickPrefs gps = new GpsBrickPrefs(this);
+    public final BluetoothBrickPrefs bluetooth = new BluetoothBrickPrefs(this);
 
     @Nullable
     public TextBrickPrefs textBrickPrefs(BrickType type) {
@@ -296,6 +307,8 @@ public class Preferences {
                 return wifi;
             case GPS:
                 return gps;
+            case BLUETOOTH:
+                return bluetooth;
             default:
                 return null;
         }
@@ -388,6 +401,7 @@ public class Preferences {
             case MEDIA: return "media";
             case WIFI: return "wifi";
             case GPS: return "gps";
+            case BLUETOOTH: return "bluetooth";
             default: return null;
         }
     }

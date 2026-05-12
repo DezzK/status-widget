@@ -134,4 +134,13 @@
         android:paddingHorizontal="4sp"
         android:src="@drawable/ic_status_gps_off"
         tools:ignore="ContentDescription" />
+
+    <dezz.status.widget.OutlineImageView
+        android:id="@+id/bluetoothStatusIcon"
+        android:layout_width="100sp"
+        android:layout_height="100sp"
+        android:layout_gravity="center_vertical"
+        android:paddingHorizontal="4sp"
+        android:src="@drawable/ic_status_bt_off"
+        tools:ignore="ContentDescription" />
 </LinearLayout>

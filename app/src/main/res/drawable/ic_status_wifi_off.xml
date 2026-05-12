@@ -3,6 +3,9 @@
     android:height="24dp"
     android:viewportWidth="512"
     android:viewportHeight="512">
+    <group
+        android:scaleX="-1"
+        android:pivotX="256">
   <path
       android:fillColor="@android:color/white"
       android:antialias="true"
@@ -30,4 +33,5 @@
       android:fillColor="@android:color/white"
       android:antialias="true"
       android:pathData="M477.67,19.66c-6.14,-6.36 -16.27,-6.53 -22.62,-0.39l-0.39,0.39 -43.38,43.38 -43.67,43.67 -39.33,39.33 -119.77,119.78 -36.67,36.67 -42.01,41.99 -91.16,91.18c-6.25,6.25 -6.25,16.38 0,22.63 3,3 7.07,4.68 11.3,4.68s8.32,-1.68 11.31,-4.69L477.28,42.28c6.36,-6.14 6.53,-16.27 0.39,-22.62Z"/>
+    </group>
 </vector>

@@ -89,6 +89,8 @@
     <string name="brick_title_media">Воспроизведение</string>
     <string name="brick_title_wifi">Wi-Fi</string>
     <string name="brick_title_gps">GPS</string>
+    <string name="brick_title_bluetooth">Bluetooth</string>
+    <string name="show_bluetooth_device_count_badge">Показывать число подключённых устройств</string>
     <string name="brick_font_size">Размер шрифта</string>
     <string name="brick_size">Размер</string>
     <string name="brick_outline_alpha">Интенсивность обводки</string>

@@ -28,7 +28,7 @@ import java.util.List;
  * comma-separated string in {@link Preferences#brickOrder}; missing types are hidden.
  */
 public enum BrickType {
-    TIME, DATE, MEDIA, WIFI, GPS;
+    TIME, DATE, MEDIA, WIFI, GPS, BLUETOOTH;
 
     @Nullable
     public static BrickType fromName(String name) {
