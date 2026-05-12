@@ -20,6 +20,7 @@ package dezz.status.widget;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
@@ -457,7 +458,23 @@ public class Preferences {
     private static final int EXPORT_FILE_VERSION = 1;
     private static final String KEY_FILE_TYPE = "fileType";
     private static final String KEY_FILE_VERSION = "fileVersion";
+    private static final String KEY_PRESET_NAME = "presetName";
     private static final String KEY_PREFERENCES = "preferences";
+
+    /**
+     * Extracts the optional {@code presetName} field from a preset/settings JSON. Returns
+     * {@code null} if the field is absent or the JSON is malformed.
+     */
+    @Nullable
+    public static String readPresetName(@NonNull String json) {
+        try {
+            JSONObject root = new JSONObject(json);
+            String name = root.optString(KEY_PRESET_NAME, "").trim();
+            return name.isEmpty() ? null : name;
+        } catch (JSONException e) {
+            return null;
+        }
+    }
 
     public static class InvalidSettingsFileException extends Exception {
         public InvalidSettingsFileException(String message) {
@@ -466,6 +483,14 @@ public class Preferences {
     }
 
     public String exportToJson() throws JSONException {
+        return exportToJson(null);
+    }
+
+    /**
+     * Same as {@link #exportToJson()} but writes the optional {@code presetName} field. Used when
+     * saving the current state as a named user preset.
+     */
+    public String exportToJson(@Nullable String presetName) throws JSONException {
         JSONObject preferencesNode = new JSONObject();
         for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
             Object value = entry.getValue();
@@ -482,6 +507,9 @@ public class Preferences {
         JSONObject root = new JSONObject();
         root.put(KEY_FILE_TYPE, EXPORT_FILE_TYPE);
         root.put(KEY_FILE_VERSION, EXPORT_FILE_VERSION);
+        if (presetName != null && !presetName.trim().isEmpty()) {
+            root.put(KEY_PRESET_NAME, presetName.trim());
+        }
         root.put(KEY_PREFERENCES, preferencesNode);
         return root.toString(2);
     }

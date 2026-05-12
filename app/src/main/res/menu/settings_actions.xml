@@ -5,6 +5,14 @@
         android:icon="@drawable/ic_preset"
         android:title="@string/menu_apply_preset" />
     <item
+        android:id="@+id/menu_save_preset"
+        android:icon="@drawable/ic_save_preset"
+        android:title="@string/menu_save_preset" />
+    <item
+        android:id="@+id/menu_import_preset"
+        android:icon="@drawable/ic_import_preset"
+        android:title="@string/menu_import_preset" />
+    <item
         android:id="@+id/menu_export"
         android:icon="@drawable/ic_export"
         android:title="@string/menu_export_settings" />

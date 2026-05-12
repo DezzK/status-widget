@@ -133,9 +133,11 @@
     <string name="app_selection_load_failed_message">Произошла ошибка:\n\n%1$s</string>
     <string name="menu_about">О приложении</string>
     <string name="menu_apply_preset">Применить пресет…</string>
-    <string name="menu_export_settings">Экспорт настроек</string>
-    <string name="menu_import_settings">Импорт настроек</string>
-    <string name="menu_reset_settings">Сбросить настройки</string>
+    <string name="menu_save_preset">Сохранить текущие как пресет…</string>
+    <string name="menu_import_preset">Импортировать пресет из файла…</string>
+    <string name="menu_export_settings">Экспорт настроек…</string>
+    <string name="menu_import_settings">Импорт настроек…</string>
+    <string name="menu_reset_settings">Сбросить настройки…</string>
     <string name="menu_settings">Настройки</string>
 
     <string name="preset_apply_title">Применить пресет?</string>
@@ -143,6 +145,35 @@
     <string name="preset_apply_confirm">Применить</string>
     <string name="preset_apply_failed">Не удалось применить пресет</string>
     <string name="preset_applied_toast">Пресет «%1$s» применён</string>
+
+    <string name="preset_user_subtitle">Ваш пресет</string>
+    <string name="preset_action_apply">Применить</string>
+    <string name="preset_action_export">Экспортировать</string>
+    <string name="preset_action_delete">Удалить</string>
+
+    <string name="preset_name_hint">Название пресета</string>
+    <string name="preset_name_invalid">Название должно содержать хотя бы одну букву или цифру</string>
+
+    <string name="preset_save_title">Сохранить текущие настройки как пресет</string>
+    <string name="preset_save_confirm">Сохранить</string>
+    <string name="preset_save_failed">Не удалось сохранить пресет</string>
+    <string name="preset_saved_toast">Пресет «%1$s» сохранён</string>
+
+    <string name="preset_import_title">Импорт пресета</string>
+    <string name="preset_import_failed">Не удалось импортировать пресет</string>
+
+    <string name="preset_overwrite_title">Перезаписать пресет?</string>
+    <string name="preset_overwrite_message">Пресет «%1$s» уже существует. Перезаписать?</string>
+    <string name="preset_overwrite_confirm">Перезаписать</string>
+
+    <string name="preset_export_failed">Не удалось экспортировать пресет</string>
+    <string name="preset_exported_toast">Пресет «%1$s» экспортирован</string>
+
+    <string name="preset_delete_title">Удалить пресет?</string>
+    <string name="preset_delete_message">Пресет «%1$s» будет удалён без возможности восстановления.</string>
+    <string name="preset_delete_confirm">Удалить</string>
+    <string name="preset_delete_failed">Не удалось удалить пресет</string>
+    <string name="preset_deleted_toast">Пресет «%1$s» удалён</string>
 
     <string name="preset_minimal_name">Минимум</string>
     <string name="preset_minimal_desc">Только крупные плавающие часы, без фона и обводки</string>
