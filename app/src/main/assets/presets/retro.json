@@ -8,18 +8,18 @@
     "brickOrder": "TIME,DATE",
     "backgroundAlpha": 200,
     "backgroundCornerRadius": 30,
-    "overlayX": 150,
-    "overlayY": 100,
+    "overlayX": 485,
+    "overlayY": 22,
     "timeFontSize": 100,
     "timeFontFamily": "monospace",
     "timeFontBold": true,
-    "timeOutlineWidth": 0,
     "timeOutlineAlpha": 0,
-    "dateFontSize": 28,
+    "timeOutlineWidth": 0,
+    "dateFontSize": 42,
     "dateFontFamily": "monospace",
     "dateOneLineLayout": true,
     "dateAlignment": 1,
-    "dateOutlineWidth": 0,
-    "dateOutlineAlpha": 0
+    "dateOutlineAlpha": 0,
+    "dateOutlineWidth": 0
   }
 }

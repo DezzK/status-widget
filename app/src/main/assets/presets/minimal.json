@@ -7,10 +7,11 @@
     "brickOrder": "TIME",
     "backgroundAlpha": 0,
     "backgroundCornerRadius": 0,
-    "overlayX": 100,
-    "overlayY": 80,
+    "overlayX": 425,
+    "overlayY": -2,
     "timeFontSize": 100,
-    "timeOutlineWidth": 0,
-    "timeOutlineAlpha": 0
+    "timeFontFamily": "sans-serif-light",
+    "timeOutlineWidth": 3,
+    "timeOutlineAlpha": 171
   }
 }
