@@ -252,6 +252,11 @@ public class Preferences {
     public final Int backgroundCornerRadius = new Int(this, "backgroundCornerRadius", 100);
     public final Int overlayX = new Int(this, "overlayX", 200);
     public final Int overlayY = new Int(this, "overlayY", 300);
+    /** Padding inside the widget container on each side, in px. */
+    public final Int paddingLeft = new Int(this, "paddingLeft", 40);
+    public final Int paddingTop = new Int(this, "paddingTop", 0);
+    public final Int paddingRight = new Int(this, "paddingRight", 40);
+    public final Int paddingBottom = new Int(this, "paddingBottom", 0);
     public final StringSet hideInPackages = new StringSet(this, "hideInPackages");
 
     // Layout: the comma-separated list of brick types in display order. Missing types are hidden.

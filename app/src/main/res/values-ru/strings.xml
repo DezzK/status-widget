@@ -33,6 +33,10 @@
     <string name="widget_align_right_hint">При изменении ширины содержимого правый край остаётся на месте, а левый сдвигается</string>
     <string name="widget_position_x">Позиция виджета по X</string>
     <string name="widget_position_y">Позиция виджета по Y</string>
+    <string name="widget_padding_left">Отступ слева</string>
+    <string name="widget_padding_right">Отступ справа</string>
+    <string name="widget_padding_top">Отступ сверху</string>
+    <string name="widget_padding_bottom">Отступ снизу</string>
 
     <string name="icon_design">Дизайн иконок</string>
     <string-array name="icon_designs">

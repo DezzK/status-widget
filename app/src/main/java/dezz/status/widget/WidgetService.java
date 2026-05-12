@@ -503,16 +503,15 @@ public class WidgetService extends Service {
         updateWifiStatus();
         updateGnssStatus();
 
-        // Root horizontal padding is the largest brick dimension among the visible bricks. We
-        // need it because text outlines and icon outlines bleed past the view bounds and would
-        // otherwise be clipped by the window surface.
-        int padding = 0;
-        if (bricksSet.contains(BrickType.TIME)) padding = Math.max(padding, prefs.time.fontSize.get());
-        if (bricksSet.contains(BrickType.DATE)) padding = Math.max(padding, prefs.date.fontSize.get());
-        if (bricksSet.contains(BrickType.MEDIA)) padding = Math.max(padding, prefs.media.fontSize.get());
-        if (bricksSet.contains(BrickType.WIFI)) padding = Math.max(padding, prefs.wifi.size.get());
-        if (bricksSet.contains(BrickType.GPS)) padding = Math.max(padding, prefs.gps.size.get());
-        binding.getRoot().setPadding(padding / 2, 0, padding / 2, 0);
+        // User-controllable global padding around the widget content (four independent sides).
+        // Was previously auto-computed as half of the largest brick dimension — many users found
+        // it too wide on small head units, so it's now explicit prefs. Slight outline clipping
+        // at thin paddings is acceptable.
+        binding.getRoot().setPadding(
+                prefs.paddingLeft.get(),
+                prefs.paddingTop.get(),
+                prefs.paddingRight.get(),
+                prefs.paddingBottom.get());
 
         // Lock the widget height to the tallest brick that's in the user's chosen order —
         // including bricks currently hidden per-app. Otherwise hiding e.g. a big Time brick

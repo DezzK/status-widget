@@ -33,6 +33,10 @@
     <string name="widget_align_right_hint">When the widget content changes width, the right edge stays fixed and the left edge moves</string>
     <string name="widget_position_x">Widget position X</string>
     <string name="widget_position_y">Widget position Y</string>
+    <string name="widget_padding_left">Padding left</string>
+    <string name="widget_padding_right">Padding right</string>
+    <string name="widget_padding_top">Padding top</string>
+    <string name="widget_padding_bottom">Padding bottom</string>
 
     <string name="icon_design">Icon design</string>
     <string-array name="icon_designs">

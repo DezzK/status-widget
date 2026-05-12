@@ -347,6 +347,10 @@ public class MainActivity extends AppCompatActivity {
         binding.sectionGeneral.widgetPositionYSlider.setValueTo(Math.max(1, dm.heightPixels));
         binder.bindSizeSlider(binding.sectionGeneral.widgetPositionXSlider, prefs.overlayX);
         binder.bindSizeSlider(binding.sectionGeneral.widgetPositionYSlider, prefs.overlayY);
+        binder.bindSizeSlider(binding.sectionGeneral.widgetPaddingLeftSlider, prefs.paddingLeft);
+        binder.bindSizeSlider(binding.sectionGeneral.widgetPaddingRightSlider, prefs.paddingRight);
+        binder.bindSizeSlider(binding.sectionGeneral.widgetPaddingTopSlider, prefs.paddingTop);
+        binder.bindSizeSlider(binding.sectionGeneral.widgetPaddingBottomSlider, prefs.paddingBottom);
         refreshFloatingControlsEnabled();
     }
 
