@@ -750,6 +750,25 @@ public class WidgetService extends Service {
         binding.mediaContainer.setTranslationY(prefs.media.adjustY.get());
         applyMediaMaxWidth(binding.mediaAppText);
         applyMediaMaxWidth(binding.mediaTitleText);
+        applyMediaChildAlignment(binding.mediaAppText, prefs.media.alignment.get());
+        applyMediaChildAlignment(binding.mediaTitleText, prefs.media.alignment.get());
+    }
+
+    /**
+     * Horizontal alignment of a single text line within the vertical media container.
+     * Container is wrap_content (sized to the wider of the two children), so the narrower
+     * child shifts within that band via its own {@code layout_gravity}.
+     */
+    private static void applyMediaChildAlignment(View view, int alignment) {
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
+        int gravity;
+        switch (alignment) {
+            case 1: gravity = Gravity.CENTER_HORIZONTAL; break;
+            case 2: gravity = Gravity.END; break;
+            default: gravity = Gravity.START; break;
+        }
+        lp.gravity = gravity;
+        view.setLayoutParams(lp);
     }
 
     private void applyMediaMaxWidth(OutlineTextView view) {

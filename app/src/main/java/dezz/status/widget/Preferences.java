@@ -182,10 +182,13 @@ public class Preferences {
     /** Media brick — has its own max-width to bound marquee scrolling. */
     public static final class MediaBrickPrefs extends TextBrickPrefs {
         public final Int maxWidth;
+        /** Horizontal alignment of the two text lines inside the media container: 0/1/2 = start/center/end. */
+        public final Int alignment;
 
         public MediaBrickPrefs(Preferences p) {
             super(p, "media", 20);
             maxWidth = new Int(p, "mediaMaxWidth", 500);
+            alignment = new Int(p, "mediaAlignment", 0);
         }
     }
 

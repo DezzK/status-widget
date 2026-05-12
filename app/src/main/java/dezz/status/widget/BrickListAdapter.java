@@ -208,11 +208,16 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialSwitch brickDateShowFullName;
         final MaterialSwitch brickDateBeforeDayOfWeek;
         final MaterialSwitch brickDateOneLineLayout;
+        final com.google.android.material.textfield.TextInputLayout brickDateStatusAlignmentLayout;
+        final MaterialAutoCompleteTextView brickDateStatusAlignmentDropdown;
         final MaterialAutoCompleteTextView brickDateAlignmentDropdown;
         final LinearLayout brickGpsBlock;
         final MaterialSwitch brickGpsShowSatelliteBadge;
         final LinearLayout brickMediaBlock;
         final Slider brickMediaMaxWidthSlider;
+        final com.google.android.material.textfield.TextInputLayout brickMediaStatusAlignmentLayout;
+        final MaterialAutoCompleteTextView brickMediaStatusAlignmentDropdown;
+        final MaterialAutoCompleteTextView brickMediaAlignmentDropdown;
         final MaterialButton brickMediaPermissionButton;
         final LinearLayout brickFontBlock;
         final MaterialAutoCompleteTextView brickFontFamilyDropdown;
@@ -251,11 +256,16 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickDateShowFullName = itemView.findViewById(R.id.brickDateShowFullName);
             brickDateBeforeDayOfWeek = itemView.findViewById(R.id.brickDateBeforeDayOfWeek);
             brickDateOneLineLayout = itemView.findViewById(R.id.brickDateOneLineLayout);
+            brickDateStatusAlignmentLayout = itemView.findViewById(R.id.brickDateStatusAlignmentLayout);
+            brickDateStatusAlignmentDropdown = itemView.findViewById(R.id.brickDateStatusAlignmentDropdown);
             brickDateAlignmentDropdown = itemView.findViewById(R.id.brickDateAlignmentDropdown);
             brickGpsBlock = itemView.findViewById(R.id.brickGpsBlock);
             brickGpsShowSatelliteBadge = itemView.findViewById(R.id.brickGpsShowSatelliteBadge);
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
+            brickMediaStatusAlignmentLayout = itemView.findViewById(R.id.brickMediaStatusAlignmentLayout);
+            brickMediaStatusAlignmentDropdown = itemView.findViewById(R.id.brickMediaStatusAlignmentDropdown);
+            brickMediaAlignmentDropdown = itemView.findViewById(R.id.brickMediaAlignmentDropdown);
             brickMediaPermissionButton = itemView.findViewById(R.id.brickMediaPermissionButton);
             brickFontBlock = itemView.findViewById(R.id.brickFontBlock);
             brickFontFamilyDropdown = itemView.findViewById(R.id.brickFontFamilyDropdown);
@@ -343,7 +353,38 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             applyExpandState(type);
         }
 
+        /**
+         * In-block status alignment dropdown for DATE / MEDIA — paired with the text alignment
+         * dropdown in a two-column row. Hidden in floating mode, in which case the sibling text
+         * alignment dropdown stretches to the full row width (its layout_weight=1 wins).
+         */
+        private void bindInBlockStatusAlignment(BrickType type,
+                                                com.google.android.material.textfield.TextInputLayout layout,
+                                                MaterialAutoCompleteTextView dropdown) {
+            boolean statusBar = prefs.widgetMode.get() == 1;
+            layout.setVisibility(statusBar ? View.VISIBLE : View.GONE);
+            if (!statusBar) return;
+            String[] items = activity.getResources().getStringArray(R.array.brick_status_alignments);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    activity,
+                    com.google.android.material.R.layout.m3_auto_complete_simple_item,
+                    items);
+            dropdown.setAdapter(adapter);
+            int current = Math.max(0, Math.min(prefs.statusAlignmentFor(type).get(), items.length - 1));
+            dropdown.setText(items[current], false);
+            dropdown.setOnItemClickListener((parent, view, position, id) -> {
+                prefs.statusAlignmentFor(type).set(position);
+                notifyService();
+            });
+        }
+
         private void bindStatusAlignment(BrickType type) {
+            // DATE and MEDIA render their status alignment inside the per-type block (paired with the
+            // text alignment), so the shared dropdown must stay hidden for them regardless of mode.
+            if (type == BrickType.DATE || type == BrickType.MEDIA) {
+                brickStatusAlignmentLayout.setVisibility(View.GONE);
+                return;
+            }
             // Only relevant in status-bar mode — hide the dropdown otherwise.
             boolean statusBar = prefs.widgetMode.get() == 1;
             brickStatusAlignmentLayout.setVisibility(statusBar ? View.VISIBLE : View.GONE);
@@ -606,6 +647,9 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                 prefs.date.alignment.set(position);
                 notifyService();
             });
+
+            bindInBlockStatusAlignment(BrickType.DATE,
+                    brickDateStatusAlignmentLayout, brickDateStatusAlignmentDropdown);
         }
 
         private void bindGpsBlock() {
@@ -624,6 +668,23 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             float upper = Math.max(brickMediaMaxWidthSlider.getValueFrom() + 1F, screenW * 0.8F);
             brickMediaMaxWidthSlider.setValueTo(upper);
             bindIntSlider(brickMediaMaxWidthSlider, prefs.media.maxWidth, sizeFormatter());
+
+            String[] alignments = activity.getResources().getStringArray(R.array.calendar_alignment_types);
+            ArrayAdapter<String> alignAdapter = new ArrayAdapter<>(
+                    activity,
+                    com.google.android.material.R.layout.m3_auto_complete_simple_item,
+                    alignments);
+            brickMediaAlignmentDropdown.setAdapter(alignAdapter);
+            int currentAlignment = clamp(prefs.media.alignment.get(), 0, alignments.length - 1);
+            brickMediaAlignmentDropdown.setText(alignments[currentAlignment], false);
+            brickMediaAlignmentDropdown.setOnItemClickListener((parent, view, position, id) -> {
+                prefs.media.alignment.set(position);
+                notifyService();
+            });
+
+            bindInBlockStatusAlignment(BrickType.MEDIA,
+                    brickMediaStatusAlignmentLayout, brickMediaStatusAlignmentDropdown);
+
             brickMediaPermissionButton.setOnClickListener(v -> {
                 if (Permissions.isNotificationAccessGranted(activity)) {
                     Toast.makeText(activity,
