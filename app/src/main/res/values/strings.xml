@@ -136,6 +136,7 @@
     <string name="background_location_required">Background location access is required</string>
     <string name="background_location_settings_hint">Please select "Allow all the time" for location access</string>
     <string name="usage_access_required">Please grant "Usage access" so the widget can detect the foreground app</string>
+    <string name="system_settings_not_available">This device does not provide the required system settings screen</string>
     <string name="hide_in_apps_button">Hide widget in apps…</string>
     <string name="hide_in_apps_title">Hide widget in:</string>
     <string name="app_selection_load_failed_title">Failed to load the list of apps</string>

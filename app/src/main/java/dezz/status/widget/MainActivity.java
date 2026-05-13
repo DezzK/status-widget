@@ -548,18 +548,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openUsageAccessSettings() {
-        Uri appUri = Uri.parse("package:" + getPackageName());
-        Intent direct = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, appUri);
-        if (direct.resolveActivity(getPackageManager()) != null) {
-            startActivity(direct);
-            return;
+        if (!SettingsLauncher.openUsageAccessSettings(this)) {
+            Toast.makeText(this, R.string.system_settings_not_available, Toast.LENGTH_LONG).show();
         }
-        Intent generic = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-        if (generic.resolveActivity(getPackageManager()) != null) {
-            startActivity(generic);
-            return;
-        }
-        startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, appUri));
     }
 
     private void startWidgetService() {
@@ -1029,7 +1020,13 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.background_location_settings_hint, Toast.LENGTH_LONG).show();
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                     Uri.parse("package:" + getPackageName()));
-            startActivityForResult(intent, BACKGROUND_LOCATION_SETTINGS_REQUEST_CODE);
+            try {
+                startActivityForResult(intent, BACKGROUND_LOCATION_SETTINGS_REQUEST_CODE);
+            } catch (Throwable t) {
+                Log.w(TAG, "Failed to open application details settings", t);
+                uncheckEnableSwitchSilently();
+                Toast.makeText(this, R.string.system_settings_not_available, Toast.LENGTH_LONG).show();
+            }
             return;
         }
 
@@ -1041,7 +1038,13 @@ public class MainActivity extends AppCompatActivity {
     public void requestOverlayPermission() {
         Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                 Uri.parse("package:" + getPackageName()));
-        startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST_CODE);
+        try {
+            startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST_CODE);
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to open overlay permission settings", t);
+            uncheckEnableSwitchSilently();
+            Toast.makeText(this, R.string.system_settings_not_available, Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override

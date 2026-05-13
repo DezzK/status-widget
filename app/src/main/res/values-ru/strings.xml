@@ -134,6 +134,7 @@
     <string name="background_location_required">Требуется доступ к геолокации в фоне</string>
     <string name="background_location_settings_hint">Выберите «Разрешить в любом режиме» для доступа к геолокации</string>
     <string name="usage_access_required">Предоставьте доступ к данным об использовании, чтобы виджет видел текущее приложение</string>
+    <string name="system_settings_not_available">На этом устройстве нет нужного окна системных настроек</string>
     <string name="hide_in_apps_button">Скрывать в приложениях…</string>
     <string name="hide_in_apps_title">Скрывать в:</string>
     <string name="app_selection_load_failed_title">Не удалось загрузить список приложений</string>

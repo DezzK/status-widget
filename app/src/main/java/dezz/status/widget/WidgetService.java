@@ -1503,8 +1503,7 @@ public class WidgetService extends Service {
                                 getBounds(binding.wifiStatusIcon).contains((int) event.getX(), (int) event.getY())) {
                             Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(intent);
-
+                            safeStartActivity(intent);
                             return true;
                         }
                         if (binding.gnssStatusIcon.getVisibility() == View.VISIBLE &&
@@ -1514,8 +1513,7 @@ public class WidgetService extends Service {
                                 intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                             }
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(intent);
-
+                            safeStartActivity(intent);
                             return true;
                         }
 
@@ -1530,7 +1528,20 @@ public class WidgetService extends Service {
     private void startMainActivity() {
         Intent startIntent = new Intent(WidgetService.this, MainActivity.class);
         startIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(startIntent);
+        safeStartActivity(startIntent);
+    }
+
+    /**
+     * Some car head units don't ship the system Wi-Fi / location / app-info activities at all,
+     * so launching them from the overlay throws ActivityNotFoundException and tears down the
+     * service process. Swallow the failure — the icon tap is non-essential.
+     */
+    private void safeStartActivity(Intent intent) {
+        try {
+            startActivity(intent);
+        } catch (Throwable t) {
+            Log.w(TAG, "startActivity failed for " + intent.getAction(), t);
+        }
     }
 
     private void setWifiStatus(WiFiState newState) {

@@ -525,15 +525,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
 
         private void openUsageAccessSettings() {
-            try {
-                Intent direct = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS,
-                        android.net.Uri.parse("package:" + activity.getPackageName()));
-                if (direct.resolveActivity(activity.getPackageManager()) != null) {
-                    activity.startActivity(direct);
-                    return;
-                }
-                activity.startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
-            } catch (Exception ignored) {
+            if (!SettingsLauncher.openUsageAccessSettings(activity)) {
+                Toast.makeText(activity, R.string.system_settings_not_available, Toast.LENGTH_LONG).show();
             }
         }
 
