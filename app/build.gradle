@@ -64,6 +64,7 @@ android {
 
 dependencies {
     implementation libs.activity
+    implementation libs.adblib
     implementation libs.appcompat
     implementation libs.core
     implementation libs.constraintlayout
