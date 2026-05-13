@@ -1117,6 +1117,12 @@ public class WidgetService extends Service {
         MediaMetadata metadata = playing.getMetadata();
         String title = pickMediaTitle(metadata);
         String artist = metadata != null ? metadata.getString(MediaMetadata.METADATA_KEY_ARTIST) : null;
+        if (isUnknownArtistPlaceholder(artist)) {
+            // Some players (notably stock Android Music) fill the artist field with a literal
+            // "Unknown artist" / "Неизвестный исполнитель" string when the tag is missing.
+            // Treat that as no artist so the subtitle falls back to the title alone.
+            artist = null;
+        }
         String subtitle;
         if (!isEmpty(artist) && !isEmpty(title)) {
             subtitle = artist + " — " + title;
@@ -1156,6 +1162,18 @@ public class WidgetService extends Service {
         String uriFilename = filenameFromUri(metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_URI));
         if (!isEmpty(uriFilename)) return uriFilename;
         return filenameFromUri(metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID));
+    }
+
+    /**
+     * Recognise the literal "Unknown artist" / "Неизвестный исполнитель" placeholders that
+     * some players write into the artist field when the tag is missing — case-insensitive
+     * and whitespace-tolerant.
+     */
+    private static boolean isUnknownArtistPlaceholder(@Nullable String s) {
+        if (s == null) return false;
+        String trimmed = s.trim();
+        return trimmed.equalsIgnoreCase("unknown artist")
+                || trimmed.equalsIgnoreCase("неизвестный исполнитель");
     }
 
     @Nullable
