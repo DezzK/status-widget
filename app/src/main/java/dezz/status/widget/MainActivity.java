@@ -24,6 +24,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -65,6 +66,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dezz.status.widget.databinding.ActivityMainBinding;
+import dezz.status.widget.shell.PrivilegedShell;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -161,6 +163,101 @@ public class MainActivity extends AppCompatActivity {
         }
 
         maybeShowCrashReport();
+        tryAutoGrantViaPrivilegedShell();
+    }
+
+    /**
+     * Some car head units (notably Geely Monjaro / QUALCOMM KX11) ship a stripped-down
+     * Settings package that doesn't expose Usage Access / Notification Listener UIs at all,
+     * so the user has no way to grant those permissions manually. As a workaround we try to
+     * speak ADB or Telnet to the head unit itself — those listeners are exposed by the
+     * factory ROM on the loopback interface — and run {@code appops}/{@code cmd notification}
+     * over that channel with shell-uid privileges. Silent no-op when permissions are already
+     * granted or no privileged channel is reachable.
+     */
+    private void tryAutoGrantViaPrivilegedShell() {
+        PrivilegedShell.Request.Builder rb = PrivilegedShell.Request.forPackage(getPackageName());
+        boolean any = false;
+
+        if (!Permissions.checkOverlayPermission(this)) {
+            rb.withOverlay();
+            any = true;
+        }
+        if (!Permissions.checkForMissingForegroundPermissions(this).isEmpty()) {
+            rb.withForegroundLocation();
+            any = true;
+        }
+        if (!Permissions.isBackgroundLocationGranted(this)) {
+            rb.withBackgroundLocation();
+            any = true;
+        }
+        if (!Permissions.isUsageAccessGranted(this)) {
+            rb.withUsageAccess();
+            any = true;
+        }
+        // Notification Listener is only useful when the media brick is in the current layout;
+        // gating on it avoids granting (and toasting about) a permission the user doesn't need.
+        boolean mediaPresent = BrickType.parseOrder(prefs.brickOrder.get()).contains(BrickType.MEDIA);
+        if (mediaPresent && !Permissions.isNotificationAccessGranted(this)) {
+            rb.withNotificationListener(PrivilegedShell.notificationListenerComponent(
+                    getPackageName(), MediaNotificationListener.class));
+            any = true;
+        }
+        if (!any) {
+            return;
+        }
+
+        // Capture the application context, NOT this Activity. Discovery can take 10+ s and
+        // the activity may already be destroyed (rotation, finish) by the time the callback
+        // fires; using `this` for Toast/getString would either leak the Activity through the
+        // pending lambda or post a Toast against a destroyed context.
+        final Context appCtx = getApplicationContext();
+        PrivilegedShell.get(this).ensurePrivileges(rb.build(), result -> {
+            if (!result.transportAvailable) {
+                // No reachable ADB/Telnet — silently fall back to the manual settings path
+                // (which the user will hit when they tap "Enable widget" or "Hide in apps…").
+                return;
+            }
+            if (result.anyGranted()) {
+                Toast.makeText(appCtx,
+                        appCtx.getString(R.string.privileged_grant_success,
+                                joinPermissionLabels(appCtx, result.grantedKinds)),
+                        Toast.LENGTH_LONG).show();
+                // If the user already had the widget enabled before and we were only blocked
+                // on permissions, autostart the service now — saves them having to toggle it.
+                if (prefs.widgetEnabled.get() && Permissions.allPermissionsGranted(this)
+                        && !WidgetService.isRunning()) {
+                    startWidgetService();
+                }
+            }
+            if (result.anyFailed()) {
+                Toast.makeText(appCtx,
+                        appCtx.getString(R.string.privileged_grant_failed,
+                                joinPermissionLabels(appCtx, result.failedKinds)),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    /** Localised, comma-separated permission labels for a {@link PrivilegedShell.GrantResult}. */
+    private static String joinPermissionLabels(Context ctx,
+                                               java.util.List<PrivilegedShell.PermissionKind> kinds) {
+        java.util.List<String> labels = new java.util.ArrayList<>(kinds.size());
+        for (PrivilegedShell.PermissionKind k : kinds) {
+            labels.add(ctx.getString(permissionLabelRes(k)));
+        }
+        return TextUtils.join(", ", labels);
+    }
+
+    private static int permissionLabelRes(PrivilegedShell.PermissionKind kind) {
+        switch (kind) {
+            case OVERLAY:             return R.string.permission_label_overlay;
+            case FOREGROUND_LOCATION: return R.string.permission_label_foreground_location;
+            case BACKGROUND_LOCATION: return R.string.permission_label_background_location;
+            case USAGE_ACCESS:        return R.string.permission_label_usage_access;
+            case NOTIFICATION:        return R.string.permission_label_notification;
+            default: throw new IllegalArgumentException("Unknown kind " + kind);
+        }
     }
 
     private void maybeShowCrashReport() {

@@ -137,6 +137,13 @@
     <string name="background_location_settings_hint">Please select "Allow all the time" for location access</string>
     <string name="usage_access_required">Please grant "Usage access" so the widget can detect the foreground app</string>
     <string name="system_settings_not_available">This device does not provide the required system settings screen</string>
+    <string name="privileged_grant_success">Permissions granted automatically: %1$s</string>
+    <string name="privileged_grant_failed">Could not grant permissions: %1$s</string>
+    <string name="permission_label_overlay">overlay</string>
+    <string name="permission_label_foreground_location">location</string>
+    <string name="permission_label_background_location">background location</string>
+    <string name="permission_label_usage_access">usage access</string>
+    <string name="permission_label_notification">notification access</string>
     <string name="hide_in_apps_button">Hide widget in apps…</string>
     <string name="hide_in_apps_title">Hide widget in:</string>
     <string name="app_selection_load_failed_title">Failed to load the list of apps</string>
