@@ -124,6 +124,7 @@
     <string name="brick_hide_apply_to">Hide in the same apps:</string>
     <string name="brick_hide_inherited_hint">Hidden in the same apps as the %1$s element.</string>
     <string name="brick_hide_use_own_list">Set a separate list of apps for hiding this element</string>
+    <string name="brick_hide_keeps_space">Reserve space when hidden</string>
 
     <string name="background_transparency">Background transparency</string>
     <string name="background_corner_radius">Background corner radius</string>

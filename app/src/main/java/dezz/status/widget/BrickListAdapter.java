@@ -26,6 +26,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -236,6 +237,13 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final LinearLayout brickHideInheritedBlock;
         final TextView brickHideInheritedHint;
         final MaterialButton brickHideUseOwnButton;
+        /**
+         * One switch lives inside each hide block so it sits visually next to the relevant
+         * button. Both are bound to the same {@code hideKeepsSpace} pref; only the one whose
+         * parent block is visible is interactable at any given time.
+         */
+        final MaterialSwitch brickHideKeepsSpaceOwnSwitch;
+        final MaterialSwitch brickHideKeepsSpaceInheritedSwitch;
         final MaterialButton brickResetButton;
         final MaterialButton brickRemoveButton;
 
@@ -287,6 +295,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickHideInheritedBlock = itemView.findViewById(R.id.brickHideInheritedBlock);
             brickHideInheritedHint = itemView.findViewById(R.id.brickHideInheritedHint);
             brickHideUseOwnButton = itemView.findViewById(R.id.brickHideUseOwnButton);
+            brickHideKeepsSpaceOwnSwitch = itemView.findViewById(R.id.brickHideKeepsSpaceOwnSwitch);
+            brickHideKeepsSpaceInheritedSwitch = itemView.findViewById(R.id.brickHideKeepsSpaceInheritedSwitch);
             brickResetButton = itemView.findViewById(R.id.brickResetButton);
             brickRemoveButton = itemView.findViewById(R.id.brickRemoveButton);
         }
@@ -320,6 +330,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickGpsShowSatelliteBadge.setOnCheckedChangeListener(null);
             brickBluetoothShowDeviceCountBadge.setOnCheckedChangeListener(null);
             brickMediaShowSource.setOnCheckedChangeListener(null);
+            brickHideKeepsSpaceOwnSwitch.setOnCheckedChangeListener(null);
+            brickHideKeepsSpaceInheritedSwitch.setOnCheckedChangeListener(null);
             brickFontStyleGroup.clearOnButtonCheckedListeners();
 
             switch (type) {
@@ -454,6 +466,20 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
 
                 bindApplyToChips(type);
             }
+
+            // The INVISIBLE/GONE toggle is per-brick and applies in both own/inherited modes.
+            // We keep one switch in each block so it sits next to the corresponding
+            // hide-in-apps / use-own-list button — only the one inside the currently visible
+            // block is interactable, the sibling is hidden by its container's GONE.
+            boolean keepsSpace = prefs.hideKeepsSpaceFor(type).get();
+            CompoundButton.OnCheckedChangeListener keepsSpaceListener = (v, c) -> {
+                prefs.hideKeepsSpaceFor(type).set(c);
+                notifyService();
+            };
+            brickHideKeepsSpaceOwnSwitch.setChecked(keepsSpace);
+            brickHideKeepsSpaceOwnSwitch.setOnCheckedChangeListener(keepsSpaceListener);
+            brickHideKeepsSpaceInheritedSwitch.setChecked(keepsSpace);
+            brickHideKeepsSpaceInheritedSwitch.setOnCheckedChangeListener(keepsSpaceListener);
         }
 
         private void bindApplyToChips(BrickType ownerType) {

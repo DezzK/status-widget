@@ -124,6 +124,7 @@
     <string name="brick_hide_apply_to">Скрывать в тех же приложениях:</string>
     <string name="brick_hide_inherited_hint">Скрывается в тех же приложениях, что и элемент «%1$s».</string>
     <string name="brick_hide_use_own_list">Указать отдельный список приложений для скрытия элемента</string>
+    <string name="brick_hide_keeps_space">Сохранять место при скрытии</string>
 
     <string name="background_transparency">Интенсивность фона</string>
     <string name="background_corner_radius">Скругление углов фона</string>

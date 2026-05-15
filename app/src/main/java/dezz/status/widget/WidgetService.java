@@ -947,28 +947,42 @@ public class WidgetService extends Service {
 
     private void applyBrickVisibility(Set<BrickType> bricksSet) {
         if (binding == null) return;
-        binding.timeText.setVisibility(
-                (bricksSet.contains(BrickType.TIME) && !isBrickHiddenByApp(BrickType.TIME))
-                        ? View.VISIBLE : View.GONE);
+        binding.timeText.setVisibility(brickVisibility(BrickType.TIME,
+                bricksSet.contains(BrickType.TIME)));
         boolean dateActive = bricksSet.contains(BrickType.DATE)
-                && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get())
-                && !isBrickHiddenByApp(BrickType.DATE);
-        binding.dateText.setVisibility(dateActive ? View.VISIBLE : View.GONE);
-        binding.wifiStatusIcon.setVisibility(
-                (bricksSet.contains(BrickType.WIFI) && !isBrickHiddenByApp(BrickType.WIFI))
-                        ? View.VISIBLE : View.GONE);
-        binding.gnssStatusIcon.setVisibility(
-                (bricksSet.contains(BrickType.GPS) && !isBrickHiddenByApp(BrickType.GPS))
-                        ? View.VISIBLE : View.GONE);
-        binding.bluetoothStatusIcon.setVisibility(
-                (bricksSet.contains(BrickType.BLUETOOTH) && !isBrickHiddenByApp(BrickType.BLUETOOTH))
-                        ? View.VISIBLE : View.GONE);
+                && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get());
+        binding.dateText.setVisibility(brickVisibility(BrickType.DATE, dateActive));
+        binding.wifiStatusIcon.setVisibility(brickVisibility(BrickType.WIFI,
+                bricksSet.contains(BrickType.WIFI)));
+        binding.gnssStatusIcon.setVisibility(brickVisibility(BrickType.GPS,
+                bricksSet.contains(BrickType.GPS)));
+        binding.bluetoothStatusIcon.setVisibility(brickVisibility(BrickType.BLUETOOTH,
+                bricksSet.contains(BrickType.BLUETOOTH)));
         // Media visibility is also gated by the active media session — see updateMediaInfo().
-        if (!bricksSet.contains(BrickType.MEDIA) || isBrickHiddenByApp(BrickType.MEDIA)) {
+        if (!bricksSet.contains(BrickType.MEDIA)) {
             binding.mediaContainer.setVisibility(View.GONE);
+        } else if (isBrickHiddenByApp(BrickType.MEDIA)) {
+            binding.mediaContainer.setVisibility(
+                    prefs.hideKeepsSpaceFor(BrickType.MEDIA).get() ? View.INVISIBLE : View.GONE);
         } else {
             updateMediaInfo();
         }
+    }
+
+    /**
+     * Resolves the {@code View} visibility constant for a brick. When the brick isn't part of the
+     * current layout at all (or is otherwise inactive — e.g. Date with both flags off) we
+     * always use {@code GONE}: those are user-driven "off" states, the space should collapse.
+     * Foreground-app hiding is the only case that honours {@link Preferences#hideKeepsSpaceFor}:
+     * the brick is still part of the layout, the user only wants it temporarily invisible
+     * over certain apps — possibly without reflowing the rest of the widget.
+     */
+    private int brickVisibility(BrickType type, boolean activeInLayout) {
+        if (!activeInLayout) return View.GONE;
+        if (isBrickHiddenByApp(type)) {
+            return prefs.hideKeepsSpaceFor(type).get() ? View.INVISIBLE : View.GONE;
+        }
+        return View.VISIBLE;
     }
 
     private Set<BrickType> currentBrickSet() {

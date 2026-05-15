@@ -137,6 +137,11 @@ public class Preferences {
         public final Str hideSource;
         /** Position group inside status-bar mode: 0 = start, 1 = center, 2 = end. */
         public final Int statusAlignment;
+        /**
+         * When the brick is hidden by a foreground-app match, reserve its space instead of
+         * collapsing siblings. Maps to {@code View.INVISIBLE} vs {@code View.GONE}.
+         */
+        public final Bool hideKeepsSpace;
 
         public TextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
             this.prefix = prefix;
@@ -152,6 +157,7 @@ public class Preferences {
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
+            hideKeepsSpace = new Bool(p, prefix + "HideKeepsSpace", false);
         }
 
         public String hideInPackagesKey() {
@@ -208,6 +214,8 @@ public class Preferences {
         public final Str hideSource;
         /** Position group inside status-bar mode: 0 = start, 1 = center, 2 = end. */
         public final Int statusAlignment;
+        /** Reserve space instead of collapsing when hidden by an app match. */
+        public final Bool hideKeepsSpace;
 
         public IconBrickPrefs(Preferences p, String prefix) {
             this.prefix = prefix;
@@ -220,6 +228,7 @@ public class Preferences {
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
+            hideKeepsSpace = new Bool(p, prefix + "HideKeepsSpace", false);
         }
 
         public String hideInPackagesKey() {
@@ -335,6 +344,15 @@ public class Preferences {
         if (t != null) return t.hideSource;
         IconBrickPrefs i = iconBrickPrefs(type);
         if (i != null) return i.hideSource;
+        throw new IllegalArgumentException("Unknown brick type: " + type);
+    }
+
+    /** Per-brick INVISIBLE-vs-GONE toggle for foreground-app hiding. */
+    public Bool hideKeepsSpaceFor(BrickType type) {
+        TextBrickPrefs t = textBrickPrefs(type);
+        if (t != null) return t.hideKeepsSpace;
+        IconBrickPrefs i = iconBrickPrefs(type);
+        if (i != null) return i.hideKeepsSpace;
         throw new IllegalArgumentException("Unknown brick type: " + type);
     }
 

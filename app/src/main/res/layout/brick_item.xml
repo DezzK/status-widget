@@ -524,13 +524,28 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/brickHideInAppsButton"
-                    style="?attr/materialButtonOutlinedStyle"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/optionsMargin"
-                    android:text="@string/brick_hide_in_apps" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/brickHideInAppsButton"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/brick_hide_in_apps" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/brickHideKeepsSpaceOwnSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/optionsMarginSmall"
+                        android:text="@string/brick_hide_keeps_space" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/brickHideApplyToLabel"
@@ -561,13 +576,28 @@
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/brickHideUseOwnButton"
-                    style="?attr/materialButtonOutlinedStyle"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:text="@string/brick_hide_use_own_list" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/brickHideUseOwnButton"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/brick_hide_use_own_list" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/brickHideKeepsSpaceInheritedSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/optionsMarginSmall"
+                        android:text="@string/brick_hide_keeps_space" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
