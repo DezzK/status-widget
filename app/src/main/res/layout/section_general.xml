@@ -121,16 +121,29 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/widget_position_x"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/widget_position_x"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/widgetPositionXSliderValue"
+                        style="@style/SliderValue" />
+                </LinearLayout>
 
                 <com.google.android.material.slider.Slider
                     android:id="@+id/widgetPositionXSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/widget_position_x"
                     android:value="0"
                     android:valueFrom="0"
                     android:valueTo="1080" />
@@ -143,16 +156,29 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/widget_position_y"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/widget_position_y"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/widgetPositionYSliderValue"
+                        style="@style/SliderValue" />
+                </LinearLayout>
 
                 <com.google.android.material.slider.Slider
                     android:id="@+id/widgetPositionYSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/widget_position_y"
                     android:value="0"
                     android:valueFrom="0"
                     android:valueTo="1920" />
@@ -171,16 +197,29 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/widget_padding_left"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/widget_padding_left"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/widgetPaddingLeftSliderValue"
+                        style="@style/SliderValue" />
+                </LinearLayout>
 
                 <com.google.android.material.slider.Slider
                     android:id="@+id/widgetPaddingLeftSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/widget_padding_left"
                     android:value="40"
                     android:valueFrom="0"
                     android:valueTo="200" />
@@ -193,16 +232,29 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/widget_padding_right"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/widget_padding_right"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/widgetPaddingRightSliderValue"
+                        style="@style/SliderValue" />
+                </LinearLayout>
 
                 <com.google.android.material.slider.Slider
                     android:id="@+id/widgetPaddingRightSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/widget_padding_right"
                     android:value="40"
                     android:valueFrom="0"
                     android:valueTo="200" />
@@ -221,16 +273,29 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/widget_padding_top"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/widget_padding_top"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/widgetPaddingTopSliderValue"
+                        style="@style/SliderValue" />
+                </LinearLayout>
 
                 <com.google.android.material.slider.Slider
                     android:id="@+id/widgetPaddingTopSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/widget_padding_top"
                     android:value="0"
                     android:valueFrom="0"
                     android:valueTo="200" />
@@ -243,16 +308,29 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/widget_padding_bottom"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/widget_padding_bottom"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/widgetPaddingBottomSliderValue"
+                        style="@style/SliderValue" />
+                </LinearLayout>
 
                 <com.google.android.material.slider.Slider
                     android:id="@+id/widgetPaddingBottomSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/widget_padding_bottom"
                     android:value="0"
                     android:valueFrom="0"
                     android:valueTo="200" />

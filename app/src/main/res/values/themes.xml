@@ -22,4 +22,23 @@
         <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
     </style>
+
+    <!--
+        Permanent value badge displayed next to each slider's title. Tappable — opens a numeric
+        input dialog for exact values. Coloured to match colorPrimary so the user reads it as
+        interactive.
+    -->
+    <style name="SliderValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">?attr/textAppearanceBodyMedium</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:gravity">end</item>
+        <item name="android:minWidth">56dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+    </style>
 </resources>

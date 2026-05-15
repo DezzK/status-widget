@@ -33,6 +33,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
@@ -587,6 +588,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
 
         private void bindTextBrick(Preferences.TextBrickPrefs p) {
             brickSizeLabel.setText(R.string.brick_font_size);
+            brickSizeSlider.setContentDescription(activity.getString(R.string.brick_font_size));
             brickSizeSlider.setValueFrom(10);
             brickSizeSlider.setValueTo(500);
             bindIntSlider(brickSizeSlider, p.fontSize, sizeFormatter());
@@ -600,6 +602,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
 
         private void bindIconBrick(Preferences.IconBrickPrefs p) {
             brickSizeLabel.setText(R.string.brick_size);
+            brickSizeSlider.setContentDescription(activity.getString(R.string.brick_size));
             brickSizeSlider.setValueFrom(10);
             brickSizeSlider.setValueTo(600);
             bindIntSlider(brickSizeSlider, p.size, sizeFormatter());
@@ -774,16 +777,101 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
     }
 
-    private static void bindIntSlider(Slider slider, Preferences.Int pref, LabelFormatter formatter) {
+    private void bindIntSlider(Slider slider, Preferences.Int pref, LabelFormatter formatter) {
         float current = clamp(pref.get(), slider.getValueFrom(), slider.getValueTo());
         slider.setValue(current);
         slider.setLabelFormatter(formatter);
+        // Permanent value-label (see findValueLabel) replaces the floating Material bubble on
+        // touch — that bubble appears right under the user's finger and is the main complaint
+        // about Material 3 sliders on car head units.
+        TextView valueLabel = findValueLabel(slider);
+        if (valueLabel != null) {
+            slider.setLabelBehavior(LabelFormatter.LABEL_GONE);
+            valueLabel.setText(formatter.getFormattedValue(slider.getValue()));
+            valueLabel.setOnClickListener(v -> showNumericInputDialog(slider, pref, formatter));
+        }
         slider.addOnChangeListener((s, value, fromUser) -> {
+            if (valueLabel != null) {
+                valueLabel.setText(formatter.getFormattedValue(value));
+            }
             pref.set((int) value);
             if (WidgetService.isRunning()) {
                 WidgetService.getInstance().applyPreferences();
             }
         });
+    }
+
+    /** See {@link ViewBinder} — same convention: id ending in {@code Value}. */
+    @Nullable
+    private static TextView findValueLabel(Slider slider) {
+        int sliderId = slider.getId();
+        if (sliderId == View.NO_ID) return null;
+        android.content.res.Resources res = slider.getResources();
+        String sliderName;
+        try {
+            sliderName = res.getResourceEntryName(sliderId);
+        } catch (android.content.res.Resources.NotFoundException e) {
+            return null;
+        }
+        int valueId = res.getIdentifier(
+                sliderName + "Value", "id", slider.getContext().getPackageName());
+        if (valueId == 0) return null;
+        android.view.ViewParent parent = slider.getParent();
+        while (parent instanceof android.view.ViewGroup) {
+            View found = ((android.view.ViewGroup) parent).findViewById(valueId);
+            if (found instanceof TextView) return (TextView) found;
+            parent = parent.getParent();
+        }
+        return null;
+    }
+
+    private void showNumericInputDialog(Slider slider, Preferences.Int pref,
+                                        LabelFormatter formatter) {
+        final int min = (int) slider.getValueFrom();
+        final int max = (int) slider.getValueTo();
+
+        android.widget.EditText input = new android.widget.EditText(activity);
+        input.setInputType(min < 0
+                ? (android.text.InputType.TYPE_CLASS_NUMBER
+                        | android.text.InputType.TYPE_NUMBER_FLAG_SIGNED)
+                : android.text.InputType.TYPE_CLASS_NUMBER);
+        input.setText(String.valueOf(pref.get()));
+        input.setSelection(input.getText().length());
+        input.setHint(activity.getString(R.string.value_edit_range, min, max));
+
+        int pad = activity.getResources().getDimensionPixelSize(R.dimen.optionsMargin);
+        android.widget.FrameLayout frame = new android.widget.FrameLayout(activity);
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(pad, pad / 2, pad, 0);
+        frame.addView(input, lp);
+
+        CharSequence title = slider.getContentDescription();
+        if (title == null || title.length() == 0) {
+            title = activity.getString(R.string.value_edit_title);
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(activity)
+                .setTitle(title)
+                .setView(frame)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (d, w) -> {
+                    String text = input.getText().toString().trim();
+                    int parsed;
+                    try {
+                        parsed = Integer.parseInt(text);
+                    } catch (NumberFormatException e) {
+                        return;
+                    }
+                    int clamped = Math.max(min, Math.min(max, parsed));
+                    slider.setValue(clamped);
+                    pref.set(clamped);
+                    if (WidgetService.isRunning()) {
+                        WidgetService.getInstance().applyPreferences();
+                    }
+                })
+                .show();
     }
 
     private LabelFormatter sizeFormatter() {

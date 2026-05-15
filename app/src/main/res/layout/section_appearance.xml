@@ -93,16 +93,29 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/background_transparency"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/background_transparency"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/backgroundAlphaSliderValue"
+                        style="@style/SliderValue" />
+                </LinearLayout>
 
                 <com.google.android.material.slider.Slider
                     android:id="@+id/backgroundAlphaSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/background_transparency"
                     android:value="170"
                     android:valueFrom="0"
                     android:valueTo="255" />
@@ -115,16 +128,29 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/background_corner_radius"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/background_corner_radius"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/backgroundCornerRadiusSliderValue"
+                        style="@style/SliderValue" />
+                </LinearLayout>
 
                 <com.google.android.material.slider.Slider
                     android:id="@+id/backgroundCornerRadiusSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/background_corner_radius"
                     android:value="100"
                     android:valueFrom="0"
                     android:valueTo="100" />
