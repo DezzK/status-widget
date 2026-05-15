@@ -119,6 +119,63 @@ public final class UserPresets {
     }
 
     /**
+     * Result of {@link #rename}: {@code success} false means the operation was rejected before
+     * any filesystem changes — e.g. another preset already uses the new slug.
+     */
+    public static final class RenameResult {
+        public final boolean success;
+        public final boolean collision;
+        @Nullable public final UserPreset renamed;
+
+        RenameResult(boolean success, boolean collision, @Nullable UserPreset renamed) {
+            this.success = success;
+            this.collision = collision;
+            this.renamed = renamed;
+        }
+    }
+
+    /**
+     * Renames the preset's display name and its on-disk filename. If the sanitised filename slug
+     * stays the same (e.g. the change is purely case or punctuation) only the JSON's
+     * {@code presetName} field is rewritten in place. Returns a {@link RenameResult} indicating
+     * whether the operation completed and, on collision, leaves the existing files untouched.
+     */
+    @NonNull
+    public static RenameResult rename(@NonNull Context context, @NonNull UserPreset preset,
+                                      @NonNull String newDisplayName) throws IOException {
+        String newSlug = sanitiseFilename(newDisplayName);
+        if (newSlug.isEmpty()) {
+            throw new IOException("Invalid preset name");
+        }
+        File newFile = new File(dir(context), newSlug + EXT);
+
+        // Re-stamp the JSON with the new display name; we always rewrite this regardless of
+        // whether the file itself moves, so the in-file presetName stays in sync.
+        String json = read(preset.file);
+        try {
+            JSONObject root = new JSONObject(json);
+            root.put("presetName", newDisplayName);
+            json = root.toString(2);
+        } catch (org.json.JSONException e) {
+            throw new IOException("Preset file is not valid JSON", e);
+        }
+
+        boolean sameFile = newFile.getAbsolutePath().equals(preset.file.getAbsolutePath());
+        if (!sameFile && newFile.exists()) {
+            return new RenameResult(false, true, null);
+        }
+
+        try (FileOutputStream out = new FileOutputStream(newFile)) {
+            out.write(json.getBytes(StandardCharsets.UTF_8));
+        }
+        if (!sameFile) {
+            //noinspection ResultOfMethodCallIgnored
+            preset.file.delete();
+        }
+        return new RenameResult(true, false, new UserPreset(newDisplayName, newFile));
+    }
+
+    /**
      * Filename slug: keeps Unicode letters and digits (so Cyrillic names survive), collapses
      * whitespace to underscores, and strips characters that are filesystem-reserved on the kinds
      * of storage the export goes through (FAT-flavoured SD cards, MTP shares). Falls back to

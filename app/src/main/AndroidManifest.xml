@@ -79,6 +79,10 @@
             android:name=".AboutActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".PresetsActivity"
+            android:exported="false" />
+
         <service
             android:name=".WidgetService"
             android:enabled="true"

@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/menu_apply_preset"
+        android:id="@+id/menu_presets"
         android:icon="@drawable/ic_preset"
-        android:title="@string/menu_apply_preset" />
-    <item
-        android:id="@+id/menu_save_preset"
-        android:icon="@drawable/ic_save_preset"
-        android:title="@string/menu_save_preset" />
-    <item
-        android:id="@+id/menu_import_preset"
-        android:icon="@drawable/ic_import_preset"
-        android:title="@string/menu_import_preset" />
+        android:title="@string/presets_menu_entry" />
     <item
         android:id="@+id/menu_export"
         android:icon="@drawable/ic_export"
