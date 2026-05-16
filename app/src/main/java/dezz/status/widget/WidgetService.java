@@ -807,6 +807,13 @@ public class WidgetService extends Service {
         applyMediaMaxWidth(binding.mediaTitleText);
         applyMediaChildAlignment(binding.mediaAppText, prefs.media.alignment.get());
         applyMediaChildAlignment(binding.mediaTitleText, prefs.media.alignment.get());
+        // Vertical gap is applied as the title's top margin — only effective when the app-name
+        // line is visible (otherwise titleText is the only child and topMargin would push the
+        // whole brick down).
+        LinearLayout.LayoutParams titleLp =
+                (LinearLayout.LayoutParams) binding.mediaTitleText.getLayoutParams();
+        titleLp.topMargin = prefs.media.lineGap.get();
+        binding.mediaTitleText.setLayoutParams(titleLp);
     }
 
     /**

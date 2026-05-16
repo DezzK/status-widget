@@ -223,6 +223,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final LinearLayout brickMediaBlock;
         final MaterialSwitch brickMediaShowSource;
         final MaterialSwitch brickMediaTitleFirst;
+        final Slider brickMediaLineGapSlider;
         final Slider brickMediaMaxWidthSlider;
         final com.google.android.material.textfield.TextInputLayout brickMediaStatusAlignmentLayout;
         final MaterialAutoCompleteTextView brickMediaStatusAlignmentDropdown;
@@ -283,6 +284,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
             brickMediaShowSource = itemView.findViewById(R.id.brickMediaShowSource);
             brickMediaTitleFirst = itemView.findViewById(R.id.brickMediaTitleFirst);
+            brickMediaLineGapSlider = itemView.findViewById(R.id.brickMediaLineGapSlider);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaStatusAlignmentLayout = itemView.findViewById(R.id.brickMediaStatusAlignmentLayout);
             brickMediaStatusAlignmentDropdown = itemView.findViewById(R.id.brickMediaStatusAlignmentDropdown);
@@ -757,6 +759,9 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             float upper = Math.max(brickMediaMaxWidthSlider.getValueFrom() + 1F, screenW * 0.8F);
             brickMediaMaxWidthSlider.setValueTo(upper);
             bindIntSlider(brickMediaMaxWidthSlider, prefs.media.maxWidth, sizeFormatter());
+
+            brickMediaLineGapSlider.clearOnChangeListeners();
+            bindIntSlider(brickMediaLineGapSlider, prefs.media.lineGap, sizeFormatter());
 
             String[] alignments = activity.getResources().getStringArray(R.array.calendar_alignment_types);
             ArrayAdapter<String> alignAdapter = new ArrayAdapter<>(

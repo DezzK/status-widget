@@ -197,6 +197,8 @@ public class Preferences {
         public final Bool showSource;
         /** {@code true} → render as "title — artist"; {@code false} (default) → "artist — title". */
         public final Bool titleFirst;
+        /** Vertical gap (px) between the app-name line and the track-title line. */
+        public final Int lineGap;
 
         public MediaBrickPrefs(Preferences p) {
             super(p, "media", 20);
@@ -204,6 +206,7 @@ public class Preferences {
             alignment = new Int(p, "mediaAlignment", 0);
             showSource = new Bool(p, "mediaShowSource", true);
             titleFirst = new Bool(p, "mediaTitleFirst", false);
+            lineGap = new Int(p, "mediaLineGap", 0);
         }
     }
 
