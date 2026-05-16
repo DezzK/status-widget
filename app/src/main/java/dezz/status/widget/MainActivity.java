@@ -407,6 +407,10 @@ public class MainActivity extends AppCompatActivity {
 
         binder.bindColorComponentSlider(binding.sectionAppearance.backgroundAlphaSlider, prefs.backgroundAlpha);
         binder.bindPercentSlider(binding.sectionAppearance.backgroundCornerRadiusSlider, prefs.backgroundCornerRadius);
+        // Fully transparent background → corner radius has nothing to round; let the existing
+        // floating-mode gate know it should now also consider the alpha state.
+        binding.sectionAppearance.backgroundAlphaSlider.addOnChangeListener(
+                (s, v, fromUser) -> refreshFloatingControlsEnabled());
 
         binding.sectionGeneral.hideInAppsButton.setOnClickListener(v -> openAppSelection());
 
@@ -432,10 +436,15 @@ public class MainActivity extends AppCompatActivity {
     /** Position sliders, right-edge anchor switch and corner radius only matter in floating mode. */
     private void refreshFloatingControlsEnabled() {
         boolean floating = prefs.widgetMode.get() != 1;
+        boolean backgroundVisible = prefs.backgroundAlpha.get() > 0;
         binding.sectionGeneral.widgetAlignRightSwitch.setEnabled(floating);
         binding.sectionGeneral.widgetPositionXSlider.setEnabled(floating);
         binding.sectionGeneral.widgetPositionYSlider.setEnabled(floating);
-        binding.sectionAppearance.backgroundCornerRadiusSlider.setEnabled(floating);
+        // Corner radius is meaningless both in status-bar mode (no rounded corners drawn) and
+        // when the background is fully transparent (nothing to round).
+        ViewBinder.setSliderEnabledWithLabel(
+                binding.sectionAppearance.backgroundCornerRadiusSlider,
+                floating && backgroundVisible);
     }
 
     private void setupBrickList() {

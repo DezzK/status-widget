@@ -105,7 +105,7 @@ public final class ViewBinder {
      * slider so the lookup still works when sliders are nested inside per-column wrappers.
      */
     @Nullable
-    private static TextView findValueLabel(Slider slider) {
+    static TextView findValueLabel(Slider slider) {
         int sliderId = slider.getId();
         if (sliderId == View.NO_ID) return null;
         Resources res = slider.getResources();
@@ -188,5 +188,47 @@ public final class ViewBinder {
 
     private static float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    /**
+     * Disable / re-enable a slider together with its value-label so the locked state reads
+     * uniformly (greyed-out badge instead of a still-bright "tap me" hint).
+     */
+    public static void setSliderEnabledWithLabel(Slider slider, boolean enabled) {
+        slider.setEnabled(enabled);
+        TextView valueLabel = findValueLabel(slider);
+        if (valueLabel != null) {
+            valueLabel.setEnabled(enabled);
+            valueLabel.setAlpha(enabled ? 1.0f : 0.38f);
+        }
+    }
+
+    /**
+     * Wire two sliders so each disables the other when its own value drops to 0 — used for the
+     * outline alpha/width pair (and the background alpha → corner radius dependency) where one
+     * pref makes the other meaningless once it reaches zero.
+     */
+    public static void linkPairDisableOnZero(Slider a, Slider b) {
+        Runnable apply = () -> {
+            boolean aZero = a.getValue() == 0f;
+            boolean bZero = b.getValue() == 0f;
+            setSliderEnabledWithLabel(a, !bZero);
+            setSliderEnabledWithLabel(b, !aZero);
+        };
+        apply.run();
+        a.addOnChangeListener((s, v, fromUser) -> apply.run());
+        b.addOnChangeListener((s, v, fromUser) -> apply.run());
+    }
+
+    /**
+     * Disable {@code controlled} whenever {@code controller}'s value is 0. One-way variant of
+     * {@link #linkPairDisableOnZero(Slider, Slider)} for cases where the relationship isn't
+     * symmetric — e.g. a fully transparent background makes corner-radius invisible, but a
+     * zero-radius background is still very much a thing.
+     */
+    public static void linkDisableWhenZero(Slider controller, Slider controlled) {
+        Runnable apply = () -> setSliderEnabledWithLabel(controlled, controller.getValue() != 0f);
+        apply.run();
+        controller.addOnChangeListener((s, v, fromUser) -> apply.run());
     }
 }

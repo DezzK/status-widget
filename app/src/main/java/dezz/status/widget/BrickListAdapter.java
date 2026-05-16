@@ -597,6 +597,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             bindIntSlider(brickMarginStartSlider, p.marginStart, sizeFormatter());
             bindIntSlider(brickMarginEndSlider, p.marginEnd, sizeFormatter());
             bindIntSlider(brickAdjustYSlider, p.adjustY, offsetFormatter());
+            ViewBinder.linkPairDisableOnZero(brickOutlineAlphaSlider, brickOutlineWidthSlider);
             bindFontBlock(p);
         }
 
@@ -611,6 +612,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             bindIntSlider(brickMarginStartSlider, p.marginStart, sizeFormatter());
             bindIntSlider(brickMarginEndSlider, p.marginEnd, sizeFormatter());
             bindIntSlider(brickAdjustYSlider, p.adjustY, offsetFormatter());
+            ViewBinder.linkPairDisableOnZero(brickOutlineAlphaSlider, brickOutlineWidthSlider);
             brickFontBlock.setVisibility(View.GONE);
         }
 
@@ -656,14 +658,26 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
 
         private void bindDateBlock() {
+            // "Date before day of week" and "one-line layout" both describe how the two
+            // sub-fields relate to each other — meaningless if only one (or zero) of them is
+            // shown. Recompute enabled state whenever either visibility switch changes.
+            Runnable refreshDatePairControls = () -> {
+                boolean bothShown = brickDateShowDate.isChecked()
+                        && brickDateShowDayOfWeek.isChecked();
+                brickDateBeforeDayOfWeek.setEnabled(bothShown);
+                brickDateOneLineLayout.setEnabled(bothShown);
+            };
+
             brickDateShowDate.setChecked(prefs.date.showDate.get());
             brickDateShowDate.setOnCheckedChangeListener((v, c) -> {
                 prefs.date.showDate.set(c);
+                refreshDatePairControls.run();
                 notifyService();
             });
             brickDateShowDayOfWeek.setChecked(prefs.date.showDayOfWeek.get());
             brickDateShowDayOfWeek.setOnCheckedChangeListener((v, c) -> {
                 prefs.date.showDayOfWeek.set(c);
+                refreshDatePairControls.run();
                 notifyService();
             });
             brickDateShowFullName.setChecked(prefs.date.showFullName.get());
@@ -681,6 +695,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                 prefs.date.oneLineLayout.set(c);
                 notifyService();
             });
+            refreshDatePairControls.run();
 
             String[] alignments = activity.getResources().getStringArray(R.array.calendar_alignment_types);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -784,7 +799,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         // Permanent value-label (see findValueLabel) replaces the floating Material bubble on
         // touch — that bubble appears right under the user's finger and is the main complaint
         // about Material 3 sliders on car head units.
-        TextView valueLabel = findValueLabel(slider);
+        TextView valueLabel = ViewBinder.findValueLabel(slider);
         if (valueLabel != null) {
             slider.setLabelBehavior(LabelFormatter.LABEL_GONE);
             valueLabel.setText(formatter.getFormattedValue(slider.getValue()));
@@ -799,30 +814,6 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                 WidgetService.getInstance().applyPreferences();
             }
         });
-    }
-
-    /** See {@link ViewBinder} — same convention: id ending in {@code Value}. */
-    @Nullable
-    private static TextView findValueLabel(Slider slider) {
-        int sliderId = slider.getId();
-        if (sliderId == View.NO_ID) return null;
-        android.content.res.Resources res = slider.getResources();
-        String sliderName;
-        try {
-            sliderName = res.getResourceEntryName(sliderId);
-        } catch (android.content.res.Resources.NotFoundException e) {
-            return null;
-        }
-        int valueId = res.getIdentifier(
-                sliderName + "Value", "id", slider.getContext().getPackageName());
-        if (valueId == 0) return null;
-        android.view.ViewParent parent = slider.getParent();
-        while (parent instanceof android.view.ViewGroup) {
-            View found = ((android.view.ViewGroup) parent).findViewById(valueId);
-            if (found instanceof TextView) return (TextView) found;
-            parent = parent.getParent();
-        }
-        return null;
     }
 
     private void showNumericInputDialog(Slider slider, Preferences.Int pref,
