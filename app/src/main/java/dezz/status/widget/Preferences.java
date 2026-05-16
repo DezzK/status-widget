@@ -200,6 +200,16 @@ public class Preferences {
         /** Vertical gap (px) between the app-name line and the track-title line. */
         public final Int lineGap;
 
+        /**
+         * Source-line ("now playing in &lt;app&gt;") font + opacity settings. Title uses the
+         * inherited {@code TextBrickPrefs} fields so existing presets keep working.
+         */
+        public final Int sourceFontSize;
+        public final Str sourceFontFamily;
+        public final Bool sourceFontBold;
+        public final Bool sourceFontItalic;
+        public final Int sourceContentAlpha;
+
         public MediaBrickPrefs(Preferences p) {
             super(p, "media", 20);
             maxWidth = new Int(p, "mediaMaxWidth", 500);
@@ -207,6 +217,11 @@ public class Preferences {
             showSource = new Bool(p, "mediaShowSource", true);
             titleFirst = new Bool(p, "mediaTitleFirst", false);
             lineGap = new Int(p, "mediaLineGap", 0);
+            sourceFontSize = new Int(p, "mediaSourceFontSize", 20);
+            sourceFontFamily = new Str(p, "mediaSourceFontFamily", Fonts.DEFAULT_KEY);
+            sourceFontBold = new Bool(p, "mediaSourceFontBold", false);
+            sourceFontItalic = new Bool(p, "mediaSourceFontItalic", false);
+            sourceContentAlpha = new Int(p, "mediaSourceContentAlpha", 255);
         }
     }
 

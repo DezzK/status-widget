@@ -788,21 +788,32 @@ public class WidgetService extends Service {
     private void applyMediaBrickSettings() {
         int outlineColor = textOutlineColor(prefs.media.outlineAlpha.get());
         int textColor = ContextCompat.getColor(themedContext, R.color.text_primary);
-        Typeface typeface = Fonts.resolve(this, prefs.media.fontFamily.get(),
-                prefs.media.fontBold.get(), prefs.media.fontItalic.get());
+
+        // Source line: independent font + opacity.
+        Typeface sourceTypeface = Fonts.resolve(this, prefs.media.sourceFontFamily.get(),
+                prefs.media.sourceFontBold.get(), prefs.media.sourceFontItalic.get());
         binding.mediaAppText.setOutlineColor(outlineColor);
         binding.mediaAppText.setOutlineWidth(prefs.media.outlineWidth.get());
         binding.mediaAppText.setTextColor(textColor);
-        binding.mediaAppText.setTypeface(typeface);
+        binding.mediaAppText.setTypeface(sourceTypeface);
+        binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.sourceFontSize.get());
+        binding.mediaAppText.setAlpha(prefs.media.sourceContentAlpha.get() / 255f);
+
+        // Title line: existing media.* font + opacity.
+        Typeface titleTypeface = Fonts.resolve(this, prefs.media.fontFamily.get(),
+                prefs.media.fontBold.get(), prefs.media.fontItalic.get());
         binding.mediaTitleText.setOutlineColor(outlineColor);
         binding.mediaTitleText.setOutlineWidth(prefs.media.outlineWidth.get());
         binding.mediaTitleText.setTextColor(textColor);
-        binding.mediaTitleText.setTypeface(typeface);
-        binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
+        binding.mediaTitleText.setTypeface(titleTypeface);
         binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
+        binding.mediaTitleText.setAlpha(prefs.media.contentAlpha.get() / 255f);
+
         applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
         binding.mediaContainer.setTranslationY(prefs.media.adjustY.get());
-        binding.mediaContainer.setAlpha(prefs.media.contentAlpha.get() / 255f);
+        // Container alpha back to full — per-line alpha is set above so the two values don't
+        // multiply through the parent.
+        binding.mediaContainer.setAlpha(1f);
         applyMediaMaxWidth(binding.mediaAppText);
         applyMediaMaxWidth(binding.mediaTitleText);
         applyMediaChildAlignment(binding.mediaAppText, prefs.media.alignment.get());
@@ -1019,9 +1030,16 @@ public class WidgetService extends Service {
             h = Math.max(h, textLineHeight(binding.dateText, prefs.date.fontSize.get()) * lines);
         }
         if (bricks.contains(BrickType.MEDIA)) {
-            // Media is one or two stacked lines depending on showSource (app name + title).
-            int mediaLines = prefs.media.showSource.get() ? 2 : 1;
-            h = Math.max(h, textLineHeight(binding.mediaAppText, prefs.media.fontSize.get()) * mediaLines);
+            // Source and title can have different font sizes now, so sum them up properly when
+            // both lines are shown; otherwise just the title line.
+            int titleHeight = textLineHeight(binding.mediaTitleText, prefs.media.fontSize.get());
+            int mediaHeight = titleHeight;
+            if (prefs.media.showSource.get()) {
+                int sourceHeight = textLineHeight(binding.mediaAppText,
+                        prefs.media.sourceFontSize.get());
+                mediaHeight = sourceHeight + titleHeight + prefs.media.lineGap.get();
+            }
+            h = Math.max(h, mediaHeight);
         }
         if (bricks.contains(BrickType.WIFI)) {
             h = Math.max(h, prefs.wifi.size.get());

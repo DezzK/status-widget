@@ -224,6 +224,12 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialSwitch brickMediaShowSource;
         final MaterialSwitch brickMediaTitleFirst;
         final Slider brickMediaLineGapSlider;
+        final Slider brickMediaSourceFontSizeSlider;
+        final Slider brickMediaSourceContentAlphaSlider;
+        final MaterialAutoCompleteTextView brickMediaSourceFontFamilyDropdown;
+        final MaterialButtonToggleGroup brickMediaSourceFontStyleGroup;
+        final MaterialButton brickMediaSourceFontBold;
+        final MaterialButton brickMediaSourceFontItalic;
         final Slider brickMediaMaxWidthSlider;
         final com.google.android.material.textfield.TextInputLayout brickMediaStatusAlignmentLayout;
         final MaterialAutoCompleteTextView brickMediaStatusAlignmentDropdown;
@@ -285,6 +291,12 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaShowSource = itemView.findViewById(R.id.brickMediaShowSource);
             brickMediaTitleFirst = itemView.findViewById(R.id.brickMediaTitleFirst);
             brickMediaLineGapSlider = itemView.findViewById(R.id.brickMediaLineGapSlider);
+            brickMediaSourceFontSizeSlider = itemView.findViewById(R.id.brickMediaSourceFontSizeSlider);
+            brickMediaSourceContentAlphaSlider = itemView.findViewById(R.id.brickMediaSourceContentAlphaSlider);
+            brickMediaSourceFontFamilyDropdown = itemView.findViewById(R.id.brickMediaSourceFontFamilyDropdown);
+            brickMediaSourceFontStyleGroup = itemView.findViewById(R.id.brickMediaSourceFontStyleGroup);
+            brickMediaSourceFontBold = itemView.findViewById(R.id.brickMediaSourceFontBold);
+            brickMediaSourceFontItalic = itemView.findViewById(R.id.brickMediaSourceFontItalic);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaStatusAlignmentLayout = itemView.findViewById(R.id.brickMediaStatusAlignmentLayout);
             brickMediaStatusAlignmentDropdown = itemView.findViewById(R.id.brickMediaStatusAlignmentDropdown);
@@ -628,7 +640,19 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
 
         private void bindFontBlock(Preferences.TextBrickPrefs p) {
             brickFontBlock.setVisibility(View.VISIBLE);
+            bindFontFamilyDropdown(brickFontFamilyDropdown, p.fontFamily);
+            bindFontStyleToggles(brickFontStyleGroup,
+                    brickFontBold, brickFontItalic,
+                    p.fontBold, p.fontItalic);
+        }
 
+        /**
+         * Wire a font-family dropdown to a {@link Preferences.Str} pref carrying {@link Fonts}
+         * keys. Reused for the main brick font block and the media source line, which both
+         * need the same UX but bind different prefs.
+         */
+        private void bindFontFamilyDropdown(MaterialAutoCompleteTextView dropdown,
+                                            Preferences.Str familyPref) {
             String[] labels = new String[Fonts.ALL.size()];
             for (int i = 0; i < Fonts.ALL.size(); i++) {
                 labels[i] = activity.getString(Fonts.ALL.get(i).labelRes);
@@ -637,34 +661,46 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     activity,
                     com.google.android.material.R.layout.m3_auto_complete_simple_item,
                     labels);
-            brickFontFamilyDropdown.setAdapter(adapter);
+            dropdown.setAdapter(adapter);
             int currentIdx = 0;
-            String currentKey = p.fontFamily.get();
+            String currentKey = familyPref.get();
             for (int i = 0; i < Fonts.ALL.size(); i++) {
                 if (Fonts.ALL.get(i).key.equals(currentKey)) {
                     currentIdx = i;
                     break;
                 }
             }
-            brickFontFamilyDropdown.setText(labels[currentIdx], false);
-            brickFontFamilyDropdown.setOnItemClickListener((parent, view, position, id) -> {
-                p.fontFamily.set(Fonts.ALL.get(position).key);
-                notifyService();
-            });
+            dropdown.setText(labels[currentIdx], false);
+            dropdown.setOnItemClickListener((parent, view, position, id) ->
+                    setAndNotify(familyPref, Fonts.ALL.get(position).key));
+        }
 
+        private void bindFontStyleToggles(MaterialButtonToggleGroup group,
+                                          MaterialButton boldButton, MaterialButton italicButton,
+                                          Preferences.Bool boldPref, Preferences.Bool italicPref) {
+            group.clearOnButtonCheckedListeners();
             // Set checked state BEFORE attaching the listener so seeding doesn't fire it.
-            brickFontBold.setChecked(p.fontBold.get());
-            brickFontItalic.setChecked(p.fontItalic.get());
-            brickFontStyleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-                if (checkedId == R.id.brickFontBold) {
-                    p.fontBold.set(isChecked);
-                } else if (checkedId == R.id.brickFontItalic) {
-                    p.fontItalic.set(isChecked);
-                } else {
-                    return;
+            boldButton.setChecked(boldPref.get());
+            italicButton.setChecked(italicPref.get());
+            final int boldId = boldButton.getId();
+            final int italicId = italicButton.getId();
+            group.addOnButtonCheckedListener((g, checkedId, isChecked) -> {
+                if (checkedId == boldId) {
+                    setAndNotify(boldPref, isChecked);
+                } else if (checkedId == italicId) {
+                    setAndNotify(italicPref, isChecked);
                 }
-                notifyService();
             });
+        }
+
+        private void setAndNotify(Preferences.Bool pref, boolean v) {
+            pref.set(v);
+            notifyService();
+        }
+
+        private void setAndNotify(Preferences.Str pref, String v) {
+            pref.set(v);
+            notifyService();
         }
 
         private void bindDateBlock() {
@@ -762,6 +798,18 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
 
             brickMediaLineGapSlider.clearOnChangeListeners();
             bindIntSlider(brickMediaLineGapSlider, prefs.media.lineGap, sizeFormatter());
+
+            // Source-line font + opacity have their own pref subset (the title line keeps using
+            // the inherited media.* font params via bindFontBlock above).
+            brickMediaSourceFontSizeSlider.clearOnChangeListeners();
+            bindIntSlider(brickMediaSourceFontSizeSlider, prefs.media.sourceFontSize, sizeFormatter());
+            brickMediaSourceContentAlphaSlider.clearOnChangeListeners();
+            bindIntSlider(brickMediaSourceContentAlphaSlider, prefs.media.sourceContentAlpha,
+                    plainFormatter());
+            bindFontFamilyDropdown(brickMediaSourceFontFamilyDropdown, prefs.media.sourceFontFamily);
+            bindFontStyleToggles(brickMediaSourceFontStyleGroup,
+                    brickMediaSourceFontBold, brickMediaSourceFontItalic,
+                    prefs.media.sourceFontBold, prefs.media.sourceFontItalic);
 
             String[] alignments = activity.getResources().getStringArray(R.array.calendar_alignment_types);
             ArrayAdapter<String> alignAdapter = new ArrayAdapter<>(

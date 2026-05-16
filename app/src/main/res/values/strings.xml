@@ -103,6 +103,7 @@
     <string name="brick_media_show_source">Show source app</string>
     <string name="brick_media_title_first">Title before artist</string>
     <string name="brick_media_line_gap">Spacing between source and title</string>
+    <string name="brick_media_source_section">Source</string>
     <string name="brick_font_family">Font</string>
     <string name="brick_font_bold">Bold</string>
     <string name="brick_font_italic">Italic</string>

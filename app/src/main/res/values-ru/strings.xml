@@ -103,6 +103,7 @@
     <string name="brick_media_show_source">Показывать источник</string>
     <string name="brick_media_title_first">Название перед исполнителем</string>
     <string name="brick_media_line_gap">Интервал между источником и названием</string>
+    <string name="brick_media_source_section">Источник</string>
     <string name="brick_font_family">Шрифт</string>
     <string name="brick_font_bold">Жирный</string>
     <string name="brick_font_italic">Курсив</string>
