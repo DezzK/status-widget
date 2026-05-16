@@ -195,12 +195,15 @@ public class Preferences {
         public final Int alignment;
         /** Whether to show the app-name line above the track title. */
         public final Bool showSource;
+        /** {@code true} → render as "title — artist"; {@code false} (default) → "artist — title". */
+        public final Bool titleFirst;
 
         public MediaBrickPrefs(Preferences p) {
             super(p, "media", 20);
             maxWidth = new Int(p, "mediaMaxWidth", 500);
             alignment = new Int(p, "mediaAlignment", 0);
             showSource = new Bool(p, "mediaShowSource", true);
+            titleFirst = new Bool(p, "mediaTitleFirst", false);
         }
     }
 

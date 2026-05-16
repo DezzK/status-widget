@@ -1138,8 +1138,11 @@ public class WidgetService extends Service {
             artist = null;
         }
         String subtitle;
-        if (!isEmpty(artist) && !isEmpty(title)) {
-            subtitle = artist + " — " + title;
+        boolean titleFirst = prefs.media.titleFirst.get();
+        String first = titleFirst ? title : artist;
+        String second = titleFirst ? artist : title;
+        if (!isEmpty(first) && !isEmpty(second)) {
+            subtitle = first + " — " + second;
         } else if (!isEmpty(title)) {
             subtitle = title;
         } else if (!isEmpty(artist)) {

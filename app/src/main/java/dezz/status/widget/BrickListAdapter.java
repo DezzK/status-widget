@@ -222,6 +222,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialSwitch brickBluetoothShowDeviceCountBadge;
         final LinearLayout brickMediaBlock;
         final MaterialSwitch brickMediaShowSource;
+        final MaterialSwitch brickMediaTitleFirst;
         final Slider brickMediaMaxWidthSlider;
         final com.google.android.material.textfield.TextInputLayout brickMediaStatusAlignmentLayout;
         final MaterialAutoCompleteTextView brickMediaStatusAlignmentDropdown;
@@ -281,6 +282,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickBluetoothShowDeviceCountBadge = itemView.findViewById(R.id.brickBluetoothShowDeviceCountBadge);
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
             brickMediaShowSource = itemView.findViewById(R.id.brickMediaShowSource);
+            brickMediaTitleFirst = itemView.findViewById(R.id.brickMediaTitleFirst);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaStatusAlignmentLayout = itemView.findViewById(R.id.brickMediaStatusAlignmentLayout);
             brickMediaStatusAlignmentDropdown = itemView.findViewById(R.id.brickMediaStatusAlignmentDropdown);
@@ -334,6 +336,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickGpsShowSatelliteBadge.setOnCheckedChangeListener(null);
             brickBluetoothShowDeviceCountBadge.setOnCheckedChangeListener(null);
             brickMediaShowSource.setOnCheckedChangeListener(null);
+            brickMediaTitleFirst.setOnCheckedChangeListener(null);
             brickHideKeepsSpaceOwnSwitch.setOnCheckedChangeListener(null);
             brickHideKeepsSpaceInheritedSwitch.setOnCheckedChangeListener(null);
             brickFontStyleGroup.clearOnButtonCheckedListeners();
@@ -739,6 +742,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaShowSource.setChecked(prefs.media.showSource.get());
             brickMediaShowSource.setOnCheckedChangeListener((v, c) -> {
                 prefs.media.showSource.set(c);
+                notifyService();
+            });
+            brickMediaTitleFirst.setChecked(prefs.media.titleFirst.get());
+            brickMediaTitleFirst.setOnCheckedChangeListener((v, c) -> {
+                prefs.media.titleFirst.set(c);
                 notifyService();
             });
 
