@@ -201,6 +201,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final Slider brickSizeSlider;
         final Slider brickOutlineAlphaSlider;
         final Slider brickOutlineWidthSlider;
+        final Slider brickContentAlphaSlider;
         final Slider brickMarginStartSlider;
         final Slider brickMarginEndSlider;
         final com.google.android.material.textfield.TextInputLayout brickStatusAlignmentLayout;
@@ -259,6 +260,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickSizeSlider = itemView.findViewById(R.id.brickSizeSlider);
             brickOutlineAlphaSlider = itemView.findViewById(R.id.brickOutlineAlphaSlider);
             brickOutlineWidthSlider = itemView.findViewById(R.id.brickOutlineWidthSlider);
+            brickContentAlphaSlider = itemView.findViewById(R.id.brickContentAlphaSlider);
             brickMarginStartSlider = itemView.findViewById(R.id.brickMarginStartSlider);
             brickMarginEndSlider = itemView.findViewById(R.id.brickMarginEndSlider);
             brickStatusAlignmentLayout = itemView.findViewById(R.id.brickStatusAlignmentLayout);
@@ -320,6 +322,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickSizeSlider.clearOnChangeListeners();
             brickOutlineAlphaSlider.clearOnChangeListeners();
             brickOutlineWidthSlider.clearOnChangeListeners();
+            brickContentAlphaSlider.clearOnChangeListeners();
             brickMarginStartSlider.clearOnChangeListeners();
             brickMarginEndSlider.clearOnChangeListeners();
             brickAdjustYSlider.clearOnChangeListeners();
@@ -597,6 +600,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             bindIntSlider(brickMarginStartSlider, p.marginStart, sizeFormatter());
             bindIntSlider(brickMarginEndSlider, p.marginEnd, sizeFormatter());
             bindIntSlider(brickAdjustYSlider, p.adjustY, offsetFormatter());
+            bindIntSlider(brickContentAlphaSlider, p.contentAlpha, plainFormatter());
             ViewBinder.linkPairDisableOnZero(brickOutlineAlphaSlider, brickOutlineWidthSlider);
             bindFontBlock(p);
         }
@@ -612,6 +616,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             bindIntSlider(brickMarginStartSlider, p.marginStart, sizeFormatter());
             bindIntSlider(brickMarginEndSlider, p.marginEnd, sizeFormatter());
             bindIntSlider(brickAdjustYSlider, p.adjustY, offsetFormatter());
+            bindIntSlider(brickContentAlphaSlider, p.contentAlpha, plainFormatter());
             ViewBinder.linkPairDisableOnZero(brickOutlineAlphaSlider, brickOutlineWidthSlider);
             brickFontBlock.setVisibility(View.GONE);
         }

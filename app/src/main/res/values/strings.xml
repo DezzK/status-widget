@@ -95,6 +95,7 @@
     <string name="brick_size">Size</string>
     <string name="brick_outline_alpha">Outline transparency</string>
     <string name="brick_outline_width">Outline thickness</string>
+    <string name="brick_content_alpha">Element opacity</string>
     <string name="brick_margin_start">Left spacing</string>
     <string name="brick_margin_end">Right spacing</string>
     <string name="brick_adjust_y">Vertical offset</string>

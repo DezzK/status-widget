@@ -230,6 +230,34 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/optionsMarginSmall"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/brick_content_alpha"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <TextView
+                    android:id="@+id/brickContentAlphaSliderValue"
+                    style="@style/SliderValue" />
+            </LinearLayout>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/brickContentAlphaSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/brick_content_alpha"
+                android:value="255"
+                android:valueFrom="0"
+                android:valueTo="255" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMarginSmall"
                 android:orientation="horizontal">
 
                 <LinearLayout

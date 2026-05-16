@@ -95,6 +95,7 @@
     <string name="brick_size">Размер</string>
     <string name="brick_outline_alpha">Интенсивность обводки</string>
     <string name="brick_outline_width">Толщина обводки</string>
+    <string name="brick_content_alpha">Непрозрачность</string>
     <string name="brick_margin_start">Отступ слева</string>
     <string name="brick_margin_end">Отступ справа</string>
     <string name="brick_adjust_y">Сдвиг по вертикали</string>

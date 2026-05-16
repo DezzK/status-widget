@@ -142,6 +142,8 @@ public class Preferences {
          * collapsing siblings. Maps to {@code View.INVISIBLE} vs {@code View.GONE}.
          */
         public final Bool hideKeepsSpace;
+        /** Whole-element opacity 0..255 — applied to the View via {@code setAlpha(value/255f)}. */
+        public final Int contentAlpha;
 
         public TextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
             this.prefix = prefix;
@@ -158,6 +160,7 @@ public class Preferences {
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
             hideKeepsSpace = new Bool(p, prefix + "HideKeepsSpace", false);
+            contentAlpha = new Int(p, prefix + "ContentAlpha", 255);
         }
 
         public String hideInPackagesKey() {
@@ -216,6 +219,8 @@ public class Preferences {
         public final Int statusAlignment;
         /** Reserve space instead of collapsing when hidden by an app match. */
         public final Bool hideKeepsSpace;
+        /** Icon opacity 0..255 — applied to the ImageView via {@code setAlpha(value/255f)}. */
+        public final Int contentAlpha;
 
         public IconBrickPrefs(Preferences p, String prefix) {
             this.prefix = prefix;
@@ -229,6 +234,7 @@ public class Preferences {
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
             hideKeepsSpace = new Bool(p, prefix + "HideKeepsSpace", false);
+            contentAlpha = new Int(p, prefix + "ContentAlpha", 255);
         }
 
         public String hideInPackagesKey() {

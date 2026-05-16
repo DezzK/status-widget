@@ -802,6 +802,7 @@ public class WidgetService extends Service {
         binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
         binding.mediaContainer.setTranslationY(prefs.media.adjustY.get());
+        binding.mediaContainer.setAlpha(prefs.media.contentAlpha.get() / 255f);
         applyMediaMaxWidth(binding.mediaAppText);
         applyMediaMaxWidth(binding.mediaTitleText);
         applyMediaChildAlignment(binding.mediaAppText, prefs.media.alignment.get());
@@ -843,6 +844,7 @@ public class WidgetService extends Service {
         binding.wifiStatusIcon.setLayoutParams(ip);
         applyHorizontalMargins(binding.wifiStatusIcon, prefs.wifi.marginStart.get(), prefs.wifi.marginEnd.get());
         binding.wifiStatusIcon.setTranslationY(prefs.wifi.adjustY.get());
+        binding.wifiStatusIcon.setAlpha(prefs.wifi.contentAlpha.get() / 255f);
     }
 
     private void applyGpsBrickSettings() {
@@ -852,6 +854,7 @@ public class WidgetService extends Service {
         binding.gnssStatusIcon.setLayoutParams(ip);
         applyHorizontalMargins(binding.gnssStatusIcon, prefs.gps.marginStart.get(), prefs.gps.marginEnd.get());
         binding.gnssStatusIcon.setTranslationY(prefs.gps.adjustY.get());
+        binding.gnssStatusIcon.setAlpha(prefs.gps.contentAlpha.get() / 255f);
     }
 
     private void applyBluetoothBrickSettings() {
@@ -862,6 +865,7 @@ public class WidgetService extends Service {
         applyHorizontalMargins(binding.bluetoothStatusIcon,
                 prefs.bluetooth.marginStart.get(), prefs.bluetooth.marginEnd.get());
         binding.bluetoothStatusIcon.setTranslationY(prefs.bluetooth.adjustY.get());
+        binding.bluetoothStatusIcon.setAlpha(prefs.bluetooth.contentAlpha.get() / 255f);
     }
 
     private void applySingleLineTextBrick(OutlineTextView view, Preferences.TextBrickPrefs p) {
@@ -871,6 +875,7 @@ public class WidgetService extends Service {
         view.setTypeface(Fonts.resolve(this, p.fontFamily.get(), p.fontBold.get(), p.fontItalic.get()));
         view.setTextSize(TypedValue.COMPLEX_UNIT_PX, p.fontSize.get());
         view.setTranslationY(p.adjustY.get());
+        view.setAlpha(p.contentAlpha.get() / 255f);
         applyHorizontalMargins(view, p.marginStart.get(), p.marginEnd.get());
     }
 
