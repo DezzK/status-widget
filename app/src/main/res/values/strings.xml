@@ -22,7 +22,7 @@
     <string name="section_general">Widget</string>
     <string name="section_layout">Layout</string>
     <string name="section_appearance">Appearance</string>
-    <string name="enable_widget">Enable widget (reset position)</string>
+    <string name="enable_widget">Enable widget</string>
     <string name="widget_mode">Widget mode</string>
     <string-array name="widget_modes">
         <item>Floating</item>

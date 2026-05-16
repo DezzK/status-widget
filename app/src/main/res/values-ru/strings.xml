@@ -22,7 +22,7 @@
     <string name="section_general">Виджет</string>
     <string name="section_layout">Расположение</string>
     <string name="section_appearance">Внешний вид</string>
-    <string name="enable_widget">Включить виджет (сбросить позицию)</string>
+    <string name="enable_widget">Включить виджет</string>
     <string name="widget_mode">Режим виджета</string>
     <string-array name="widget_modes">
         <item>Плавающий</item>
