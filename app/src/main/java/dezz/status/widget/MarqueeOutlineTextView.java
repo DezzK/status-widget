@@ -21,6 +21,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -159,44 +160,39 @@ public class MarqueeOutlineTextView extends OutlineTextView {
         scrollPx = 0f;
         setScrollX(0);
 
-        float textWidth = getPaint().measureText(text, 0, text.length());
-        int available = currentAvailableWidthPx();
-        if (available <= 0) {
-            // Not measured yet — render statically; onSizeChanged() will re-evaluate.
-            super.setText(text);
-            return;
-        }
+        int maxWidthPx = getMaxWidth();
+        boolean hasMaxWidth = maxWidthPx > 0 && maxWidthPx < Integer.MAX_VALUE;
 
-        if (textWidth <= available + 0.5f) {
-            super.setText(text);
-            return;
-        }
+        float contentWidth = getPaint().measureText(text, 0, text.length());
+        int paddings = getPaddingLeft() + getPaddingRight();
+        float naturalTotalWidth = contentWidth + paddings;
 
-        // Overflow: build "text + separator + text" so the wrap point is hidden by the
-        // already-visible second copy.
-        float separatorWidth = getPaint().measureText(SEPARATOR);
-        loopWidthPx = textWidth + separatorWidth;
-        super.setText(TextUtils.concat(text, SEPARATOR, text));
-        scrolling = true;
-        if (attached) {
-            postOnAnimation(tick);
+        if (hasMaxWidth && naturalTotalWidth > maxWidthPx + 0.5f) {
+            // Overflow. We have to pin {@code layout.width} to {@code maxWidth} explicitly —
+            // {@link android.widget.TextView#onMeasure} with {@code setHorizontallyScrolling(true)}
+            // returns the full natural text width and silently ignores {@code setMaxWidth},
+            // so without this the parent would grow to fit the whole string and no scrolling
+            // ever kicked in. After fixing the width, render "text + separator + text" so the
+            // wrap point is hidden by the already-visible second copy.
+            setLayoutWidth(maxWidthPx);
+            float separatorWidth = getPaint().measureText(SEPARATOR);
+            loopWidthPx = contentWidth + separatorWidth;
+            super.setText(TextUtils.concat(text, SEPARATOR, text));
+            scrolling = true;
+            if (attached) {
+                postOnAnimation(tick);
+            }
+        } else {
+            // Fits — grow naturally up to maxWidth, single render, no animation.
+            setLayoutWidth(ViewGroup.LayoutParams.WRAP_CONTENT);
+            super.setText(text);
         }
     }
 
-    /**
-     * Width the text actually has to occupy. {@code getWidth()} reflects the laid-out size,
-     * {@code getMaxWidth()} the cap supplied by code/XML; we take the tighter of the two minus
-     * horizontal padding. Returns 0 before the first layout pass.
-     */
-    private int currentAvailableWidthPx() {
-        int width = getWidth();
-        int maxWidth = getMaxWidth();
-        // When maxWidth is set it's the upper bound; before layout getWidth() is 0 and we
-        // should still trust maxWidth so a setMarqueeText() before measure can decide
-        // pre-emptively (the onSizeChanged() refresh covers the post-measure correction too).
-        if (maxWidth > 0 && maxWidth < Integer.MAX_VALUE) {
-            if (width <= 0 || maxWidth < width) width = maxWidth;
-        }
-        return Math.max(0, width - getPaddingLeft() - getPaddingRight());
+    private void setLayoutWidth(int width) {
+        ViewGroup.LayoutParams lp = getLayoutParams();
+        if (lp == null || lp.width == width) return;
+        lp.width = width;
+        setLayoutParams(lp);
     }
 }

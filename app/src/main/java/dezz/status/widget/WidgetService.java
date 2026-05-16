@@ -845,14 +845,9 @@ public class WidgetService extends Service {
     }
 
     private void applyMediaMaxWidth(MarqueeOutlineTextView view) {
-        int maxWidth = prefs.media.maxWidth.get();
-        ViewGroup.LayoutParams lp = view.getLayoutParams();
-        // Wrap to content but never exceed the user-chosen maximum — short texts stay short,
-        // long ones cap at maxWidth and switch to seamless continuous scrolling handled by
-        // MarqueeOutlineTextView itself.
-        lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-        view.setLayoutParams(lp);
-        view.setMaxWidth(maxWidth);
+        // The view itself toggles between WRAP_CONTENT (text fits) and a fixed maxWidth
+        // (overflow + scrolling). All we need here is to tell it the upper bound.
+        view.setMaxWidth(prefs.media.maxWidth.get());
     }
 
     private void applyWifiBrickSettings() {
