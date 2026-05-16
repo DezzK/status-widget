@@ -1292,10 +1292,19 @@ public class WidgetService extends Service {
     }
 
     /**
-     * Seed the connected-device set from profile proxies. ACL_CONNECTED broadcasts only fire on
-     * link change — devices that are already connected when the receiver registers wouldn't show
-     * up otherwise. Query HEADSET + A2DP (the common car-HU profiles) asynchronously and union
-     * their {@code getConnectedDevices()} lists into {@link #btConnectedAddrs}.
+     * Seed the connected-device set from whatever the system can synchronously tell us, with
+     * an async profile-proxy refresh on top.
+     * <p>
+     * The synchronous path iterates {@link BluetoothAdapter#getBondedDevices()} and reflects on
+     * the hidden {@code BluetoothDevice.isConnected()} method — this works on AOSP and the
+     * typical car-HU ROMs derived from it, returns instantly, and crucially covers the
+     * "brick was just added, BT is already on and the device is paired" case that pure
+     * profile-proxy seeding misses.
+     * <p>
+     * The async path keeps querying HEADSET / A2DP proxies as a safety net for OEM ROMs where
+     * the reflection trick is unavailable, and for unbonded but momentarily connected devices.
+     * ACL_CONNECTED / ACL_DISCONNECTED broadcasts (registered separately) handle live updates
+     * once the receiver is in place.
      */
     private void refreshBtConnectedFromProxies() {
         BluetoothAdapter adapter = getBluetoothAdapter();
@@ -1308,6 +1317,9 @@ public class WidgetService extends Service {
         } catch (Throwable t) {
             return;
         }
+
+        seedConnectedFromBondedDevices(adapter);
+
         BluetoothProfile.ServiceListener listener = new BluetoothProfile.ServiceListener() {
             @Override
             public void onServiceConnected(int profile, BluetoothProfile proxy) {
@@ -1335,6 +1347,40 @@ public class WidgetService extends Service {
             adapter.getProfileProxy(this, listener, BluetoothProfile.A2DP);
         } catch (Throwable t) {
             Log.w(TAG, "Failed to query Bluetooth profile proxies", t);
+        }
+    }
+
+    /**
+     * Synchronously populate {@link #btConnectedAddrs} from bonded devices via the hidden
+     * {@code BluetoothDevice.isConnected()} method. Safe to call repeatedly — the set is a
+     * union, so a stale entry would only be cleared by the ACL_DISCONNECTED broadcast or by
+     * a full Bluetooth-off transition.
+     */
+    private void seedConnectedFromBondedDevices(BluetoothAdapter adapter) {
+        java.lang.reflect.Method isConnected;
+        try {
+            isConnected = BluetoothDevice.class.getMethod("isConnected");
+        } catch (NoSuchMethodException nsm) {
+            return;
+        } catch (Throwable t) {
+            return;
+        }
+        Set<BluetoothDevice> bonded;
+        try {
+            bonded = adapter.getBondedDevices();
+        } catch (Throwable t) {
+            return;
+        }
+        if (bonded == null) return;
+        for (BluetoothDevice device : bonded) {
+            if (device == null || device.getAddress() == null) continue;
+            try {
+                Object result = isConnected.invoke(device);
+                if (result instanceof Boolean && (Boolean) result) {
+                    btConnectedAddrs.add(device.getAddress());
+                }
+            } catch (Throwable ignored) {
+            }
         }
     }
 
