@@ -330,6 +330,15 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/brickFontBlockHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/optionsMargin"
+                android:text="@string/brick_media_title_section"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:id="@+id/brickFontBlock"
                 android:layout_width="match_parent"
@@ -543,15 +552,7 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/brickMediaShowSource"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:minHeight="@dimen/optionsLineHeight"
-                    android:text="@string/brick_media_show_source"
-                    android:textAppearance="?attr/textAppearanceBodyLarge" />
-
+                <!-- Layout / общие настройки медиа -->
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/brickMediaTitleFirst"
                     android:layout_width="match_parent"
@@ -559,6 +560,15 @@
                     android:layout_marginTop="@dimen/optionsMarginSmall"
                     android:minHeight="@dimen/optionsLineHeight"
                     android:text="@string/brick_media_title_first"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickMediaShowSource"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/brick_media_show_source"
                     android:textAppearance="?attr/textAppearanceBodyLarge" />
 
                 <LinearLayout
@@ -588,150 +598,6 @@
                     android:value="500"
                     android:valueFrom="100"
                     android:valueTo="1000" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/brick_media_line_gap"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/brickMediaLineGapSliderValue"
-                        style="@style/SliderValue" />
-                </LinearLayout>
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/brickMediaLineGapSlider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/brick_media_line_gap"
-                    android:value="0"
-                    android:valueFrom="0"
-                    android:valueTo="100" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMargin"
-                    android:text="@string/brick_media_source_section"
-                    android:textAppearance="?attr/textAppearanceTitleSmall" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/brick_font_size"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/brickMediaSourceFontSizeSliderValue"
-                        style="@style/SliderValue" />
-                </LinearLayout>
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/brickMediaSourceFontSizeSlider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/brick_font_size"
-                    android:value="20"
-                    android:valueFrom="10"
-                    android:valueTo="500" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/brick_content_alpha"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/brickMediaSourceContentAlphaSliderValue"
-                        style="@style/SliderValue" />
-                </LinearLayout>
-
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/brickMediaSourceContentAlphaSlider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/brick_content_alpha"
-                    android:value="255"
-                    android:valueFrom="0"
-                    android:valueTo="255" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:hint="@string/brick_font_family">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/brickMediaSourceFontFamilyDropdown"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:inputType="none" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/brickMediaSourceFontStyleGroup"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/optionsMarginSmall"
-                        app:singleSelection="false">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/brickMediaSourceFontBold"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:contentDescription="@string/brick_font_bold"
-                            android:minWidth="0dp"
-                            android:paddingHorizontal="@dimen/optionsMargin"
-                            android:text="@string/brick_font_bold_short"
-                            android:textStyle="bold" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/brickMediaSourceFontItalic"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:contentDescription="@string/brick_font_italic"
-                            android:minWidth="0dp"
-                            android:paddingHorizontal="@dimen/optionsMargin"
-                            android:text="@string/brick_font_italic_short"
-                            android:textStyle="italic" />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
-                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -773,10 +639,163 @@
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
+                <!-- Source section: всё, что касается отдельной строки источника. Целиком
+                     скрывается когда "Показывать источник" выключен (см. BrickListAdapter). -->
+                <LinearLayout
+                    android:id="@+id/brickMediaSourceSection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/optionsMargin"
+                        android:text="@string/brick_media_source_section"
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/optionsMarginSmall"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/brick_media_line_gap"
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                        <TextView
+                            android:id="@+id/brickMediaLineGapSliderValue"
+                            style="@style/SliderValue" />
+                    </LinearLayout>
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickMediaLineGapSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/brick_media_line_gap"
+                        android:value="0"
+                        android:valueFrom="0"
+                        android:valueTo="100" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/optionsMarginSmall"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/brick_font_size"
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                        <TextView
+                            android:id="@+id/brickMediaSourceFontSizeSliderValue"
+                            style="@style/SliderValue" />
+                    </LinearLayout>
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickMediaSourceFontSizeSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/brick_font_size"
+                        android:value="20"
+                        android:valueFrom="10"
+                        android:valueTo="500" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/optionsMarginSmall"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/brick_content_alpha"
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                        <TextView
+                            android:id="@+id/brickMediaSourceContentAlphaSliderValue"
+                            style="@style/SliderValue" />
+                    </LinearLayout>
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/brickMediaSourceContentAlphaSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/brick_content_alpha"
+                        android:value="255"
+                        android:valueFrom="0"
+                        android:valueTo="255" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/optionsMarginSmall"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="@string/brick_font_family">
+
+                            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                                android:id="@+id/brickMediaSourceFontFamilyDropdown"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:inputType="none" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/brickMediaSourceFontStyleGroup"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/optionsMarginSmall"
+                            app:singleSelection="false">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/brickMediaSourceFontBold"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/brick_font_bold"
+                                android:minWidth="0dp"
+                                android:paddingHorizontal="@dimen/optionsMargin"
+                                android:text="@string/brick_font_bold_short"
+                                android:textStyle="bold" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/brickMediaSourceFontItalic"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/brick_font_italic"
+                                android:minWidth="0dp"
+                                android:paddingHorizontal="@dimen/optionsMargin"
+                                android:text="@string/brick_font_italic_short"
+                                android:textStyle="italic" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+                    </LinearLayout>
+                </LinearLayout>
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:layout_marginTop="@dimen/optionsMargin"
                     android:text="@string/show_media_hint"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="?attr/colorOnSurfaceVariant" />

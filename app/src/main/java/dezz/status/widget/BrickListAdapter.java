@@ -236,6 +236,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialAutoCompleteTextView brickMediaAlignmentDropdown;
         final MaterialButton brickMediaPermissionButton;
         final LinearLayout brickFontBlock;
+        final TextView brickFontBlockHeader;
+        final LinearLayout brickMediaSourceSection;
         final MaterialAutoCompleteTextView brickFontFamilyDropdown;
         final MaterialButtonToggleGroup brickFontStyleGroup;
         final MaterialButton brickFontBold;
@@ -303,6 +305,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaAlignmentDropdown = itemView.findViewById(R.id.brickMediaAlignmentDropdown);
             brickMediaPermissionButton = itemView.findViewById(R.id.brickMediaPermissionButton);
             brickFontBlock = itemView.findViewById(R.id.brickFontBlock);
+            brickFontBlockHeader = itemView.findViewById(R.id.brickFontBlockHeader);
+            brickMediaSourceSection = itemView.findViewById(R.id.brickMediaSourceSection);
             brickFontFamilyDropdown = itemView.findViewById(R.id.brickFontFamilyDropdown);
             brickFontStyleGroup = itemView.findViewById(R.id.brickFontStyleGroup);
             brickFontBold = itemView.findViewById(R.id.brickFontBold);
@@ -354,6 +358,9 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickHideKeepsSpaceOwnSwitch.setOnCheckedChangeListener(null);
             brickHideKeepsSpaceInheritedSwitch.setOnCheckedChangeListener(null);
             brickFontStyleGroup.clearOnButtonCheckedListeners();
+            // Header "Title" only makes sense alongside the media source section — hide by
+            // default; bindMediaBlock turns it back on for the media brick.
+            brickFontBlockHeader.setVisibility(View.GONE);
 
             switch (type) {
                 case TIME:
@@ -698,6 +705,13 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             notifyService();
         }
 
+        /** Source section (line gap + source-font controls) is meaningless when the source
+         *  line isn't rendered. Collapse it whenever the user turns showSource off. */
+        private void refreshMediaSourceSectionVisibility() {
+            brickMediaSourceSection.setVisibility(
+                    prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
+        }
+
         private void setAndNotify(Preferences.Str pref, String v) {
             pref.set(v);
             notifyService();
@@ -777,9 +791,15 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
 
         private void bindMediaBlock() {
+            // The main brick-area font block becomes the "Title" font block for media — surface
+            // a section header so the user can tell which side those controls affect.
+            brickFontBlockHeader.setText(R.string.brick_media_title_section);
+            brickFontBlockHeader.setVisibility(View.VISIBLE);
+
             brickMediaShowSource.setChecked(prefs.media.showSource.get());
             brickMediaShowSource.setOnCheckedChangeListener((v, c) -> {
                 prefs.media.showSource.set(c);
+                refreshMediaSourceSectionVisibility();
                 notifyService();
             });
             brickMediaTitleFirst.setChecked(prefs.media.titleFirst.get());
@@ -787,6 +807,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                 prefs.media.titleFirst.set(c);
                 notifyService();
             });
+            refreshMediaSourceSectionVisibility();
 
             brickMediaMaxWidthSlider.clearOnChangeListeners();
             // Upper bound = 80% of the current screen width — gives a useful range on both phones
