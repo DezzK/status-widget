@@ -825,20 +825,15 @@ public class WidgetService extends Service {
         view.setLayoutParams(lp);
     }
 
-    private void applyMediaMaxWidth(OutlineTextView view) {
+    private void applyMediaMaxWidth(MarqueeOutlineTextView view) {
         int maxWidth = prefs.media.maxWidth.get();
         ViewGroup.LayoutParams lp = view.getLayoutParams();
         // Wrap to content but never exceed the user-chosen maximum — short texts stay short,
-        // long ones cap at maxWidth and switch to marquee scrolling.
+        // long ones cap at maxWidth and switch to seamless continuous scrolling handled by
+        // MarqueeOutlineTextView itself.
         lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
         view.setLayoutParams(lp);
         view.setMaxWidth(maxWidth);
-        view.setSingleLine(true);
-        view.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);
-        view.setMarqueeRepeatLimit(-1); // marquee_forever
-        // Marquee only animates while the view "is selected"; force it on so a static overlay
-        // (which never receives input focus) still scrolls long titles.
-        view.setSelected(true);
     }
 
     private void applyWifiBrickSettings() {
@@ -1149,9 +1144,9 @@ public class WidgetService extends Service {
             // placeholder so the user can see that media playback is active.
             subtitle = getString(R.string.media_unknown_track);
         }
-        binding.mediaAppText.setText(getAppLabel(playing.getPackageName()));
+        binding.mediaAppText.setMarqueeText(getAppLabel(playing.getPackageName()));
         binding.mediaAppText.setVisibility(prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
-        binding.mediaTitleText.setText(subtitle);
+        binding.mediaTitleText.setMarqueeText(subtitle);
         binding.mediaContainer.setVisibility(View.VISIBLE);
     }
 
