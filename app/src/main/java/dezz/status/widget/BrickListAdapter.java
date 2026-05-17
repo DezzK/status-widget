@@ -220,24 +220,50 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialSwitch brickGpsShowSatelliteBadge;
         final LinearLayout brickBluetoothBlock;
         final MaterialSwitch brickBluetoothShowDeviceCountBadge;
+        // Containers in the generic brick area we GONE for media — media duplicates everything
+        // text-related inside its own sectioned block.
+        final LinearLayout brickSizeAdjustRow;
+        final LinearLayout brickOutlineRow;
+        final LinearLayout brickContentAlphaRow;
+        final LinearLayout brickMarginRow;
+
         final LinearLayout brickMediaBlock;
+        // Общие
         final MaterialSwitch brickMediaShowSource;
         final MaterialSwitch brickMediaTitleFirst;
+        final Slider brickMediaMaxWidthSlider;
+        final Slider brickMediaMarginStartSlider;
+        final Slider brickMediaMarginEndSlider;
+        final Slider brickMediaAdjustYSlider;
+        final com.google.android.material.textfield.TextInputLayout brickMediaStatusAlignmentLayout;
+        final MaterialAutoCompleteTextView brickMediaStatusAlignmentDropdown;
+        // Общие (продолжение)
         final Slider brickMediaLineGapSlider;
+        // Источник
+        final LinearLayout brickMediaSourceSection;
         final Slider brickMediaSourceFontSizeSlider;
+        final Slider brickMediaSourceOutlineAlphaSlider;
+        final Slider brickMediaSourceOutlineWidthSlider;
         final Slider brickMediaSourceContentAlphaSlider;
         final MaterialAutoCompleteTextView brickMediaSourceFontFamilyDropdown;
         final MaterialButtonToggleGroup brickMediaSourceFontStyleGroup;
         final MaterialButton brickMediaSourceFontBold;
         final MaterialButton brickMediaSourceFontItalic;
-        final Slider brickMediaMaxWidthSlider;
-        final com.google.android.material.textfield.TextInputLayout brickMediaStatusAlignmentLayout;
-        final MaterialAutoCompleteTextView brickMediaStatusAlignmentDropdown;
-        final MaterialAutoCompleteTextView brickMediaAlignmentDropdown;
+        final MaterialAutoCompleteTextView brickMediaSourceAlignmentDropdown;
+        // Композиция
+        final Slider brickMediaTitleFontSizeSlider;
+        final Slider brickMediaTitleOutlineAlphaSlider;
+        final Slider brickMediaTitleOutlineWidthSlider;
+        final Slider brickMediaTitleContentAlphaSlider;
+        final MaterialAutoCompleteTextView brickMediaTitleFontFamilyDropdown;
+        final MaterialButtonToggleGroup brickMediaTitleFontStyleGroup;
+        final MaterialButton brickMediaTitleFontBold;
+        final MaterialButton brickMediaTitleFontItalic;
+        final MaterialAutoCompleteTextView brickMediaTitleAlignmentDropdown;
+
         final MaterialButton brickMediaPermissionButton;
         final LinearLayout brickFontBlock;
         final TextView brickFontBlockHeader;
-        final LinearLayout brickMediaSourceSection;
         final MaterialAutoCompleteTextView brickFontFamilyDropdown;
         final MaterialButtonToggleGroup brickFontStyleGroup;
         final MaterialButton brickFontBold;
@@ -289,24 +315,42 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickGpsShowSatelliteBadge = itemView.findViewById(R.id.brickGpsShowSatelliteBadge);
             brickBluetoothBlock = itemView.findViewById(R.id.brickBluetoothBlock);
             brickBluetoothShowDeviceCountBadge = itemView.findViewById(R.id.brickBluetoothShowDeviceCountBadge);
+            brickSizeAdjustRow = itemView.findViewById(R.id.brickSizeAdjustRow);
+            brickOutlineRow = itemView.findViewById(R.id.brickOutlineRow);
+            brickContentAlphaRow = itemView.findViewById(R.id.brickContentAlphaRow);
+            brickMarginRow = itemView.findViewById(R.id.brickMarginRow);
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
             brickMediaShowSource = itemView.findViewById(R.id.brickMediaShowSource);
             brickMediaTitleFirst = itemView.findViewById(R.id.brickMediaTitleFirst);
+            brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
+            brickMediaMarginStartSlider = itemView.findViewById(R.id.brickMediaMarginStartSlider);
+            brickMediaMarginEndSlider = itemView.findViewById(R.id.brickMediaMarginEndSlider);
+            brickMediaAdjustYSlider = itemView.findViewById(R.id.brickMediaAdjustYSlider);
+            brickMediaStatusAlignmentLayout = itemView.findViewById(R.id.brickMediaStatusAlignmentLayout);
+            brickMediaStatusAlignmentDropdown = itemView.findViewById(R.id.brickMediaStatusAlignmentDropdown);
             brickMediaLineGapSlider = itemView.findViewById(R.id.brickMediaLineGapSlider);
+            brickMediaSourceSection = itemView.findViewById(R.id.brickMediaSourceSection);
             brickMediaSourceFontSizeSlider = itemView.findViewById(R.id.brickMediaSourceFontSizeSlider);
+            brickMediaSourceOutlineAlphaSlider = itemView.findViewById(R.id.brickMediaSourceOutlineAlphaSlider);
+            brickMediaSourceOutlineWidthSlider = itemView.findViewById(R.id.brickMediaSourceOutlineWidthSlider);
             brickMediaSourceContentAlphaSlider = itemView.findViewById(R.id.brickMediaSourceContentAlphaSlider);
             brickMediaSourceFontFamilyDropdown = itemView.findViewById(R.id.brickMediaSourceFontFamilyDropdown);
             brickMediaSourceFontStyleGroup = itemView.findViewById(R.id.brickMediaSourceFontStyleGroup);
             brickMediaSourceFontBold = itemView.findViewById(R.id.brickMediaSourceFontBold);
             brickMediaSourceFontItalic = itemView.findViewById(R.id.brickMediaSourceFontItalic);
-            brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
-            brickMediaStatusAlignmentLayout = itemView.findViewById(R.id.brickMediaStatusAlignmentLayout);
-            brickMediaStatusAlignmentDropdown = itemView.findViewById(R.id.brickMediaStatusAlignmentDropdown);
-            brickMediaAlignmentDropdown = itemView.findViewById(R.id.brickMediaAlignmentDropdown);
+            brickMediaSourceAlignmentDropdown = itemView.findViewById(R.id.brickMediaSourceAlignmentDropdown);
+            brickMediaTitleFontSizeSlider = itemView.findViewById(R.id.brickMediaTitleFontSizeSlider);
+            brickMediaTitleOutlineAlphaSlider = itemView.findViewById(R.id.brickMediaTitleOutlineAlphaSlider);
+            brickMediaTitleOutlineWidthSlider = itemView.findViewById(R.id.brickMediaTitleOutlineWidthSlider);
+            brickMediaTitleContentAlphaSlider = itemView.findViewById(R.id.brickMediaTitleContentAlphaSlider);
+            brickMediaTitleFontFamilyDropdown = itemView.findViewById(R.id.brickMediaTitleFontFamilyDropdown);
+            brickMediaTitleFontStyleGroup = itemView.findViewById(R.id.brickMediaTitleFontStyleGroup);
+            brickMediaTitleFontBold = itemView.findViewById(R.id.brickMediaTitleFontBold);
+            brickMediaTitleFontItalic = itemView.findViewById(R.id.brickMediaTitleFontItalic);
+            brickMediaTitleAlignmentDropdown = itemView.findViewById(R.id.brickMediaTitleAlignmentDropdown);
             brickMediaPermissionButton = itemView.findViewById(R.id.brickMediaPermissionButton);
             brickFontBlock = itemView.findViewById(R.id.brickFontBlock);
             brickFontBlockHeader = itemView.findViewById(R.id.brickFontBlockHeader);
-            brickMediaSourceSection = itemView.findViewById(R.id.brickMediaSourceSection);
             brickFontFamilyDropdown = itemView.findViewById(R.id.brickFontFamilyDropdown);
             brickFontStyleGroup = itemView.findViewById(R.id.brickFontStyleGroup);
             brickFontBold = itemView.findViewById(R.id.brickFontBold);
@@ -355,11 +399,31 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickBluetoothShowDeviceCountBadge.setOnCheckedChangeListener(null);
             brickMediaShowSource.setOnCheckedChangeListener(null);
             brickMediaTitleFirst.setOnCheckedChangeListener(null);
+            brickMediaMaxWidthSlider.clearOnChangeListeners();
+            brickMediaMarginStartSlider.clearOnChangeListeners();
+            brickMediaMarginEndSlider.clearOnChangeListeners();
+            brickMediaAdjustYSlider.clearOnChangeListeners();
+            brickMediaLineGapSlider.clearOnChangeListeners();
+            brickMediaSourceFontSizeSlider.clearOnChangeListeners();
+            brickMediaSourceOutlineAlphaSlider.clearOnChangeListeners();
+            brickMediaSourceOutlineWidthSlider.clearOnChangeListeners();
+            brickMediaSourceContentAlphaSlider.clearOnChangeListeners();
+            brickMediaSourceFontStyleGroup.clearOnButtonCheckedListeners();
+            brickMediaTitleFontSizeSlider.clearOnChangeListeners();
+            brickMediaTitleOutlineAlphaSlider.clearOnChangeListeners();
+            brickMediaTitleOutlineWidthSlider.clearOnChangeListeners();
+            brickMediaTitleContentAlphaSlider.clearOnChangeListeners();
+            brickMediaTitleFontStyleGroup.clearOnButtonCheckedListeners();
             brickHideKeepsSpaceOwnSwitch.setOnCheckedChangeListener(null);
             brickHideKeepsSpaceInheritedSwitch.setOnCheckedChangeListener(null);
             brickFontStyleGroup.clearOnButtonCheckedListeners();
-            // Header "Title" only makes sense alongside the media source section — hide by
-            // default; bindMediaBlock turns it back on for the media brick.
+            // Reset visibility of the generic text rows. bindMediaBrick collapses them so the
+            // media brick only shows controls organised into its own three sections; other text
+            // bricks (Time/Date) use the generic area and need them VISIBLE.
+            brickSizeAdjustRow.setVisibility(View.VISIBLE);
+            brickOutlineRow.setVisibility(View.VISIBLE);
+            brickContentAlphaRow.setVisibility(View.VISIBLE);
+            brickMarginRow.setVisibility(View.VISIBLE);
             brickFontBlockHeader.setVisibility(View.GONE);
 
             switch (type) {
@@ -379,12 +443,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     showMediaBlock(false);
                     break;
                 case MEDIA:
-                    bindTextBrick(prefs.media);
+                    bindMediaBrick(prefs.media);
                     showDateBlock(false);
                     showGpsBlock(false);
                     showBluetoothBlock(false);
                     showMediaBlock(true);
-                    bindMediaBlock();
                     break;
                 case WIFI:
                     bindIconBrick(prefs.wifi);
@@ -645,6 +708,22 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickFontBlock.setVisibility(View.GONE);
         }
 
+        /**
+         * Media has a sectioned layout of its own (Общие / Источник / Композиция) and source
+         * vs title get independent text params, so we collapse the generic text rows from the
+         * brick area instead of duplicating them. Everything text-related is bound inside
+         * {@link #bindMediaBlock()}.
+         */
+        private void bindMediaBrick(Preferences.MediaBrickPrefs p) {
+            brickSizeAdjustRow.setVisibility(View.GONE);
+            brickOutlineRow.setVisibility(View.GONE);
+            brickContentAlphaRow.setVisibility(View.GONE);
+            brickMarginRow.setVisibility(View.GONE);
+            brickFontBlock.setVisibility(View.GONE);
+            brickFontBlockHeader.setVisibility(View.GONE);
+            bindMediaBlock();
+        }
+
         private void bindFontBlock(Preferences.TextBrickPrefs p) {
             brickFontBlock.setVisibility(View.VISIBLE);
             bindFontFamilyDropdown(brickFontFamilyDropdown, p.fontFamily);
@@ -705,11 +784,29 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             notifyService();
         }
 
-        /** Source section (line gap + source-font controls) is meaningless when the source
-         *  line isn't rendered. Collapse it whenever the user turns showSource off. */
+        /** Source section is meaningless when the source line isn't rendered. Collapse it
+         *  whenever the user turns showSource off. */
         private void refreshMediaSourceSectionVisibility() {
             brickMediaSourceSection.setVisibility(
                     prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
+        }
+
+        /** Reusable Start/Center/End alignment dropdown bound to an int 0..2 preference. */
+        private void bindAlignmentDropdown(MaterialAutoCompleteTextView dropdown,
+                                           Preferences.Int pref) {
+            String[] options = activity.getResources()
+                    .getStringArray(R.array.calendar_alignment_types);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    activity,
+                    com.google.android.material.R.layout.m3_auto_complete_simple_item,
+                    options);
+            dropdown.setAdapter(adapter);
+            int current = clamp(pref.get(), 0, options.length - 1);
+            dropdown.setText(options[current], false);
+            dropdown.setOnItemClickListener((parent, view, position, id) -> {
+                pref.set(position);
+                notifyService();
+            });
         }
 
         private void setAndNotify(Preferences.Str pref, String v) {
@@ -791,11 +888,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
 
         private void bindMediaBlock() {
-            // The main brick-area font block becomes the "Title" font block for media — surface
-            // a section header so the user can tell which side those controls affect.
-            brickFontBlockHeader.setText(R.string.brick_media_title_section);
-            brickFontBlockHeader.setVisibility(View.VISIBLE);
-
+            // ============================ Общие ============================
             brickMediaShowSource.setChecked(prefs.media.showSource.get());
             brickMediaShowSource.setOnCheckedChangeListener((v, c) -> {
                 prefs.media.showSource.set(c);
@@ -809,7 +902,6 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             });
             refreshMediaSourceSectionVisibility();
 
-            brickMediaMaxWidthSlider.clearOnChangeListeners();
             // Upper bound = 80% of the current screen width — gives a useful range on both phones
             // and car head units without locking it to the XML default.
             int screenW = activity.getResources().getDisplayMetrics().widthPixels;
@@ -817,36 +909,40 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaMaxWidthSlider.setValueTo(upper);
             bindIntSlider(brickMediaMaxWidthSlider, prefs.media.maxWidth, sizeFormatter());
 
-            brickMediaLineGapSlider.clearOnChangeListeners();
+            bindIntSlider(brickMediaMarginStartSlider, prefs.media.marginStart, sizeFormatter());
+            bindIntSlider(brickMediaMarginEndSlider, prefs.media.marginEnd, sizeFormatter());
+            bindIntSlider(brickMediaAdjustYSlider, prefs.media.adjustY, offsetFormatter());
             bindIntSlider(brickMediaLineGapSlider, prefs.media.lineGap, sizeFormatter());
+            bindInBlockStatusAlignment(BrickType.MEDIA,
+                    brickMediaStatusAlignmentLayout, brickMediaStatusAlignmentDropdown);
 
-            // Source-line font + opacity have their own pref subset (the title line keeps using
-            // the inherited media.* font params via bindFontBlock above).
-            brickMediaSourceFontSizeSlider.clearOnChangeListeners();
+            // ============================ Источник ============================
             bindIntSlider(brickMediaSourceFontSizeSlider, prefs.media.sourceFontSize, sizeFormatter());
-            brickMediaSourceContentAlphaSlider.clearOnChangeListeners();
-            bindIntSlider(brickMediaSourceContentAlphaSlider, prefs.media.sourceContentAlpha,
-                    plainFormatter());
+            bindIntSlider(brickMediaSourceOutlineAlphaSlider, prefs.media.sourceOutlineAlpha, plainFormatter());
+            bindIntSlider(brickMediaSourceOutlineWidthSlider, prefs.media.sourceOutlineWidth, sizeFormatter());
+            bindIntSlider(brickMediaSourceContentAlphaSlider, prefs.media.sourceContentAlpha, plainFormatter());
+            ViewBinder.linkPairDisableOnZero(
+                    brickMediaSourceOutlineAlphaSlider, brickMediaSourceOutlineWidthSlider);
             bindFontFamilyDropdown(brickMediaSourceFontFamilyDropdown, prefs.media.sourceFontFamily);
             bindFontStyleToggles(brickMediaSourceFontStyleGroup,
                     brickMediaSourceFontBold, brickMediaSourceFontItalic,
                     prefs.media.sourceFontBold, prefs.media.sourceFontItalic);
+            bindAlignmentDropdown(brickMediaSourceAlignmentDropdown, prefs.media.sourceAlignment);
 
-            String[] alignments = activity.getResources().getStringArray(R.array.calendar_alignment_types);
-            ArrayAdapter<String> alignAdapter = new ArrayAdapter<>(
-                    activity,
-                    com.google.android.material.R.layout.m3_auto_complete_simple_item,
-                    alignments);
-            brickMediaAlignmentDropdown.setAdapter(alignAdapter);
-            int currentAlignment = clamp(prefs.media.alignment.get(), 0, alignments.length - 1);
-            brickMediaAlignmentDropdown.setText(alignments[currentAlignment], false);
-            brickMediaAlignmentDropdown.setOnItemClickListener((parent, view, position, id) -> {
-                prefs.media.alignment.set(position);
-                notifyService();
-            });
-
-            bindInBlockStatusAlignment(BrickType.MEDIA,
-                    brickMediaStatusAlignmentLayout, brickMediaStatusAlignmentDropdown);
+            // ============================ Композиция ============================
+            // Title uses the inherited TextBrickPrefs fields (fontSize, outline, contentAlpha,
+            // fontFamily, fontBold/Italic) so existing presets keep working unchanged.
+            bindIntSlider(brickMediaTitleFontSizeSlider, prefs.media.fontSize, sizeFormatter());
+            bindIntSlider(brickMediaTitleOutlineAlphaSlider, prefs.media.outlineAlpha, plainFormatter());
+            bindIntSlider(brickMediaTitleOutlineWidthSlider, prefs.media.outlineWidth, sizeFormatter());
+            bindIntSlider(brickMediaTitleContentAlphaSlider, prefs.media.contentAlpha, plainFormatter());
+            ViewBinder.linkPairDisableOnZero(
+                    brickMediaTitleOutlineAlphaSlider, brickMediaTitleOutlineWidthSlider);
+            bindFontFamilyDropdown(brickMediaTitleFontFamilyDropdown, prefs.media.fontFamily);
+            bindFontStyleToggles(brickMediaTitleFontStyleGroup,
+                    brickMediaTitleFontBold, brickMediaTitleFontItalic,
+                    prefs.media.fontBold, prefs.media.fontItalic);
+            bindAlignmentDropdown(brickMediaTitleAlignmentDropdown, prefs.media.alignment);
 
             brickMediaPermissionButton.setOnClickListener(v -> {
                 if (Permissions.isNotificationAccessGranted(activity)) {

@@ -786,23 +786,22 @@ public class WidgetService extends Service {
     }
 
     private void applyMediaBrickSettings() {
-        int outlineColor = textOutlineColor(prefs.media.outlineAlpha.get());
         int textColor = ContextCompat.getColor(themedContext, R.color.text_primary);
 
-        // Source line: independent font + opacity.
+        // Source line: independent font, opacity, outline.
         Typeface sourceTypeface = Fonts.resolve(this, prefs.media.sourceFontFamily.get(),
                 prefs.media.sourceFontBold.get(), prefs.media.sourceFontItalic.get());
-        binding.mediaAppText.setOutlineColor(outlineColor);
-        binding.mediaAppText.setOutlineWidth(prefs.media.outlineWidth.get());
+        binding.mediaAppText.setOutlineColor(textOutlineColor(prefs.media.sourceOutlineAlpha.get()));
+        binding.mediaAppText.setOutlineWidth(prefs.media.sourceOutlineWidth.get());
         binding.mediaAppText.setTextColor(textColor);
         binding.mediaAppText.setTypeface(sourceTypeface);
         binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.sourceFontSize.get());
         binding.mediaAppText.setAlpha(prefs.media.sourceContentAlpha.get() / 255f);
 
-        // Title line: existing media.* font + opacity.
+        // Title line: existing media.* font + opacity + outline (TextBrickPrefs inherited).
         Typeface titleTypeface = Fonts.resolve(this, prefs.media.fontFamily.get(),
                 prefs.media.fontBold.get(), prefs.media.fontItalic.get());
-        binding.mediaTitleText.setOutlineColor(outlineColor);
+        binding.mediaTitleText.setOutlineColor(textOutlineColor(prefs.media.outlineAlpha.get()));
         binding.mediaTitleText.setOutlineWidth(prefs.media.outlineWidth.get());
         binding.mediaTitleText.setTextColor(textColor);
         binding.mediaTitleText.setTypeface(titleTypeface);
@@ -816,7 +815,7 @@ public class WidgetService extends Service {
         binding.mediaContainer.setAlpha(1f);
         applyMediaMaxWidth(binding.mediaAppText);
         applyMediaMaxWidth(binding.mediaTitleText);
-        applyMediaChildAlignment(binding.mediaAppText, prefs.media.alignment.get());
+        applyMediaChildAlignment(binding.mediaAppText, prefs.media.sourceAlignment.get());
         applyMediaChildAlignment(binding.mediaTitleText, prefs.media.alignment.get());
         // Vertical gap is applied as the title's top margin — only effective when the app-name
         // line is visible (otherwise titleText is the only child and topMargin would push the

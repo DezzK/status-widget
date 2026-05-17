@@ -201,14 +201,23 @@ public class Preferences {
         public final Int lineGap;
 
         /**
-         * Source-line ("now playing in &lt;app&gt;") font + opacity settings. Title uses the
-         * inherited {@code TextBrickPrefs} fields so existing presets keep working.
+         * Source-line ("now playing in &lt;app&gt;") text settings. Title keeps using the
+         * inherited {@code TextBrickPrefs} fields (fontSize, fontFamily, fontBold/Italic,
+         * outlineAlpha/Width, contentAlpha) so existing presets keep working.
          */
         public final Int sourceFontSize;
         public final Str sourceFontFamily;
         public final Bool sourceFontBold;
         public final Bool sourceFontItalic;
         public final Int sourceContentAlpha;
+        public final Int sourceOutlineAlpha;
+        public final Int sourceOutlineWidth;
+        /**
+         * Horizontal alignment of the source line within the media container: 0/1/2 =
+         * start/center/end. Title uses the existing {@link #alignment} pref so old presets
+         * keep working unchanged.
+         */
+        public final Int sourceAlignment;
 
         public MediaBrickPrefs(Preferences p) {
             super(p, "media", 20);
@@ -222,6 +231,9 @@ public class Preferences {
             sourceFontBold = new Bool(p, "mediaSourceFontBold", false);
             sourceFontItalic = new Bool(p, "mediaSourceFontItalic", false);
             sourceContentAlpha = new Int(p, "mediaSourceContentAlpha", 255);
+            sourceOutlineAlpha = new Int(p, "mediaSourceOutlineAlpha", 0xAA);
+            sourceOutlineWidth = new Int(p, "mediaSourceOutlineWidth", 2);
+            sourceAlignment = new Int(p, "mediaSourceAlignment", 0);
         }
     }
 
