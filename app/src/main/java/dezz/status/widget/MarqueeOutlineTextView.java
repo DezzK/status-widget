@@ -21,7 +21,6 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -168,31 +167,42 @@ public class MarqueeOutlineTextView extends OutlineTextView {
         float naturalTotalWidth = contentWidth + paddings;
 
         if (hasMaxWidth && naturalTotalWidth > maxWidthPx + 0.5f) {
-            // Overflow. We have to pin {@code layout.width} to {@code maxWidth} explicitly —
-            // {@link android.widget.TextView#onMeasure} with {@code setHorizontallyScrolling(true)}
-            // returns the full natural text width and silently ignores {@code setMaxWidth},
-            // so without this the parent would grow to fit the whole string and no scrolling
-            // ever kicked in. After fixing the width, render "text + separator + text" so the
-            // wrap point is hidden by the already-visible second copy.
-            setLayoutWidth(maxWidthPx);
+            // Overflow: render "text + separator + text" so the wrap point is hidden by the
+            // already-visible second copy. {@link #onMeasure} clamps the measured width to
+            // {@code maxWidth} in this state — that's the only reliable way to cap it,
+            // because {@code setHorizontallyScrolling(true)} makes the underlying TextView
+            // report the full natural text width from {@code onMeasure} and silently ignore
+            // {@code setMaxWidth}.
             float separatorWidth = getPaint().measureText(SEPARATOR);
             loopWidthPx = contentWidth + separatorWidth;
             super.setText(TextUtils.concat(text, SEPARATOR, text));
             scrolling = true;
+            requestLayout();
             if (attached) {
                 postOnAnimation(tick);
             }
         } else {
-            // Fits — grow naturally up to maxWidth, single render, no animation.
-            setLayoutWidth(ViewGroup.LayoutParams.WRAP_CONTENT);
+            // Fits — single render, no animation, view grows naturally.
             super.setText(text);
+            requestLayout();
         }
     }
 
-    private void setLayoutWidth(int width) {
-        ViewGroup.LayoutParams lp = getLayoutParams();
-        if (lp == null || lp.width == width) return;
-        lp.width = width;
-        setLayoutParams(lp);
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        // Re-measure under UNSPECIFIED so {@code setHorizontallyScrolling(true)} reports the
+        // full natural text width without being squeezed by a competing-sibling AT_MOST cap
+        // (overlay's LinearLayout horizontal with multiple bricks gives each child the
+        // remaining-space cap, which would clip long media subtitles before our own logic
+        // ever gets to choose between static render and scrolling).
+        int unspecified = android.view.View.MeasureSpec.makeMeasureSpec(
+                0, android.view.View.MeasureSpec.UNSPECIFIED);
+        super.onMeasure(unspecified, heightMeasureSpec);
+        int natural = getMeasuredWidth();
+        int maxWidth = getMaxWidth();
+        if (maxWidth > 0 && maxWidth < Integer.MAX_VALUE && natural > maxWidth) {
+            natural = maxWidth;
+        }
+        setMeasuredDimension(natural, getMeasuredHeight());
     }
 }
