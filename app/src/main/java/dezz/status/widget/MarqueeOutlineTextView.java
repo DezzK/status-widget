@@ -44,8 +44,9 @@ import androidx.annotation.Nullable;
  * fit are shown statically; no animation kicks in.
  */
 public class MarqueeOutlineTextView extends OutlineTextView {
-    /** Gap between repetitions of the scrolling text. Empirically: enough to read as a pause. */
-    private static final String SEPARATOR = "      ";
+    /** Separator between repetitions of the scrolling text. Bullet + flanking spaces — wide
+     *  enough to read as a pause, and the dot gives an explicit "end of one cycle" marker. */
+    private static final String SEPARATOR = "   •   ";
 
     /** Frame period in milliseconds. 16 ≈ 60 fps. */
     private static final long FRAME_PERIOD_MS = 16L;
