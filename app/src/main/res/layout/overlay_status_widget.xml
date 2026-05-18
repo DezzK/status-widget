@@ -17,15 +17,26 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+   Two-level root: outer FrameLayout is attached to WindowManager so we can resize the
+   *window* (pre-expand to screen width / pin to current width) for the duration of a
+   visibility transition without confusing TransitionManager, which animates children
+   inside the inner LinearLayout instead.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/overlay_container"
+    android:id="@+id/overlay_root"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/overlay_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
     <!-- Status-bar mode containers + spacers. Hidden in floating mode; bricks live as direct
-         children of the root then. WidgetService rearranges things at runtime. -->
+         children of the inner container then. WidgetService rearranges things at runtime. -->
     <LinearLayout
         android:id="@+id/startGroup"
         android:layout_width="wrap_content"
@@ -139,4 +150,6 @@
         android:paddingHorizontal="4sp"
         android:src="@drawable/ic_status_bt_off"
         tools:ignore="ContentDescription" />
-</LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

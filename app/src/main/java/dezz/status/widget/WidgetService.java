@@ -151,6 +151,17 @@ public class WidgetService extends Service {
 
     private static final long INTERNET_PROBE_INTERVAL_MS = 30_000L;
 
+    /** Cross-fade duration for the entire overlay (show/hide / per-app hide). */
+    private static final int OVERLAY_FADE_DURATION_MS = 500;
+    /**
+     * Duration of the combined Fade + ChangeBounds transition that handles per-brick
+     * visibility flips. See {@link #beginVisibilityTransition} for the "window-buffer"
+     * trick that makes this transition stay inside a stable window rectangle.
+     */
+    private static final int BRICK_TRANSITION_DURATION_MS = 450;
+    /** Duration of the alpha animation used when a brick is hidden in keeps-space mode. */
+    private static final int BRICK_ALPHA_DURATION_MS = 300;
+
     private static final String TAG = "WidgetService";
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "WidgetServiceChannel";
@@ -438,8 +449,16 @@ public class WidgetService extends Service {
         // Create the overlay view
         LayoutInflater layoutInflater = LayoutInflater.from(this);
         binding = OverlayStatusWidgetBinding.inflate(layoutInflater);
+        // Start invisible — the addView() below makes the window appear instantly; we then
+        // fade the content in to match the symmetric fade-out the overlay does elsewhere.
+        binding.getRoot().setAlpha(0f);
         binding.getRoot().setVisibility(View.VISIBLE);
-        binding.getRoot().addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+        // Listen on the INNER container, not the outer FrameLayout. During a visibility
+        // transition we pre-expand the *window* (root) to screenWidth as a buffer for
+        // TransitionManager; if we listened on the root we'd see that buffer expand as a
+        // huge layout change and shove overlayX by hundreds of pixels (and persist it).
+        // The inner container's bounds are what TransitionManager animates smoothly.
+        binding.overlayContainer.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             updateBackground();
             // Right-edge anchoring: when the widget content changes its measured width, shift the
             // window's left edge by the same amount so the right edge stays put. Done in a single
@@ -452,7 +471,7 @@ public class WidgetService extends Service {
                     && prefs.widgetAlignRight.get() && oldWidth > 0 && newWidth > 0 && newWidth != oldWidth) {
                 params.x += oldWidth - newWidth;
                 try {
-                    windowManager.updateViewLayout(v, params);
+                    windowManager.updateViewLayout(binding.getRoot(), params);
                 } catch (Exception ignored) {
                 }
                 prefs.overlayX.set(params.x);
@@ -489,6 +508,11 @@ public class WidgetService extends Service {
 
         try {
             windowManager.addView(binding.getRoot(), params);
+            // Fade in the freshly-added view; addView itself is instant.
+            binding.getRoot().animate()
+                    .alpha(1f)
+                    .setDuration(OVERLAY_FADE_DURATION_MS)
+                    .start();
         } catch (Exception e) {
             Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_LONG).show();
             stopSelf();
@@ -551,7 +575,11 @@ public class WidgetService extends Service {
         // Was previously auto-computed as half of the largest brick dimension — many users found
         // it too wide on small head units, so it's now explicit prefs. Slight outline clipping
         // at thin paddings is acceptable.
-        binding.getRoot().setPadding(
+        // Padding goes on the INNER container — that's the view with the rounded background.
+        // Putting it on the outer FrameLayout instead leaves a transparent gutter around the
+        // background rect (visible at non-zero padding) and shifts the background's rounded
+        // corners outside the touchable area.
+        binding.overlayContainer.setPadding(
                 prefs.paddingLeft.get(),
                 prefs.paddingTop.get(),
                 prefs.paddingRight.get(),
@@ -561,7 +589,7 @@ public class WidgetService extends Service {
         // including bricks currently hidden per-app. Otherwise hiding e.g. a big Time brick
         // would let the row shrink vertically and the remaining icons would re-center up,
         // breaking alignment with the device status bar that users carefully tune.
-        binding.getRoot().setMinimumHeight(computeMinWidgetHeight(bricksSet));
+        binding.overlayContainer.setMinimumHeight(computeMinWidgetHeight(bricksSet));
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         if (bricksSet.contains(BrickType.TIME) || bricksSet.contains(BrickType.DATE)) {
@@ -641,6 +669,10 @@ public class WidgetService extends Service {
     }
 
     private void reorderBricks(List<BrickType> bricks) {
+        // Adding/removing a brick changes child order/membership of the root.
+        // applyBrickVisibility() (called right after this from applyPreferences) drives the
+        // per-brick fade + width animation that gives us the "dynamic island" feel; we
+        // just rearrange children here.
         if (prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR) {
             reorderForStatusBar(bricks);
         } else {
@@ -649,7 +681,7 @@ public class WidgetService extends Service {
     }
 
     private void reorderForFloating(List<BrickType> bricks) {
-        LinearLayout root = (LinearLayout) binding.getRoot();
+        LinearLayout root = binding.overlayContainer;
         // Status-bar group containers and spacers are hidden in floating mode and emptied so
         // bricks live as direct children of the root again.
         binding.startGroup.removeAllViews();
@@ -683,7 +715,7 @@ public class WidgetService extends Service {
     }
 
     private void reorderForStatusBar(List<BrickType> bricks) {
-        LinearLayout root = (LinearLayout) binding.getRoot();
+        LinearLayout root = binding.overlayContainer;
         // Detach bricks from wherever they currently sit (root or any group).
         binding.startGroup.removeAllViews();
         binding.centerGroup.removeAllViews();
@@ -959,42 +991,202 @@ public class WidgetService extends Service {
 
     private void applyBrickVisibility(Set<BrickType> bricksSet) {
         if (binding == null) return;
-        binding.timeText.setVisibility(brickVisibility(BrickType.TIME,
-                bricksSet.contains(BrickType.TIME)));
         boolean dateActive = bricksSet.contains(BrickType.DATE)
                 && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get());
-        binding.dateText.setVisibility(brickVisibility(BrickType.DATE, dateActive));
-        binding.wifiStatusIcon.setVisibility(brickVisibility(BrickType.WIFI,
-                bricksSet.contains(BrickType.WIFI)));
-        binding.gnssStatusIcon.setVisibility(brickVisibility(BrickType.GPS,
-                bricksSet.contains(BrickType.GPS)));
-        binding.bluetoothStatusIcon.setVisibility(brickVisibility(BrickType.BLUETOOTH,
-                bricksSet.contains(BrickType.BLUETOOTH)));
-        // Media visibility is also gated by the active media session — see updateMediaInfo().
-        if (!bricksSet.contains(BrickType.MEDIA)) {
-            binding.mediaContainer.setVisibility(View.GONE);
-        } else if (isBrickHiddenByApp(BrickType.MEDIA)) {
-            binding.mediaContainer.setVisibility(
-                    prefs.hideKeepsSpaceFor(BrickType.MEDIA).get() ? View.INVISIBLE : View.GONE);
+        BrickTarget[] targets = {
+                resolveTarget(BrickType.TIME, bricksSet.contains(BrickType.TIME),
+                        binding.timeText, prefs.time.contentAlpha.get()),
+                resolveTarget(BrickType.DATE, dateActive,
+                        binding.dateText, prefs.date.contentAlpha.get()),
+                resolveTarget(BrickType.WIFI, bricksSet.contains(BrickType.WIFI),
+                        binding.wifiStatusIcon, prefs.wifi.contentAlpha.get()),
+                resolveTarget(BrickType.GPS, bricksSet.contains(BrickType.GPS),
+                        binding.gnssStatusIcon, prefs.gps.contentAlpha.get()),
+                resolveTarget(BrickType.BLUETOOTH, bricksSet.contains(BrickType.BLUETOOTH),
+                        binding.bluetoothStatusIcon, prefs.bluetooth.contentAlpha.get()),
+        };
+
+        // Media has the extra session gate, so we build its BrickTarget here.
+        boolean mediaShouldBeGone = !bricksSet.contains(BrickType.MEDIA);
+        boolean mediaHiddenByApp = !mediaShouldBeGone && isBrickHiddenByApp(BrickType.MEDIA);
+        BrickTarget mediaTarget;
+        if (mediaShouldBeGone) {
+            mediaTarget = new BrickTarget(binding.mediaContainer, View.GONE, 1f);
+        } else if (mediaHiddenByApp) {
+            if (prefs.hideKeepsSpaceFor(BrickType.MEDIA).get()) {
+                mediaTarget = new BrickTarget(binding.mediaContainer, View.VISIBLE, 0f);
+            } else {
+                mediaTarget = new BrickTarget(binding.mediaContainer, View.GONE, 1f);
+            }
         } else {
+            mediaTarget = new BrickTarget(binding.mediaContainer, View.VISIBLE,
+                    prefs.media.contentAlpha.get() / 255f);
+        }
+
+        // Categorise the changes. Visibility flips (VISIBLE↔GONE) get the TransitionManager +
+        // window-buffer treatment; pure alpha changes (keep-space mode where the brick stays
+        // in the layout) just get a plain alpha animation.
+        java.util.List<BrickTarget> visibilityFlips = new java.util.ArrayList<>();
+        java.util.List<BrickTarget> alphaOnly = new java.util.ArrayList<>();
+        boolean expanding = false;
+        for (BrickTarget t : targets) {
+            if (t.view.getVisibility() != t.visibility) {
+                visibilityFlips.add(t);
+                if (t.visibility == View.VISIBLE) expanding = true;
+            } else if (t.visibility == View.VISIBLE) {
+                alphaOnly.add(t);
+            }
+        }
+        // Media too.
+        if (mediaTarget.view.getVisibility() != mediaTarget.visibility) {
+            visibilityFlips.add(mediaTarget);
+            if (mediaTarget.visibility == View.VISIBLE) expanding = true;
+        } else if (mediaTarget.visibility == View.VISIBLE && !mediaShouldBeGone
+                && !mediaHiddenByApp) {
+            // media stays visible — just bring metadata up to date (also might tweak its
+            // alpha via the brick target below).
             updateMediaInfo();
+        }
+
+        if (!visibilityFlips.isEmpty()) {
+            // Scene root for TransitionManager is the INNER container — the outer FrameLayout
+            // gets resized to a screen-width buffer via WindowManager, and we want the
+            // transition to play inside the stable inner LinearLayout, not chase the buffer.
+            beginVisibilityTransition(binding.overlayContainer, expanding);
+        }
+
+        // Apply all targets. For visibility flips Fade transition handles the alpha animation;
+        // for alpha-only ones we run an explicit ViewPropertyAnimator.
+        for (BrickTarget t : targets) {
+            applyBrickTarget(t, visibilityFlips.contains(t));
+        }
+        applyBrickTarget(mediaTarget, visibilityFlips.contains(mediaTarget));
+
+        // Per-brick alpha not covered by the Fade transition (keep-space VISIBLE→VISIBLE).
+        // The bricks in alphaOnly might still want a visible-alpha update if contentAlpha
+        // pref changed — handled by applyXxxBrickSettings setAlpha which runs before this.
+    }
+
+    /** Snapshot of the desired end state for a brick view. */
+    private static final class BrickTarget {
+        final View view;
+        final int visibility;
+        /** Target alpha when {@link #visibility} is {@code VISIBLE}; ignored otherwise. */
+        final float visibleAlpha;
+        BrickTarget(View view, int visibility, float visibleAlpha) {
+            this.view = view;
+            this.visibility = visibility;
+            this.visibleAlpha = visibleAlpha;
         }
     }
 
     /**
-     * Resolves the {@code View} visibility constant for a brick. When the brick isn't part of the
-     * current layout at all (or is otherwise inactive — e.g. Date with both flags off) we
-     * always use {@code GONE}: those are user-driven "off" states, the space should collapse.
-     * Foreground-app hiding is the only case that honours {@link Preferences#hideKeepsSpaceFor}:
-     * the brick is still part of the layout, the user only wants it temporarily invisible
-     * over certain apps — possibly without reflowing the rest of the widget.
+     * Decide the final view state for a brick. {@code activeInLayout=false} (brick not in
+     * the layout / Date with both flags off) → {@code GONE}, hard collapse. Otherwise honour
+     * {@link Preferences#hideKeepsSpaceFor}: if true, render an INVISIBLE-equivalent (VISIBLE
+     * view, alpha animated to 0); if false, plain GONE.
      */
-    private int brickVisibility(BrickType type, boolean activeInLayout) {
-        if (!activeInLayout) return View.GONE;
-        if (isBrickHiddenByApp(type)) {
-            return prefs.hideKeepsSpaceFor(type).get() ? View.INVISIBLE : View.GONE;
+    private BrickTarget resolveTarget(BrickType type, boolean activeInLayout, View view,
+                                      int contentAlphaPref) {
+        float baseAlpha = contentAlphaPref / 255f;
+        if (!activeInLayout) {
+            return new BrickTarget(view, View.GONE, baseAlpha);
         }
-        return View.VISIBLE;
+        if (isBrickHiddenByApp(type)) {
+            if (prefs.hideKeepsSpaceFor(type).get()) {
+                // VISIBLE-with-alpha-0 replaces the old INVISIBLE constant — same effect on
+                // layout (space preserved) but animatable.
+                return new BrickTarget(view, View.VISIBLE, 0f);
+            }
+            return new BrickTarget(view, View.GONE, baseAlpha);
+        }
+        return new BrickTarget(view, View.VISIBLE, baseAlpha);
+    }
+
+    /**
+     * Applies a brick's target state. For visibility flips the heavy lifting is done by the
+     * {@code TransitionManager} scene set up by {@link #beginVisibilityTransition} — we
+     * just toggle {@code setVisibility} and the Fade transition cross-fades alpha while
+     * ChangeBounds slides siblings into place. For alpha-only changes (keep-space hide)
+     * we animate alpha explicitly.
+     */
+    private void applyBrickTarget(BrickTarget target, boolean handledByTransition) {
+        if (target.visibility == View.GONE) {
+            target.view.animate().cancel();
+            target.view.setVisibility(View.GONE);
+            return;
+        }
+        target.view.setVisibility(View.VISIBLE);
+        if (handledByTransition) {
+            // Fade transition animates the alpha for us; make sure the final value is the
+            // brick's contentAlpha pref (not 1.0 from Fade's default).
+            target.view.setAlpha(target.visibleAlpha);
+        } else {
+            target.view.animate().cancel();
+            target.view.animate()
+                    .alpha(target.visibleAlpha)
+                    .setDuration(BRICK_ALPHA_DURATION_MS)
+                    .start();
+        }
+    }
+
+    /**
+     * Runs the "buffer window" animation. Trick: before triggering the
+     * scene change we either expand the window to screen width (when something is about to
+     * appear) or pin it to its current width (when something is about to disappear). With
+     * the window's outer rectangle frozen the children's Fade + ChangeBounds animations
+     * play cleanly inside it; the listener restores the window to WRAP_CONTENT after the
+     * transition so it snaps to the new natural size in one go. This sidesteps the
+     * per-frame {@code updateViewLayout} approach that was visually broken on real hardware.
+     */
+    private void beginVisibilityTransition(ViewGroup sceneRoot, boolean expanding) {
+        if (binding == null) return;
+        final View windowRoot = binding.getRoot();   // the outer FrameLayout attached to WM
+        if (params != null && prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR) {
+            int oldWidth = params.width;
+            if (expanding) {
+                params.width = getResources().getDisplayMetrics().widthPixels;
+            } else {
+                int currentWidth = windowRoot.getWidth();
+                if (currentWidth > 0) params.width = currentWidth;
+            }
+            try {
+                windowManager.updateViewLayout(windowRoot, params);
+            } catch (Exception ignored) {
+                params.width = oldWidth;
+            }
+        }
+
+        android.transition.TransitionSet tx = new android.transition.TransitionSet();
+        tx.addTransition(new android.transition.ChangeBounds());
+        tx.addTransition(new android.transition.Fade());
+        tx.setOrdering(android.transition.TransitionSet.ORDERING_TOGETHER);
+        tx.setDuration(BRICK_TRANSITION_DURATION_MS);
+        tx.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+        tx.addListener(new android.transition.Transition.TransitionListener() {
+            @Override public void onTransitionStart(android.transition.Transition t) {}
+            @Override public void onTransitionEnd(android.transition.Transition t) {
+                restoreWindowToWrapContent();
+            }
+            @Override public void onTransitionCancel(android.transition.Transition t) {
+                restoreWindowToWrapContent();
+            }
+            @Override public void onTransitionPause(android.transition.Transition t) {}
+            @Override public void onTransitionResume(android.transition.Transition t) {}
+        });
+        android.transition.TransitionManager.beginDelayedTransition(sceneRoot, tx);
+    }
+
+    private void restoreWindowToWrapContent() {
+        if (params == null || binding == null) return;
+        if (prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR) {
+            params.width = WindowManager.LayoutParams.MATCH_PARENT;
+        } else {
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT;
+        }
+        try {
+            windowManager.updateViewLayout(binding.getRoot(), params);
+        } catch (Exception ignored) {}
     }
 
     private Set<BrickType> currentBrickSet() {
@@ -1485,8 +1677,26 @@ public class WidgetService extends Service {
             return;
         }
         overlayHiddenByApp = hide;
-        if (binding != null) {
-            binding.getRoot().setVisibility(hide ? View.GONE : View.VISIBLE);
+        if (binding == null) return;
+        View root = binding.getRoot();
+        root.animate().cancel();
+        if (hide) {
+            // Animate to fully transparent, then collapse so the window stops occupying space.
+            root.animate()
+                    .alpha(0f)
+                    .setDuration(OVERLAY_FADE_DURATION_MS)
+                    .withEndAction(() -> {
+                        if (overlayHiddenByApp) root.setVisibility(View.GONE);
+                    })
+                    .start();
+        } else {
+            // The animate().cancel() above leaves alpha at whatever it was mid-animation;
+            // start the fade-in from the current value to its target of 1f.
+            root.setVisibility(View.VISIBLE);
+            root.animate()
+                    .alpha(1f)
+                    .setDuration(OVERLAY_FADE_DURATION_MS)
+                    .start();
         }
     }
 
@@ -1497,8 +1707,11 @@ public class WidgetService extends Service {
         if (themedContext == null) {
             updateThemedContext();
         }
-        int width = binding.getRoot().getWidth();
-        int height = binding.getRoot().getHeight();
+        // Read from the inner container, which is where the background drawable lives and what
+        // TransitionManager animates. Reading from getRoot() would, during a visibility
+        // transition, briefly return the screen-width window buffer and cap maxRadius too high.
+        int width = binding.overlayContainer.getWidth();
+        int height = binding.overlayContainer.getHeight();
         if (width == 0 || height == 0) {
             return;
         }
