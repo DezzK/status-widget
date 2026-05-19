@@ -159,6 +159,13 @@ public class WidgetService extends Service {
      * trick that makes this transition stay inside a stable window rectangle.
      */
     private static final int BRICK_TRANSITION_DURATION_MS = 450;
+    /**
+     * Duration of {@link android.animation.LayoutTransition#CHANGING} animations that fire
+     * when a child changes its own size (clock minute, date, media track, icon swap). Shorter
+     * than visibility flips because the user sees small frequent updates as snappy when
+     * animated under ~300ms; longer feels sluggish for tiny shifts.
+     */
+    private static final int CONTENT_CHANGE_DURATION_MS = 250;
     /** Duration of the alpha animation used when a brick is hidden in keeps-space mode. */
     private static final int BRICK_ALPHA_DURATION_MS = 300;
 
@@ -212,6 +219,44 @@ public class WidgetService extends Service {
     private Set<String> hiddenInPackages;
     private String lastForegroundPackage;
     private boolean overlayHiddenByApp = false;
+
+    /**
+     * Number of in-flight transitions that have widened the WindowManager window to the
+     * screen-width "buffer" so animations can play in a stable rectangle. Incremented when
+     * a transition starts the buffer, decremented when it ends; the window is restored to
+     * WRAP_CONTENT only when the counter reaches zero. Shared between:
+     * <ul>
+     *   <li>{@link #beginVisibilityTransition} (brick show/hide)</li>
+     *   <li>The always-on {@link android.animation.LayoutTransition#CHANGING} on
+     *       overlayContainer (any child changing measured size)</li>
+     *   <li>The eager pre-empt in the {@code onLayoutChange} listener that catches a
+     *       shrink one frame before {@code LayoutTransition.startTransition} would,
+     *       so the window doesn't snap below the children that are still animating
+     *       at their old positions</li>
+     * </ul>
+     */
+    private int pendingBufferedTransitions = 0;
+
+    /**
+     * Closes the buffer opened eagerly by {@code onLayoutChange} when the content shrinks.
+     * Posted with a delay slightly longer than {@link #BRICK_TRANSITION_DURATION_MS}; the
+     * happy-path {@code LayoutTransition.endTransition} usually fires first and the
+     * counter goes to zero on its own — this is the safety net for the case where no
+     * {@code LayoutTransition} actually runs (e.g. a same-size measure that still
+     * propagated through), so the window doesn't stay screen-wide forever.
+     */
+    private final Runnable shrinkBufferSafetyClose = this::endBufferedTransition;
+
+    /**
+     * Always-on {@link android.animation.LayoutTransition#CHANGING} animation installed on the
+     * overlay container. Held as a field so {@link #beginVisibilityTransition} can disable
+     * CHANGING for the duration of a visibility flip — otherwise the explicit ChangeBounds
+     * inside the visibility {@link android.transition.TransitionSet} and the implicit CHANGING
+     * triggered by sibling bricks shifting both play at once, producing the visible "double
+     * animation". Re-enabled when the visibility transition's close runnable fires.
+     */
+    @Nullable
+    private android.animation.LayoutTransition contentLayoutTransition;
 
     private Context themedContext;
     private int appliedThemePref = -1;
@@ -467,7 +512,8 @@ public class WidgetService extends Service {
             if (params == null) return;
             int oldWidth = oldRight - oldLeft;
             int newWidth = right - left;
-            if (prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR
+            boolean nonStatusBar = prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR;
+            if (nonStatusBar
                     && prefs.widgetAlignRight.get() && oldWidth > 0 && newWidth > 0 && newWidth != oldWidth) {
                 params.x += oldWidth - newWidth;
                 try {
@@ -479,15 +525,71 @@ public class WidgetService extends Service {
             notifyOverlayState();
         });
 
-        applyPreferences();
+        // Synchronous "size about to change" hook. Fires from {@code onMeasure} of the
+        // BufferingLinearLayout — earlier than OnLayoutChangeListener and earlier than
+        // LayoutTransition.startTransition, both of which run after ViewRootImpl has
+        // already pushed the new wrap_content dimensions to WindowManager. Catching it
+        // mid-measure lets our updateViewLayout(screenWidth) win the race so the window
+        // never snaps below the children that are about to animate. The safety runnable
+        // is a fallback in case no LayoutTransition actually plays.
+        binding.overlayContainer.setSizeChangeHint((oldW, newW, oldH, newH) -> {
+            if (params == null) return;
+            if (prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR) return;
+            if (newW >= oldW) return;   // grow path already works
+            if (pendingBufferedTransitions > 0) return;   // some transition already buffering
+            beginBufferedTransition(true);
+            mainHandler.removeCallbacks(shrinkBufferSafetyClose);
+            mainHandler.postDelayed(shrinkBufferSafetyClose,
+                    BRICK_TRANSITION_DURATION_MS + 200);
+        });
 
-        updateWifiStatus();
-        updateGnssStatus();
+        // Universal "content size changed" animation: install a LayoutTransition with only the
+        // CHANGING type enabled on the overlay container. Any child that changes its measured
+        // size (clock minute rolls over, date string flips at midnight, media title scrolls to
+        // a new track, status icon swaps drawable) will produce a smooth ChangeBounds-style
+        // animation for itself and any siblings it pushes around. CHANGE_APPEARING / APPEARING
+        // / DISAPPEARING are left disabled — those cases are handled by our explicit
+        // {@link #beginVisibilityTransition} that knows about the window-buffer trick.
+        // We hook startTransition / endTransition into the same buffered-transition counter so
+        // the window doesn't snap mid-animation when CHANGING runs solo, and so concurrent
+        // CHANGING + visibility transitions coexist correctly.
+        contentLayoutTransition = new android.animation.LayoutTransition();
+        android.animation.LayoutTransition lt = contentLayoutTransition;
+        lt.disableTransitionType(android.animation.LayoutTransition.APPEARING);
+        lt.disableTransitionType(android.animation.LayoutTransition.DISAPPEARING);
+        lt.disableTransitionType(android.animation.LayoutTransition.CHANGE_APPEARING);
+        lt.disableTransitionType(android.animation.LayoutTransition.CHANGE_DISAPPEARING);
+        lt.enableTransitionType(android.animation.LayoutTransition.CHANGING);
+        lt.setDuration(android.animation.LayoutTransition.CHANGING, CONTENT_CHANGE_DURATION_MS);
+        lt.setInterpolator(android.animation.LayoutTransition.CHANGING,
+                new android.view.animation.AccelerateDecelerateInterpolator());
+        lt.addTransitionListener(new android.animation.LayoutTransition.TransitionListener() {
+            @Override
+            public void startTransition(android.animation.LayoutTransition transition,
+                                        android.view.ViewGroup container, View view, int type) {
+                if (type != android.animation.LayoutTransition.CHANGING) return;
+                beginBufferedTransition(true);
+            }
 
-        // Set up drag listener
+            @Override
+            public void endTransition(android.animation.LayoutTransition transition,
+                                      android.view.ViewGroup container, View view, int type) {
+                if (type != android.animation.LayoutTransition.CHANGING) return;
+                endBufferedTransition();
+            }
+        });
+        binding.overlayContainer.setLayoutTransition(lt);
+
+        // Set up drag listener (just registers a touch listener on the root view — safe to do
+        // before addView since the listener captures touches once attached).
         setupDragListener();
 
-        // Add the view to the window
+        // Initialize params and addView BEFORE applyPreferences. The first applyPreferences()
+        // call inside this method walks through applyBrickVisibility / beginVisibilityTransition
+        // which expects to expand the window via WindowManager.updateViewLayout — that requires
+        // params and the view to be attached. Doing applyPreferences before addView used to
+        // leave pendingBufferedTransitions stuck at 1 forever, which suppressed every later
+        // shrink-side buffer pre-empt and made content-shrink animations clip their right edge.
         boolean statusBar = prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR;
         params = new WindowManager.LayoutParams(
                 statusBar
@@ -508,15 +610,22 @@ public class WidgetService extends Service {
 
         try {
             windowManager.addView(binding.getRoot(), params);
-            // Fade in the freshly-added view; addView itself is instant.
-            binding.getRoot().animate()
-                    .alpha(1f)
-                    .setDuration(OVERLAY_FADE_DURATION_MS)
-                    .start();
         } catch (Exception e) {
             Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_LONG).show();
             stopSelf();
+            return;
         }
+
+        applyPreferences();
+
+        updateWifiStatus();
+        updateGnssStatus();
+
+        // Fade in the freshly-added view; addView itself is instant.
+        binding.getRoot().animate()
+                .alpha(1f)
+                .setDuration(OVERLAY_FADE_DURATION_MS)
+                .start();
     }
 
     @Override
@@ -1141,20 +1250,15 @@ public class WidgetService extends Service {
      */
     private void beginVisibilityTransition(ViewGroup sceneRoot, boolean expanding) {
         if (binding == null) return;
-        final View windowRoot = binding.getRoot();   // the outer FrameLayout attached to WM
-        if (params != null && prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR) {
-            int oldWidth = params.width;
-            if (expanding) {
-                params.width = getResources().getDisplayMetrics().widthPixels;
-            } else {
-                int currentWidth = windowRoot.getWidth();
-                if (currentWidth > 0) params.width = currentWidth;
-            }
-            try {
-                windowManager.updateViewLayout(windowRoot, params);
-            } catch (Exception ignored) {
-                params.width = oldWidth;
-            }
+        beginBufferedTransition(expanding);
+
+        // Suppress the always-on CHANGING animation for the duration of this visibility flip.
+        // Sibling bricks shift positions when a brick appears/disappears, which LayoutTransition
+        // would otherwise interpret as a content change and animate in parallel with our own
+        // explicit ChangeBounds inside the TransitionSet — visible as a doubled motion.
+        if (contentLayoutTransition != null) {
+            contentLayoutTransition.disableTransitionType(
+                    android.animation.LayoutTransition.CHANGING);
         }
 
         android.transition.TransitionSet tx = new android.transition.TransitionSet();
@@ -1163,18 +1267,69 @@ public class WidgetService extends Service {
         tx.setOrdering(android.transition.TransitionSet.ORDERING_TOGETHER);
         tx.setDuration(BRICK_TRANSITION_DURATION_MS);
         tx.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+        // Listener can leak the buffer counter if TransitionManager decides nothing
+        // animatable changed and never fires the lifecycle callbacks — known foot-gun.
+        // Guard with a single-shot close flag and a safety runnable that runs unconditionally
+        // after slightly longer than the transition's own duration. Whichever fires first
+        // closes the buffer; the other becomes a no-op.
+        final boolean[] closed = {false};
+        Runnable closeOnce = () -> {
+            if (closed[0]) return;
+            closed[0] = true;
+            if (contentLayoutTransition != null) {
+                contentLayoutTransition.enableTransitionType(
+                        android.animation.LayoutTransition.CHANGING);
+            }
+            endBufferedTransition();
+        };
         tx.addListener(new android.transition.Transition.TransitionListener() {
             @Override public void onTransitionStart(android.transition.Transition t) {}
             @Override public void onTransitionEnd(android.transition.Transition t) {
-                restoreWindowToWrapContent();
+                closeOnce.run();
             }
             @Override public void onTransitionCancel(android.transition.Transition t) {
-                restoreWindowToWrapContent();
+                closeOnce.run();
             }
             @Override public void onTransitionPause(android.transition.Transition t) {}
             @Override public void onTransitionResume(android.transition.Transition t) {}
         });
         android.transition.TransitionManager.beginDelayedTransition(sceneRoot, tx);
+        mainHandler.postDelayed(closeOnce, BRICK_TRANSITION_DURATION_MS + 500);
+    }
+
+    /**
+     * Open a window-buffered transition: if no other buffered transition is in flight, pre-resize
+     * the WindowManager window to either screen width ({@code expanding}) or its current width
+     * (shrinking), so the animation that follows plays inside a stable rectangle instead of
+     * fighting wrap-content. Idempotent under nesting: re-entrant callers just bump the counter.
+     */
+    private void beginBufferedTransition(boolean expanding) {
+        if (binding == null) return;
+        if (pendingBufferedTransitions++ == 0) {
+            if (params != null && prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR) {
+                int oldWidth = params.width;
+                if (expanding) {
+                    params.width = getResources().getDisplayMetrics().widthPixels;
+                } else {
+                    int currentWidth = binding.getRoot().getWidth();
+                    if (currentWidth > 0) params.width = currentWidth;
+                }
+                try {
+                    windowManager.updateViewLayout(binding.getRoot(), params);
+                } catch (Exception ignored) {
+                    params.width = oldWidth;
+                }
+            }
+        }
+    }
+
+    /** Closes a transition opened by {@link #beginBufferedTransition}. When the last in-flight
+     *  transition ends, restores the window to WRAP_CONTENT so it snaps to natural size. */
+    private void endBufferedTransition() {
+        if (pendingBufferedTransitions <= 0) return;
+        if (--pendingBufferedTransitions == 0) {
+            restoreWindowToWrapContent();
+        }
     }
 
     private void restoreWindowToWrapContent() {
@@ -1275,6 +1430,14 @@ public class WidgetService extends Service {
         int newWidth = statusBar
                 ? WindowManager.LayoutParams.MATCH_PARENT
                 : WindowManager.LayoutParams.WRAP_CONTENT;
+        // During a buffered transition the window is intentionally pinned wider than
+        // wrap_content so children can animate without being clipped. Overwriting
+        // params.width here would snap the window mid-animation and also strand the
+        // TransitionManager listener (no scene change → no onTransitionEnd → counter
+        // leak). The buffer closer will restore wrap_content when it ends.
+        if (pendingBufferedTransitions > 0 && !statusBar) {
+            newWidth = params.width;
+        }
         int newX = statusBar ? 0 : prefs.overlayX.get();
         int newY = statusBar ? 0 : prefs.overlayY.get();
         if (params.x == newX && params.y == newY && params.width == newWidth) return;

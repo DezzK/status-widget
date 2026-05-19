@@ -29,7 +29,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
-    <LinearLayout
+    <dezz.status.widget.BufferingLinearLayout
         android:id="@+id/overlay_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -150,6 +150,6 @@
         android:paddingHorizontal="4sp"
         android:src="@drawable/ic_status_bt_off"
         tools:ignore="ContentDescription" />
-    </LinearLayout>
+    </dezz.status.widget.BufferingLinearLayout>
 
 </FrameLayout>
