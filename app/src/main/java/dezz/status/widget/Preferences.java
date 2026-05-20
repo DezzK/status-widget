@@ -199,6 +199,11 @@ public class Preferences {
         public final Bool titleFirst;
         /** Vertical gap (px) between the app-name line and the track-title line. */
         public final Int lineGap;
+        /**
+         * {@code true} (default) → on overflow scroll the text continuously past the max-width;
+         * {@code false} → render statically up to max-width and cut off with an ellipsis.
+         */
+        public final Bool marqueeEnabled;
 
         /**
          * Source-line ("now playing in &lt;app&gt;") text settings. Title keeps using the
@@ -226,6 +231,7 @@ public class Preferences {
             showSource = new Bool(p, "mediaShowSource", true);
             titleFirst = new Bool(p, "mediaTitleFirst", false);
             lineGap = new Int(p, "mediaLineGap", 0);
+            marqueeEnabled = new Bool(p, "mediaMarqueeEnabled", true);
             sourceFontSize = new Int(p, "mediaSourceFontSize", 20);
             sourceFontFamily = new Str(p, "mediaSourceFontFamily", Fonts.DEFAULT_KEY);
             sourceFontBold = new Bool(p, "mediaSourceFontBold", false);

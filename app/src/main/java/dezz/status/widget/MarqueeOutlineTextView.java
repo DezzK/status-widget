@@ -60,6 +60,7 @@ public class MarqueeOutlineTextView extends OutlineTextView {
     private float loopWidthPx = 0f;
     private boolean scrolling = false;
     private boolean attached = false;
+    private boolean marqueeEnabled = true;
     private float speedPxPerFrame = DEFAULT_SPEED_PX_PER_FRAME;
 
     private final Runnable tick = new Runnable() {
@@ -107,6 +108,17 @@ public class MarqueeOutlineTextView extends OutlineTextView {
      */
     public void setMarqueeText(@Nullable CharSequence text) {
         sourceText = text == null ? "" : text;
+        evaluateAndUpdate();
+    }
+
+    /**
+     * Enable / disable the marquee scroll behavior. When disabled, overflowing text is rendered
+     * statically up to {@link #setMaxWidth(int) maxWidth} and cut off with an end ellipsis;
+     * when enabled (the default), overflow triggers the continuous scroll loop.
+     */
+    public void setMarqueeEnabled(boolean enabled) {
+        if (marqueeEnabled == enabled) return;
+        marqueeEnabled = enabled;
         evaluateAndUpdate();
     }
 
@@ -167,13 +179,14 @@ public class MarqueeOutlineTextView extends OutlineTextView {
         int paddings = getPaddingLeft() + getPaddingRight();
         float naturalTotalWidth = contentWidth + paddings;
 
-        if (hasMaxWidth && naturalTotalWidth > maxWidthPx + 0.5f) {
-            // Overflow: render "text + separator + text" so the wrap point is hidden by the
-            // already-visible second copy. {@link #onMeasure} clamps the measured width to
-            // {@code maxWidth} in this state — that's the only reliable way to cap it,
-            // because {@code setHorizontallyScrolling(true)} makes the underlying TextView
-            // report the full natural text width from {@code onMeasure} and silently ignore
-            // {@code setMaxWidth}.
+        if (hasMaxWidth && naturalTotalWidth > maxWidthPx + 0.5f && marqueeEnabled) {
+            // Overflow + marquee enabled: render "text + separator + text" so the wrap point
+            // is hidden by the already-visible second copy. {@link #onMeasure} clamps the
+            // measured width to {@code maxWidth} in this state — that's the only reliable
+            // way to cap it, because {@code setHorizontallyScrolling(true)} makes the
+            // underlying TextView report the full natural text width from {@code onMeasure}
+            // and silently ignore {@code setMaxWidth}.
+            setEllipsize(null);
             float separatorWidth = getPaint().measureText(SEPARATOR);
             loopWidthPx = contentWidth + separatorWidth;
             super.setText(TextUtils.concat(text, SEPARATOR, text));
@@ -182,8 +195,20 @@ public class MarqueeOutlineTextView extends OutlineTextView {
             if (attached) {
                 postOnAnimation(tick);
             }
+        } else if (hasMaxWidth && naturalTotalWidth > maxWidthPx + 0.5f) {
+            // Overflow + marquee disabled: static render, cap at maxWidth with end ellipsis.
+            // setHorizontallyScrolling(false) plus ellipsize=END lets the TextView handle the
+            // cutoff itself; onMeasure still clamps the measured width because the original
+            // setHorizontallyScrolling(true) from init() would otherwise report the natural
+            // width.
+            setHorizontallyScrolling(false);
+            setEllipsize(android.text.TextUtils.TruncateAt.END);
+            super.setText(text);
+            requestLayout();
         } else {
-            // Fits — single render, no animation, view grows naturally.
+            // Fits — single render, no animation, no ellipsis needed, view grows naturally.
+            setEllipsize(null);
+            setHorizontallyScrolling(true);
             super.setText(text);
             requestLayout();
         }

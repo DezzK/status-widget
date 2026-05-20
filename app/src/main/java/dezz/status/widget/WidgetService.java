@@ -949,6 +949,10 @@ public class WidgetService extends Service {
         binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         binding.mediaTitleText.setAlpha(prefs.media.contentAlpha.get() / 255f);
 
+        boolean marquee = prefs.media.marqueeEnabled.get();
+        binding.mediaAppText.setMarqueeEnabled(marquee);
+        binding.mediaTitleText.setMarqueeEnabled(marquee);
+
         applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
         binding.mediaContainer.setTranslationY(prefs.media.adjustY.get());
         // Container alpha back to full — per-line alpha is set above so the two values don't

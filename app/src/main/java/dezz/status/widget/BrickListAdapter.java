@@ -231,6 +231,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         // Общие
         final MaterialSwitch brickMediaShowSource;
         final MaterialSwitch brickMediaTitleFirst;
+        final MaterialSwitch brickMediaMarqueeEnabled;
         final Slider brickMediaMaxWidthSlider;
         final Slider brickMediaMarginStartSlider;
         final Slider brickMediaMarginEndSlider;
@@ -322,6 +323,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaBlock = itemView.findViewById(R.id.brickMediaBlock);
             brickMediaShowSource = itemView.findViewById(R.id.brickMediaShowSource);
             brickMediaTitleFirst = itemView.findViewById(R.id.brickMediaTitleFirst);
+            brickMediaMarqueeEnabled = itemView.findViewById(R.id.brickMediaMarqueeEnabled);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaMarginStartSlider = itemView.findViewById(R.id.brickMediaMarginStartSlider);
             brickMediaMarginEndSlider = itemView.findViewById(R.id.brickMediaMarginEndSlider);
@@ -399,6 +401,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickBluetoothShowDeviceCountBadge.setOnCheckedChangeListener(null);
             brickMediaShowSource.setOnCheckedChangeListener(null);
             brickMediaTitleFirst.setOnCheckedChangeListener(null);
+            brickMediaMarqueeEnabled.setOnCheckedChangeListener(null);
             brickMediaMaxWidthSlider.clearOnChangeListeners();
             brickMediaMarginStartSlider.clearOnChangeListeners();
             brickMediaMarginEndSlider.clearOnChangeListeners();
@@ -898,6 +901,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaTitleFirst.setChecked(prefs.media.titleFirst.get());
             brickMediaTitleFirst.setOnCheckedChangeListener((v, c) -> {
                 prefs.media.titleFirst.set(c);
+                notifyService();
+            });
+            brickMediaMarqueeEnabled.setChecked(prefs.media.marqueeEnabled.get());
+            brickMediaMarqueeEnabled.setOnCheckedChangeListener((v, c) -> {
+                prefs.media.marqueeEnabled.set(c);
                 notifyService();
             });
             refreshMediaSourceSectionVisibility();
