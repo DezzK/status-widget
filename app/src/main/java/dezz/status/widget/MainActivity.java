@@ -420,10 +420,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupPositionSliders(ViewBinder binder) {
         DisplayMetrics dm = getResources().getDisplayMetrics();
-        binding.sectionGeneral.widgetPositionXSlider.setValueFrom(0F);
-        binding.sectionGeneral.widgetPositionXSlider.setValueTo(Math.max(1, dm.widthPixels));
-        binding.sectionGeneral.widgetPositionYSlider.setValueFrom(0F);
-        binding.sectionGeneral.widgetPositionYSlider.setValueTo(Math.max(1, dm.heightPixels));
+        // Static slider bounds derived from screen size. We previously recomputed
+        // -(widgetWidth/2)..screenWidth on every overlay state callback, which made the
+        // X slider jitter every time the widget's own width animated (minute roll over,
+        // new track, icon swap, brick visibility flip). The widget can never be wider
+        // than the screen, so allowing -screenWidth/2 on the left and +screenWidth on
+        // the right covers every reachable position for any widget width — without the
+        // bounds depending on a moving target.
+        int xMin = -dm.widthPixels / 2;
+        int xMax = Math.max(1, dm.widthPixels);
+        int yMin = -dm.heightPixels / 2;
+        int yMax = Math.max(1, dm.heightPixels);
+        binding.sectionGeneral.widgetPositionXSlider.setValueFrom(xMin);
+        binding.sectionGeneral.widgetPositionXSlider.setValueTo(xMax);
+        binding.sectionGeneral.widgetPositionYSlider.setValueFrom(yMin);
+        binding.sectionGeneral.widgetPositionYSlider.setValueTo(yMax);
         binder.bindSizeSlider(binding.sectionGeneral.widgetPositionXSlider, prefs.overlayX);
         binder.bindSizeSlider(binding.sectionGeneral.widgetPositionYSlider, prefs.overlayY);
         binder.bindSizeSlider(binding.sectionGeneral.widgetPaddingLeftSlider, prefs.paddingLeft);
@@ -572,16 +583,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void updatePositionSliders(int x, int y, int w, int h) {
         if (binding == null) return;
-        DisplayMetrics dm = getResources().getDisplayMetrics();
         Slider sx = binding.sectionGeneral.widgetPositionXSlider;
         Slider sy = binding.sectionGeneral.widgetPositionYSlider;
-        int xMin = -(w / 2);
-        int xMax = dm.widthPixels;
-        int yMin = -(h / 2);
-        int yMax = dm.heightPixels;
-        applySliderRange(sx, xMin, xMax, x);
-        applySliderRange(sy, yMin, yMax, y);
+        // Range was set once in setupPositionSliders; only the current value moves with
+        // the widget. Clamp into the slider's bounds defensively in case the overlay
+        // position somehow drifted outside (e.g. saved value from a wider previous screen).
+        sx.setValue(clampToSliderRange(sx, x));
+        sy.setValue(clampToSliderRange(sy, y));
         updateStatusBarPadding(h);
+    }
+
+    private static float clampToSliderRange(Slider slider, int value) {
+        return Math.max(slider.getValueFrom(), Math.min(slider.getValueTo(), value));
     }
 
     /**
@@ -600,17 +613,6 @@ public class MainActivity extends AppCompatActivity {
                 basePaddingTop + extra,
                 child.getPaddingRight(),
                 child.getPaddingBottom());
-    }
-
-    private static void applySliderRange(Slider slider, int min, int max, int value) {
-        int clamped = Math.max(min, Math.min(max, value));
-        // Material Slider validates the (from, to, value) triple on every setter, so widen the
-        // bounds first to ensure the current value stays inside the range during transitions.
-        slider.setValueFrom(Math.min(slider.getValueFrom(), Math.min(min, clamped)));
-        slider.setValueTo(Math.max(slider.getValueTo(), Math.max(max, clamped)));
-        slider.setValue(clamped);
-        slider.setValueFrom(min);
-        slider.setValueTo(max);
     }
 
     private void openAppSelection() {
