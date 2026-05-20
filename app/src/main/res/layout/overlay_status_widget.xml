@@ -75,12 +75,17 @@
         android:orientation="horizontal"
         android:visibility="gone" />
 
+    <!-- includeFontPadding=false everywhere: removes the per-TextView reserve under font
+         ascenders / descenders that we don't need for the languages/glyphs this widget
+         renders. Makes the widget visibly more compact and keeps baselines aligned
+         across time / date / media when they share a font size. -->
     <dezz.status.widget.OutlineTextView
         android:id="@+id/timeText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:fontFamily="@font/roboto_condensed_medium"
+        android:includeFontPadding="false"
         android:textColor="@color/text_primary"
         android:textSize="100sp"
         tools:text="10:00" />
@@ -91,6 +96,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:fontFamily="@font/roboto_condensed_medium"
+        android:includeFontPadding="false"
         android:textColor="@color/text_primary"
         android:textSize="20sp"
         tools:text=" Tue, 10 Nov " />
@@ -108,6 +114,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto_condensed_medium"
+            android:includeFontPadding="false"
             android:textColor="@color/text_primary"
             android:textSize="20sp"
             tools:text="Spotify"
@@ -118,6 +125,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto_condensed_medium"
+            android:includeFontPadding="false"
             android:textColor="@color/text_primary"
             android:textSize="20sp"
             tools:text="Track — Artist"

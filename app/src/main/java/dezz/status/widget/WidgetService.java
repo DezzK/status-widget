@@ -1400,8 +1400,9 @@ public class WidgetService extends Service {
         Paint p = new Paint(view.getPaint());
         p.setTextSize(fontSizePx);
         Paint.FontMetrics fm = p.getFontMetrics();
-        // TextView with includeFontPadding=true (default) uses top/bottom for the layout bounds.
-        return (int) Math.ceil(fm.bottom - fm.top);
+        // All text TextViews in the widget have includeFontPadding=false — layout bounds use
+        // ascent/descent (just the glyph metrics, no extra accent/descender reserve).
+        return (int) Math.ceil(fm.descent - fm.ascent);
     }
 
     public void setOverlayStateListener(@Nullable OverlayStateListener listener) {
