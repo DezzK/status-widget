@@ -140,6 +140,7 @@ public class PrivilegedShell {
         BACKGROUND_LOCATION,
         USAGE_ACCESS,
         NOTIFICATION,
+        ACCESSIBILITY,
     }
 
     /** Result of an {@link #ensurePrivileges} call. */
@@ -190,6 +191,8 @@ public class PrivilegedShell {
         final boolean usageAccess;
         final boolean notificationListener;
         @Nullable final String notificationListenerComponent;
+        final boolean accessibility;
+        @Nullable final String accessibilityComponent;
 
         private Request(Builder b) {
             this.packageName = b.packageName;
@@ -199,11 +202,13 @@ public class PrivilegedShell {
             this.usageAccess = b.usageAccess;
             this.notificationListener = b.notificationListener;
             this.notificationListenerComponent = b.notificationListenerComponent;
+            this.accessibility = b.accessibility;
+            this.accessibilityComponent = b.accessibilityComponent;
         }
 
         boolean nothingToDo() {
             return !overlay && !foregroundLocation && !backgroundLocation
-                    && !usageAccess && !notificationListener;
+                    && !usageAccess && !notificationListener && !accessibility;
         }
 
         public static Builder forPackage(String packageName) { return new Builder(packageName); }
@@ -216,6 +221,8 @@ public class PrivilegedShell {
             private boolean usageAccess = false;
             private boolean notificationListener = false;
             @Nullable private String notificationListenerComponent = null;
+            private boolean accessibility = false;
+            @Nullable private String accessibilityComponent = null;
 
             Builder(String packageName) { this.packageName = packageName; }
 
@@ -226,6 +233,11 @@ public class PrivilegedShell {
             public Builder withNotificationListener(String component) {
                 this.notificationListener = true;
                 this.notificationListenerComponent = component;
+                return this;
+            }
+            public Builder withAccessibility(String component) {
+                this.accessibility = true;
+                this.accessibilityComponent = component;
                 return this;
             }
             public Request build() { return new Request(this); }
@@ -544,6 +556,11 @@ public class PrivilegedShell {
                         PermissionKind.NOTIFICATION,
                         granted, failed);
             }
+            if (request.accessibility && request.accessibilityComponent != null) {
+                applyAccessibilityGrant(transport,
+                        request.accessibilityComponent,
+                        granted, failed);
+            }
         } catch (Exception e) {
             Log.w(TAG, "Failed to open transport for grant flow", e);
             // Caller treats transportAvailable=false as "fall back to the manual route".
@@ -608,6 +625,64 @@ public class PrivilegedShell {
         boolean isGranted();
     }
 
+    /**
+     * Special-cased grant for {@link PermissionKind#ACCESSIBILITY}: enabling an accessibility
+     * service requires preserving every other already-enabled service (otherwise we'd silently
+     * disable a screen reader the user depends on). Read the colon-separated list from
+     * {@code settings get secure enabled_accessibility_services}, append our component if
+     * absent, write it back, then flip {@code accessibility_enabled} to 1.
+     */
+    private void applyAccessibilityGrant(ShellTransport transport,
+                                         String component,
+                                         List<PermissionKind> granted,
+                                         List<PermissionKind> failed) {
+        PermissionCheck check = () -> Permissions.isAccessibilityServiceEnabled(appContext, component);
+        if (check.isGranted()) return;
+        try {
+            String current = transport.exec("settings get secure enabled_accessibility_services");
+            if (current == null) current = "";
+            current = current.trim();
+            if ("null".equals(current)) current = "";
+            String updated;
+            if (current.isEmpty()) {
+                updated = component;
+            } else {
+                String[] entries = current.split(":");
+                boolean alreadyPresent = false;
+                for (String e : entries) {
+                    if (component.equals(e.trim())) {
+                        alreadyPresent = true;
+                        break;
+                    }
+                }
+                updated = alreadyPresent ? current : (current + ":" + component);
+            }
+            transport.exec("settings put secure enabled_accessibility_services " + updated);
+            transport.exec("settings put secure accessibility_enabled 1");
+            Log.i(TAG, "Wrote enabled_accessibility_services = " + updated);
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to enable accessibility service via shell", e);
+            failed.add(PermissionKind.ACCESSIBILITY);
+            return;
+        }
+        // System publishes the change to running apps asynchronously; recheck a few times.
+        for (int i = 0; i < 10; i++) {
+            if (check.isGranted()) {
+                granted.add(PermissionKind.ACCESSIBILITY);
+                return;
+            }
+            try { Thread.sleep(150); } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        if (check.isGranted()) {
+            granted.add(PermissionKind.ACCESSIBILITY);
+        } else {
+            failed.add(PermissionKind.ACCESSIBILITY);
+        }
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private static ThreadFactory daemonThreads(String name) {
@@ -623,6 +698,15 @@ public class PrivilegedShell {
      * {@code cmd notification allow_listener} argument.
      */
     public static String notificationListenerComponent(String packageName, Class<?> serviceClass) {
+        return packageName + "/" + serviceClass.getName();
+    }
+
+    /**
+     * Convenience: format the {@code <pkg>/<service-class>} component for the
+     * {@code settings put secure enabled_accessibility_services} argument. Same string
+     * format as {@link android.content.ComponentName#flattenToString()}.
+     */
+    public static String accessibilityServiceComponent(String packageName, Class<?> serviceClass) {
         return packageName + "/" + serviceClass.getName();
     }
 }

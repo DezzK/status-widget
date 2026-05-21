@@ -181,6 +181,15 @@ public class MainActivity extends AppCompatActivity {
                     getPackageName(), MediaNotificationListener.class));
             any = true;
         }
+        // Accessibility service powers per-display foreground detection on multi-display
+        // head units. Single-display devices work fine without it (UsageStatsManager-based
+        // fallback), but turning it on doesn't hurt them either, so we always try.
+        String a11yComponent = PrivilegedShell.accessibilityServiceComponent(
+                getPackageName(), WidgetAccessibilityService.class);
+        if (!Permissions.isAccessibilityServiceEnabled(this, a11yComponent)) {
+            rb.withAccessibility(a11yComponent);
+            any = true;
+        }
         if (!any) {
             return;
         }
@@ -234,6 +243,7 @@ public class MainActivity extends AppCompatActivity {
             case BACKGROUND_LOCATION: return R.string.permission_label_background_location;
             case USAGE_ACCESS:        return R.string.permission_label_usage_access;
             case NOTIFICATION:        return R.string.permission_label_notification;
+            case ACCESSIBILITY:       return R.string.permission_label_accessibility;
             default: throw new IllegalArgumentException("Unknown kind " + kind);
         }
     }

@@ -1790,14 +1790,28 @@ public class WidgetService extends Service {
     }
 
     private void updateForegroundAppTracking() {
-        boolean shouldTrack = (!hiddenInPackages.isEmpty() || anyBrickHasHideList())
-                && Permissions.isUsageAccessGranted(this);
-        if (shouldTrack) {
-            if (usageStatsManager == null) {
+        boolean needTracking = !hiddenInPackages.isEmpty() || anyBrickHasHideList();
+        boolean accessibilityActive = WidgetAccessibilityService.getInstance() != null;
+        boolean usageGranted = Permissions.isUsageAccessGranted(this);
+        // Two paths to the foreground package:
+        //   - AccessibilityService (preferred): per-display data, multi-display safe.
+        //   - UsageStatsManager (fallback): global, single foreground across all displays.
+        // We only poll when neither path is being driven by events: the accessibility service
+        // pushes via {@link #onForegroundDisplayMapUpdated()}, no polling needed.
+        boolean shouldPoll = needTracking && !accessibilityActive && usageGranted;
+        if (needTracking && (accessibilityActive || usageGranted)) {
+            if (usageGranted && usageStatsManager == null) {
                 usageStatsManager = (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
             }
             mainHandler.removeCallbacks(foregroundAppCheckRunnable);
-            mainHandler.post(foregroundAppCheckRunnable);
+            if (shouldPoll) {
+                mainHandler.post(foregroundAppCheckRunnable);
+            }
+            // If accessibility just connected, recompute once now — we won't get an event
+            // until something actually changes on a display.
+            if (accessibilityActive) {
+                checkForegroundApp();
+            }
         } else {
             mainHandler.removeCallbacks(foregroundAppCheckRunnable);
             usageStatsManager = null;
@@ -1806,38 +1820,87 @@ public class WidgetService extends Service {
         }
     }
 
+    /**
+     * Called by {@link WidgetAccessibilityService} when the per-display foreground map changes.
+     * Recomputes visibility based on the package on <i>our</i> display.
+     */
+    public void onForegroundDisplayMapUpdated() {
+        mainHandler.post(this::checkForegroundApp);
+    }
+
+    /**
+     * Called by {@link WidgetAccessibilityService} when its connection state flips — connect
+     * or disconnect. Re-evaluates which foreground-tracking pipeline to use (accessibility
+     * push vs. UsageStats poll).
+     */
+    public void onForegroundTrackingPathChanged() {
+        mainHandler.post(this::updateForegroundAppTracking);
+    }
+
     private void checkForegroundApp() {
-        if (usageStatsManager == null) {
-            return;
-        }
-        if (!Permissions.isUsageAccessGranted(this)) {
-            updateForegroundAppTracking();
-            return;
-        }
-        long now = System.currentTimeMillis();
-        UsageEvents events = usageStatsManager.queryEvents(now - FOREGROUND_APP_LOOKBACK_MS, now);
-        UsageEvents.Event event = new UsageEvents.Event();
-        String latestPackage = lastForegroundPackage;
-        long latestTimestamp = 0;
-        while (events.getNextEvent(event)) {
-            int type = event.getEventType();
-            if (type == UsageEvents.Event.MOVE_TO_FOREGROUND
-                    || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && type == UsageEvents.Event.ACTIVITY_RESUMED)) {
-                if (event.getTimeStamp() >= latestTimestamp) {
-                    latestTimestamp = event.getTimeStamp();
-                    latestPackage = event.getPackageName();
-                }
+        if (hiddenInPackages.isEmpty() && !anyBrickHasHideList()) return;
+
+        WidgetAccessibilityService a11y = WidgetAccessibilityService.getInstance();
+        String latestPackage;
+        if (a11y != null) {
+            // Display-aware: look up the foreground package on our overlay's display only.
+            // If the accessibility framework hasn't reported anything for that display yet,
+            // fall through to the UsageStats path so we're not blind on first start.
+            int myDisplayId = currentOverlayDisplayId();
+            latestPackage = a11y.getForegroundPackageOnDisplay(myDisplayId);
+            if (latestPackage == null && usageStatsManager != null
+                    && Permissions.isUsageAccessGranted(this)) {
+                latestPackage = latestPackageFromUsageStats();
             }
+        } else {
+            // Global path — works on single-display devices.
+            if (usageStatsManager == null) return;
+            if (!Permissions.isUsageAccessGranted(this)) {
+                updateForegroundAppTracking();
+                return;
+            }
+            latestPackage = latestPackageFromUsageStats();
         }
-        if (latestPackage == null) {
-            return;
-        }
+        if (latestPackage == null) return;
+
         boolean changed = !latestPackage.equals(lastForegroundPackage);
         lastForegroundPackage = latestPackage;
         applyOverlayVisibility(hiddenInPackages.contains(latestPackage));
         if (changed && binding != null) {
             applyBrickVisibility(currentBrickSet());
         }
+    }
+
+    /** Display ID our overlay's window is attached to. Defaults to {@code DEFAULT_DISPLAY}
+     *  if we can't determine it (single-display devices or pre-attach). */
+    private int currentOverlayDisplayId() {
+        if (binding == null) return android.view.Display.DEFAULT_DISPLAY;
+        android.view.Display display = binding.getRoot().getDisplay();
+        return display != null ? display.getDisplayId() : android.view.Display.DEFAULT_DISPLAY;
+    }
+
+    /** Extracts the most recent foreground package from {@link UsageStatsManager}. Null if
+     *  nothing was reported in the lookback window. */
+    @Nullable
+    private String latestPackageFromUsageStats() {
+        if (usageStatsManager == null) return null;
+        long now = System.currentTimeMillis();
+        UsageEvents events = usageStatsManager.queryEvents(now - FOREGROUND_APP_LOOKBACK_MS, now);
+        UsageEvents.Event event = new UsageEvents.Event();
+        String latest = lastForegroundPackage;
+        long latestTimestamp = 0;
+        while (events.getNextEvent(event)) {
+            int type = event.getEventType();
+            if (type == UsageEvents.Event.MOVE_TO_FOREGROUND
+                    || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                            && type == UsageEvents.Event.ACTIVITY_RESUMED)) {
+                if (event.getTimeStamp() >= latestTimestamp) {
+                    latestTimestamp = event.getTimeStamp();
+                    latest = event.getPackageName();
+                }
+            }
+        }
+        return latest;
     }
 
     private void applyOverlayVisibility(boolean hide) {

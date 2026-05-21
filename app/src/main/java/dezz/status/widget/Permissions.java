@@ -92,6 +92,33 @@ public class Permissions {
         }
     }
 
+    /**
+     * Whether the given {@code component} (flattened {@code <pkg>/<service-class>}) appears in
+     * the system's enabled_accessibility_services list. Reading from {@code Settings.Secure}
+     * is the standard way to check accessibility-service state without requiring
+     * {@code BIND_ACCESSIBILITY_SERVICE} on the caller; both the framework and Google's own
+     * samples use this approach.
+     */
+    public static boolean isAccessibilityServiceEnabled(Context context, String component) {
+        try {
+            String enabled = android.provider.Settings.Secure.getString(
+                    context.getContentResolver(),
+                    android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (enabled == null || enabled.isEmpty()) return false;
+            ComponentName target = ComponentName.unflattenFromString(component);
+            for (String entry : enabled.split(":")) {
+                if (entry == null) continue;
+                String trimmed = entry.trim();
+                if (trimmed.equals(component)) return true;
+                ComponentName cn = ComponentName.unflattenFromString(trimmed);
+                if (cn != null && cn.equals(target)) return true;
+            }
+            return false;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static boolean isUsageAccessGranted(Context context) {
         // AppOpsManager.unsafeCheckOpNoThrow promises not to throw, but on some custom OEM ROMs
         // (MIUI/EMUI/Magic OS) it has been observed throwing SecurityException or returning a

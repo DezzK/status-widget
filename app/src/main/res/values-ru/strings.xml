@@ -17,6 +17,8 @@
 
 <resources>
     <string name="app_name">Виджет информации</string>
+    <string name="accessibility_service_summary">Отслеживает активное приложение на каждом дисплее</string>
+    <string name="accessibility_service_description">Позволяет виджету определять, на каком физическом дисплее произошло переключение приложения. Нужно только для головных устройств с несколькими дисплеями: виджет будет скрываться/появляться только при переключении приложений на своём дисплее, не реагируя на другие.</string>
 
     <string name="widget_title">Настройки виджета</string>
     <string name="section_general">Виджет</string>
@@ -160,6 +162,7 @@
     <string name="permission_label_background_location">геолокация в фоне</string>
     <string name="permission_label_usage_access">доступ к статистике</string>
     <string name="permission_label_notification">доступ к уведомлениям</string>
+    <string name="permission_label_accessibility">специальные возможности</string>
     <string name="hide_in_apps_button">Скрывать в приложениях…</string>
     <string name="hide_in_apps_title">Скрывать в:</string>
     <string name="app_selection_load_failed_title">Не удалось загрузить список приложений</string>

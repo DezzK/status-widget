@@ -17,6 +17,8 @@
 
 <resources>
     <string name="app_name">Information Widget</string>
+    <string name="accessibility_service_summary">Tracks which app is on top per display</string>
+    <string name="accessibility_service_description">Allows the widget to know on which physical display the foreground app changed. Required only on multi-display head units so the widget hides only when the foreground app changes on its own display, not on any other one.</string>
 
     <string name="widget_title">Widget Configuration</string>
     <string name="section_general">Widget</string>
@@ -163,6 +165,7 @@
     <string name="permission_label_background_location">background location</string>
     <string name="permission_label_usage_access">usage access</string>
     <string name="permission_label_notification">notification access</string>
+    <string name="permission_label_accessibility">accessibility</string>
     <string name="hide_in_apps_button">Hide widget in apps…</string>
     <string name="hide_in_apps_title">Hide widget in:</string>
     <string name="app_selection_load_failed_title">Failed to load the list of apps</string>
