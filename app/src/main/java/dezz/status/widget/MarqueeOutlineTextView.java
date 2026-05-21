@@ -63,6 +63,8 @@ public class MarqueeOutlineTextView extends OutlineTextView {
     private boolean marqueeEnabled = true;
     private float speedPxPerFrame = DEFAULT_SPEED_PX_PER_FRAME;
 
+    private boolean insideTick = false;
+
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
@@ -73,10 +75,26 @@ public class MarqueeOutlineTextView extends OutlineTextView {
                 // so resetting scrollX is visually invisible.
                 scrollPx -= loopWidthPx;
             }
-            setScrollX(Math.round(scrollPx));
+            insideTick = true;
+            try {
+                setScrollX(Math.round(scrollPx));
+            } finally {
+                insideTick = false;
+            }
             postOnAnimationDelayed(this, FRAME_PERIOD_MS);
         }
     };
+
+    @Override
+    public void scrollTo(int x, int y) {
+        // {@link TextView#onPreDraw} unconditionally calls {@link TextView#bringTextIntoView}
+        // on every frame for non-editable text views. With LEFT/START gravity (our default)
+        // that routine resets {@code scrollX} to 0 — fighting our marquee tick and producing
+        // periodic visual jumps back to the start of the text. While the marquee is actively
+        // scrolling, only our own tick gets to write to scrollX; any other caller is ignored.
+        if (scrolling && !insideTick) return;
+        super.scrollTo(x, y);
+    }
 
     public MarqueeOutlineTextView(@NonNull Context context) {
         super(context);
@@ -107,7 +125,12 @@ public class MarqueeOutlineTextView extends OutlineTextView {
      * starts the continuous scroll loop.
      */
     public void setMarqueeText(@Nullable CharSequence text) {
-        sourceText = text == null ? "" : text;
+        CharSequence next = text == null ? "" : text;
+        // Skip re-evaluation when the text is unchanged — otherwise every PlaybackState callback
+        // (which fires on play/pause/seek/buffer events with the same subtitle) would reset the
+        // scroll offset to zero, making the marquee restart mid-track every time the user seeks.
+        if (TextUtils.equals(next, sourceText)) return;
+        sourceText = next;
         evaluateAndUpdate();
     }
 
@@ -167,19 +190,43 @@ public class MarqueeOutlineTextView extends OutlineTextView {
 
     private void evaluateAndUpdate() {
         CharSequence text = sourceText == null ? "" : sourceText;
+
+        int maxWidthPx = getMaxWidth();
+        boolean hasMaxWidth = maxWidthPx > 0 && maxWidthPx < Integer.MAX_VALUE;
+        float contentWidth = getPaint().measureText(text, 0, text.length());
+        int paddings = getPaddingLeft() + getPaddingRight();
+        float naturalTotalWidth = contentWidth + paddings;
+        boolean overflowing = hasMaxWidth && naturalTotalWidth > maxWidthPx + 0.5f;
+
+        Mode desiredMode = overflowing
+                ? (marqueeEnabled ? Mode.MARQUEE : Mode.ELLIPSIZE)
+                : Mode.FITS;
+
+        // Idempotent fast path: if the desired mode and the rendered TextView text already
+        // match what they would become below, do nothing. This avoids resetting scrollPx and
+        // re-running super.setText on every onSizeChanged / onMeasure cycle when nothing has
+        // actually changed — which previously made the marquee snap visually mid-scroll.
+        CharSequence desiredRenderedText = (desiredMode == Mode.MARQUEE)
+                ? TextUtils.concat(text, SEPARATOR, text)
+                : text;
+        if (desiredMode == currentMode && TextUtils.equals(getText(), desiredRenderedText)) {
+            // Already in the right state. If we're supposed to be scrolling and the tick
+            // happened to be removed (e.g. by setMarqueeEnabled re-entrancy), re-arm it.
+            if (scrolling && attached) {
+                removeCallbacks(tick);
+                postOnAnimation(tick);
+            }
+            return;
+        }
+
+        // Real transition — only here do we reset scroll state.
         removeCallbacks(tick);
         scrolling = false;
         scrollPx = 0f;
         setScrollX(0);
+        currentMode = desiredMode;
 
-        int maxWidthPx = getMaxWidth();
-        boolean hasMaxWidth = maxWidthPx > 0 && maxWidthPx < Integer.MAX_VALUE;
-
-        float contentWidth = getPaint().measureText(text, 0, text.length());
-        int paddings = getPaddingLeft() + getPaddingRight();
-        float naturalTotalWidth = contentWidth + paddings;
-
-        if (hasMaxWidth && naturalTotalWidth > maxWidthPx + 0.5f && marqueeEnabled) {
+        if (desiredMode == Mode.MARQUEE) {
             // Overflow + marquee enabled: render "text + separator + text" so the wrap point
             // is hidden by the already-visible second copy. {@link #onMeasure} clamps the
             // measured width to {@code maxWidth} in this state — that's the only reliable
@@ -187,15 +234,27 @@ public class MarqueeOutlineTextView extends OutlineTextView {
             // underlying TextView report the full natural text width from {@code onMeasure}
             // and silently ignore {@code setMaxWidth}.
             setEllipsize(null);
-            float separatorWidth = getPaint().measureText(SEPARATOR);
-            loopWidthPx = contentWidth + separatorWidth;
-            super.setText(TextUtils.concat(text, SEPARATOR, text));
+            // Re-enable horizontal scrolling — the ellipsize branch may have turned it off on
+            // a previous evaluate, and without it setScrollX is silently clamped to 0 and the
+            // text just slides off the right edge instead of wrapping to the second copy.
+            setHorizontallyScrolling(true);
+            // Compute the exact X position of the first glyph of the second copy in the shaped
+            // combined string. {@code Paint.getRunAdvance} with the whole string as the
+            // shaping context honours kerning across the [last separator char, first text char]
+            // boundary — using {@code measureText(combined, 0, prefixLen)} instead would treat
+            // the prefix as its own shaping context and miss that boundary kerning, leaving
+            // the marquee wrap off by 1–3 px each loop (visible as a small periodic jump).
+            int combinedLen = desiredRenderedText.length();
+            int prefixLen = text.length() + SEPARATOR.length();
+            loopWidthPx = getPaint().getRunAdvance(desiredRenderedText, 0, combinedLen,
+                    0, combinedLen, false, prefixLen);
+            super.setText(desiredRenderedText);
             scrolling = true;
             requestLayout();
             if (attached) {
                 postOnAnimation(tick);
             }
-        } else if (hasMaxWidth && naturalTotalWidth > maxWidthPx + 0.5f) {
+        } else if (desiredMode == Mode.ELLIPSIZE) {
             // Overflow + marquee disabled: static render, cap at maxWidth with end ellipsis.
             // setHorizontallyScrolling(false) plus ellipsize=END lets the TextView handle the
             // cutoff itself; onMeasure still clamps the measured width because the original
@@ -203,16 +262,19 @@ public class MarqueeOutlineTextView extends OutlineTextView {
             // width.
             setHorizontallyScrolling(false);
             setEllipsize(android.text.TextUtils.TruncateAt.END);
-            super.setText(text);
+            super.setText(desiredRenderedText);
             requestLayout();
         } else {
             // Fits — single render, no animation, no ellipsis needed, view grows naturally.
             setEllipsize(null);
             setHorizontallyScrolling(true);
-            super.setText(text);
+            super.setText(desiredRenderedText);
             requestLayout();
         }
     }
+
+    private enum Mode { UNSET, FITS, ELLIPSIZE, MARQUEE }
+    private Mode currentMode = Mode.UNSET;
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
