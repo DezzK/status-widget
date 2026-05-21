@@ -701,7 +701,15 @@ public class WidgetService extends Service {
         // including bricks currently hidden per-app. Otherwise hiding e.g. a big Time brick
         // would let the row shrink vertically and the remaining icons would re-center up,
         // breaking alignment with the device status bar that users carefully tune.
-        binding.overlayContainer.setMinimumHeight(computeMinWidgetHeight(bricksSet));
+        // {@code setMinimumHeight} compares against the view's *total* measured height (content
+        // plus padding), so we add the vertical padding here — otherwise when the tallest brick
+        // is visible the view measures to {@code maxBrick + padding} and when it's hidden it
+        // collapses to {@code minHeight = maxBrick} (without padding), shrinking by the padding
+        // amount on every hide.
+        int verticalPadding = binding.overlayContainer.getPaddingTop()
+                + binding.overlayContainer.getPaddingBottom();
+        binding.overlayContainer.setMinimumHeight(
+                computeMinWidgetHeight(bricksSet) + verticalPadding);
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         if (bricksSet.contains(BrickType.TIME) || bricksSet.contains(BrickType.DATE)) {
