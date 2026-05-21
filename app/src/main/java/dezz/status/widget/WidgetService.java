@@ -174,6 +174,9 @@ public class WidgetService extends Service {
     private static final String CHANNEL_ID = "WidgetServiceChannel";
     private static final long GNSS_STATUS_CHECK_INTERVAL = 1000;
     private static final long DATETIME_UPDATE_INTERVAL_MS = 60_000L;
+    /** Cadence for advancing the media progress bar while a track is actively playing. 250ms
+     *  is fast enough to look smooth on a thin bar and slow enough to not show up in profilers. */
+    private static final long MEDIA_PROGRESS_TICK_MS = 250L;
     private static final long FOREGROUND_APP_CHECK_INTERVAL_MS = 1000L;
     private static final long FOREGROUND_APP_LOOKBACK_MS = 60_000L;
     private static final String GNSSSHARE_CLIENT_PACKAGE = "dezz.gnssshare.client";
@@ -1500,11 +1503,13 @@ public class WidgetService extends Service {
         if (binding == null) return;
         if (!currentBrickSet().contains(BrickType.MEDIA) || isBrickHiddenByApp(BrickType.MEDIA)) {
             binding.mediaContainer.setVisibility(View.GONE);
+            stopMediaProgressTicker();
             return;
         }
         MediaController playing = pickActiveMediaController();
         if (playing == null) {
             binding.mediaContainer.setVisibility(View.GONE);
+            stopMediaProgressTicker();
             return;
         }
         MediaMetadata metadata = playing.getMetadata();
@@ -1535,7 +1540,64 @@ public class WidgetService extends Service {
         binding.mediaAppText.setVisibility(prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
         binding.mediaTitleText.setMarqueeText(subtitle);
         binding.mediaContainer.setVisibility(View.VISIBLE);
+
+        updateMediaProgress(playing);
     }
+
+    /**
+     * Snap the progress bar to the current playback position and arm/disarm the periodic ticker.
+     * Called both from {@link #updateMediaInfo} (state/metadata flips) and from
+     * {@link #mediaProgressTick} (every ~250ms while playing) to advance the bar smoothly.
+     */
+    private void updateMediaProgress(@Nullable MediaController playing) {
+        if (binding == null) return;
+        if (!prefs.media.progressBarEnabled.get() || playing == null) {
+            binding.mediaProgressBar.setVisibility(View.GONE);
+            stopMediaProgressTicker();
+            return;
+        }
+        MediaMetadata metadata = playing.getMetadata();
+        long duration = metadata != null
+                ? metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
+                : 0L;
+        PlaybackState state = playing.getPlaybackState();
+        if (duration <= 0L || state == null) {
+            // No reliable timeline (live stream, podcast pre-buffer, player not reporting
+            // duration). Hide the bar rather than showing an empty or misleading track.
+            binding.mediaProgressBar.setVisibility(View.GONE);
+            stopMediaProgressTicker();
+            return;
+        }
+        long now = android.os.SystemClock.elapsedRealtime();
+        long lastUpdate = state.getLastPositionUpdateTime();
+        long basePosition = state.getPosition();
+        // PlaybackState.getPosition() returns the position as of getLastPositionUpdateTime();
+        // for the *current* moment we extrapolate with the reported playback speed (typically 1.0).
+        long actualPosition = basePosition
+                + (long) ((now - lastUpdate) * state.getPlaybackSpeed());
+        if (actualPosition < 0L) actualPosition = 0L;
+        if (actualPosition > duration) actualPosition = duration;
+
+        binding.mediaProgressBar.setColor(
+                ContextCompat.getColor(themedContext != null ? themedContext : this,
+                        R.color.text_primary));
+        binding.mediaProgressBar.setProgress((float) actualPosition / (float) duration);
+        binding.mediaProgressBar.setVisibility(View.VISIBLE);
+
+        if (state.getState() == PlaybackState.STATE_PLAYING) {
+            // Re-arm — the new postDelayed replaces any previously queued one, idempotent.
+            mainHandler.removeCallbacks(mediaProgressTick);
+            mainHandler.postDelayed(mediaProgressTick, MEDIA_PROGRESS_TICK_MS);
+        } else {
+            stopMediaProgressTicker();
+        }
+    }
+
+    private void stopMediaProgressTicker() {
+        mainHandler.removeCallbacks(mediaProgressTick);
+    }
+
+    private final Runnable mediaProgressTick = () -> updateMediaProgress(pickActiveMediaController());
 
     /**
      * Best-effort extraction of a track title from the media metadata. Falls back through several
@@ -2232,6 +2294,7 @@ public class WidgetService extends Service {
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         mainHandler.removeCallbacks(foregroundAppCheckRunnable);
         mainHandler.removeCallbacks(reachabilityProbeRunnable);
+        mainHandler.removeCallbacks(mediaProgressTick);
 
         if (binding != null && windowManager != null) {
             windowManager.removeView(binding.getRoot());

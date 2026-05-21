@@ -130,6 +130,14 @@
             android:textSize="20sp"
             tools:text="Track — Artist"
             tools:visibility="visible" />
+
+        <dezz.status.widget.MediaProgressBar
+            android:id="@+id/mediaProgressBar"
+            android:layout_width="match_parent"
+            android:layout_height="3sp"
+            android:layout_marginTop="2sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
     </LinearLayout>
 
     <dezz.status.widget.OutlineImageView

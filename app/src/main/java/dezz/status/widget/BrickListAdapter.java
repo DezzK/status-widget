@@ -232,6 +232,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialSwitch brickMediaShowSource;
         final MaterialSwitch brickMediaTitleFirst;
         final MaterialSwitch brickMediaMarqueeEnabled;
+        final MaterialSwitch brickMediaProgressBarEnabled;
         final Slider brickMediaMaxWidthSlider;
         final Slider brickMediaMarginStartSlider;
         final Slider brickMediaMarginEndSlider;
@@ -324,6 +325,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaShowSource = itemView.findViewById(R.id.brickMediaShowSource);
             brickMediaTitleFirst = itemView.findViewById(R.id.brickMediaTitleFirst);
             brickMediaMarqueeEnabled = itemView.findViewById(R.id.brickMediaMarqueeEnabled);
+            brickMediaProgressBarEnabled = itemView.findViewById(R.id.brickMediaProgressBarEnabled);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaMarginStartSlider = itemView.findViewById(R.id.brickMediaMarginStartSlider);
             brickMediaMarginEndSlider = itemView.findViewById(R.id.brickMediaMarginEndSlider);
@@ -402,6 +404,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaShowSource.setOnCheckedChangeListener(null);
             brickMediaTitleFirst.setOnCheckedChangeListener(null);
             brickMediaMarqueeEnabled.setOnCheckedChangeListener(null);
+            brickMediaProgressBarEnabled.setOnCheckedChangeListener(null);
             brickMediaMaxWidthSlider.clearOnChangeListeners();
             brickMediaMarginStartSlider.clearOnChangeListeners();
             brickMediaMarginEndSlider.clearOnChangeListeners();
@@ -906,6 +909,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaMarqueeEnabled.setChecked(prefs.media.marqueeEnabled.get());
             brickMediaMarqueeEnabled.setOnCheckedChangeListener((v, c) -> {
                 prefs.media.marqueeEnabled.set(c);
+                notifyService();
+            });
+            brickMediaProgressBarEnabled.setChecked(prefs.media.progressBarEnabled.get());
+            brickMediaProgressBarEnabled.setOnCheckedChangeListener((v, c) -> {
+                prefs.media.progressBarEnabled.set(c);
                 notifyService();
             });
             refreshMediaSourceSectionVisibility();

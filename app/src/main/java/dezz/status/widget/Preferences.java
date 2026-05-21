@@ -204,6 +204,11 @@ public class Preferences {
          * {@code false} → render statically up to max-width and cut off with an ellipsis.
          */
         public final Bool marqueeEnabled;
+        /**
+         * Show a thin progress bar under the title line that fills as the current track plays.
+         * Default on. Off-state hides the bar entirely without affecting the rest of the brick.
+         */
+        public final Bool progressBarEnabled;
 
         /**
          * Source-line ("now playing in &lt;app&gt;") text settings. Title keeps using the
@@ -232,6 +237,7 @@ public class Preferences {
             titleFirst = new Bool(p, "mediaTitleFirst", false);
             lineGap = new Int(p, "mediaLineGap", 0);
             marqueeEnabled = new Bool(p, "mediaMarqueeEnabled", true);
+            progressBarEnabled = new Bool(p, "mediaProgressBarEnabled", true);
             sourceFontSize = new Int(p, "mediaSourceFontSize", 20);
             sourceFontFamily = new Str(p, "mediaSourceFontFamily", Fonts.DEFAULT_KEY);
             sourceFontBold = new Bool(p, "mediaSourceFontBold", false);
