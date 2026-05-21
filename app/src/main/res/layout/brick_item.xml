@@ -582,15 +582,6 @@
                     android:textAppearance="?attr/textAppearanceBodyLarge" />
 
                 <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/brickMediaMarqueeEnabled"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/optionsMarginSmall"
-                    android:minHeight="@dimen/optionsLineHeight"
-                    android:text="@string/brick_media_marquee_enabled"
-                    android:textAppearance="?attr/textAppearanceBodyLarge" />
-
-                <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/brickMediaProgressBarEnabled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -1041,6 +1032,15 @@
                     android:text="@string/brick_media_title_section"
                     android:textAppearance="?attr/textAppearanceTitleSmall" />
 
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickMediaMarqueeEnabled"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/brick_media_marquee_enabled"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
                 <!-- font size + content alpha — paired row -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -1261,6 +1261,184 @@
                             android:text="@string/brick_font_italic_short"
                             android:textStyle="italic" />
                     </com.google.android.material.button.MaterialButtonToggleGroup>
+                </LinearLayout>
+
+                <!-- ============================ ДЛИТЕЛЬНОСТЬ ============================ -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMargin"
+                    android:text="@string/brick_media_duration_section"
+                    android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickMediaShowDuration"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/brick_media_show_duration"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <LinearLayout
+                    android:id="@+id/brickMediaDurationSection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- font size + content alpha — paired row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/optionsMarginSmall"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/brick_font_size"
+                                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                                <TextView
+                                    android:id="@+id/brickMediaDurationFontSizeSliderValue"
+                                    style="@style/SliderValue" />
+                            </LinearLayout>
+
+                            <com.google.android.material.slider.Slider
+                                android:id="@+id/brickMediaDurationFontSizeSlider"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/brick_font_size"
+                                android:value="16"
+                                android:valueFrom="10"
+                                android:valueTo="500" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/optionsMarginSmall"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/brick_content_alpha"
+                                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                                <TextView
+                                    android:id="@+id/brickMediaDurationContentAlphaSliderValue"
+                                    style="@style/SliderValue" />
+                            </LinearLayout>
+
+                            <com.google.android.material.slider.Slider
+                                android:id="@+id/brickMediaDurationContentAlphaSlider"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/brick_content_alpha"
+                                android:value="255"
+                                android:valueFrom="0"
+                                android:valueTo="255" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- outline alpha + outline width — paired row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/optionsMarginSmall"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/brick_outline_alpha"
+                                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                                <TextView
+                                    android:id="@+id/brickMediaDurationOutlineAlphaSliderValue"
+                                    style="@style/SliderValue" />
+                            </LinearLayout>
+
+                            <com.google.android.material.slider.Slider
+                                android:id="@+id/brickMediaDurationOutlineAlphaSlider"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/brick_outline_alpha"
+                                android:value="170"
+                                android:valueFrom="0"
+                                android:valueTo="255" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/optionsMarginSmall"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/brick_outline_width"
+                                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                                <TextView
+                                    android:id="@+id/brickMediaDurationOutlineWidthSliderValue"
+                                    style="@style/SliderValue" />
+                            </LinearLayout>
+
+                            <com.google.android.material.slider.Slider
+                                android:id="@+id/brickMediaDurationOutlineWidthSlider"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/brick_outline_width"
+                                android:value="2"
+                                android:valueFrom="0"
+                                android:valueTo="20" />
+                        </LinearLayout>
+                    </LinearLayout>
                 </LinearLayout>
 
                 <TextView

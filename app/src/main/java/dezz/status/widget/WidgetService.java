@@ -952,9 +952,28 @@ public class WidgetService extends Service {
         binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
         binding.mediaTitleText.setAlpha(prefs.media.contentAlpha.get() / 255f);
 
-        boolean marquee = prefs.media.marqueeEnabled.get();
-        binding.mediaAppText.setMarqueeEnabled(marquee);
-        binding.mediaTitleText.setMarqueeEnabled(marquee);
+        // Source line is always static + ellipsized; only the title scrolls. Source is short
+        // and a constant moving marquee on it would be more distracting than helpful.
+        binding.mediaAppText.setMarqueeEnabled(false);
+        binding.mediaTitleText.setMarqueeEnabled(prefs.media.marqueeEnabled.get());
+
+        // State icon (▶/❚❚) — same font as the title so it visually belongs to the same line,
+        // including when the source line is hidden. Outline and alpha track the title too.
+        binding.mediaStateIcon.setTypeface(titleTypeface);
+        binding.mediaStateIcon.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
+        binding.mediaStateIcon.setTextColor(textColor);
+        binding.mediaStateIcon.setOutlineColor(textOutlineColor(prefs.media.outlineAlpha.get()));
+        binding.mediaStateIcon.setOutlineWidth(prefs.media.outlineWidth.get());
+        binding.mediaStateIcon.setAlpha(prefs.media.contentAlpha.get() / 255f);
+
+        // Duration text — independent font size / alpha / outline so the user can dial it down
+        // (typically the duration is rendered smaller and dimmer than the track subtitle).
+        binding.mediaDurationText.setTypeface(titleTypeface);
+        binding.mediaDurationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.durationFontSize.get());
+        binding.mediaDurationText.setTextColor(textColor);
+        binding.mediaDurationText.setOutlineColor(textOutlineColor(prefs.media.durationOutlineAlpha.get()));
+        binding.mediaDurationText.setOutlineWidth(prefs.media.durationOutlineWidth.get());
+        binding.mediaDurationText.setAlpha(prefs.media.durationContentAlpha.get() / 255f);
 
         applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
         binding.mediaContainer.setTranslationY(prefs.media.adjustY.get());
@@ -1536,12 +1555,56 @@ public class WidgetService extends Service {
             // placeholder so the user can see that media playback is active.
             subtitle = getString(R.string.media_unknown_track);
         }
+        PlaybackState playbackState = playing.getPlaybackState();
+        // Both glyphs are picked from Unicode blocks whose default Presentation is "text", not
+        // "emoji" — Android's emoji font silently overrides any symbol that defaults to emoji
+        // (e.g. U+23F8 ⏸ renders as a color icon on a coloured background on most builds),
+        // and we want plain glyphs that inherit the surrounding text colour, outline and font.
+        // ❚❚ shown only for actual PAUSED; transient states (buffering / seeking) keep the ▶
+        // so the icon doesn't flicker between play and pause every time the user scrubs.
+        String stateGlyph = (playbackState != null
+                && playbackState.getState() == PlaybackState.STATE_PAUSED)
+                ? "❚❚"    // two U+275A HEAVY VERTICAL BARs — pause shape that stays text-rendered
+                : "▶";    // U+25B6 BLACK RIGHT-POINTING TRIANGLE (text presentation default)
+        binding.mediaStateIcon.setText(stateGlyph);
         binding.mediaAppText.setMarqueeText(getAppLabel(playing.getPackageName()));
         binding.mediaAppText.setVisibility(prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
         binding.mediaTitleText.setMarqueeText(subtitle);
+
+        // Duration: format ms → "M:SS" / "H:MM:SS". Hidden when the user opted out or the
+        // player doesn't expose a positive duration (live streams, podcast pre-buffer).
+        long durationMs = metadata != null
+                ? metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
+                : 0L;
+        if (prefs.media.showDuration.get() && durationMs > 0L) {
+            // Leading space gives the gap between title and duration without an extra layout
+            // margin pref — scales naturally with the duration font size.
+            binding.mediaDurationText.setText(" " + formatTrackDuration(durationMs));
+            binding.mediaDurationText.setVisibility(View.VISIBLE);
+        } else {
+            binding.mediaDurationText.setVisibility(View.GONE);
+        }
+
         binding.mediaContainer.setVisibility(View.VISIBLE);
 
         updateMediaProgress(playing);
+    }
+
+    /**
+     * Format a positive duration in milliseconds as {@code M:SS} (under an hour) or
+     * {@code H:MM:SS} (one hour or longer). Locale-independent — uses the same digit forms
+     * everywhere because the duration is displayed alongside the marquee subtitle, where
+     * regional digit substitutions would look out of place.
+     */
+    private static String formatTrackDuration(long ms) {
+        long totalSeconds = ms / 1000L;
+        long hours = totalSeconds / 3600L;
+        long minutes = (totalSeconds % 3600L) / 60L;
+        long seconds = totalSeconds % 60L;
+        if (hours > 0) {
+            return String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds);
+        }
+        return String.format(java.util.Locale.ROOT, "%d:%02d", minutes, seconds);
     }
 
     /**
@@ -1657,13 +1720,41 @@ public class WidgetService extends Service {
 
     @Nullable
     private MediaController pickActiveMediaController() {
+        // Prefer a controller that is currently playing. If none is playing, fall back to any
+        // controller in a transient "media is loaded and the user is doing something with it"
+        // state — paused, buffering, fast-forwarding, rewinding, skipping. Keeping the brick
+        // visible across these short-lived transitions avoids a VISIBLE→GONE→VISIBLE blink
+        // (which would re-layout the title text from zero size and reset the marquee scroll)
+        // every time the user seeks or the player briefly buffers.
+        MediaController fallback = null;
         for (MediaController c : activeMediaControllers) {
             PlaybackState s = c.getPlaybackState();
-            if (s != null && s.getState() == PlaybackState.STATE_PLAYING) {
+            if (s == null) continue;
+            int state = s.getState();
+            if (state == PlaybackState.STATE_PLAYING) {
                 return c;
             }
+            if (fallback == null && isMediaActiveState(state)) {
+                fallback = c;
+            }
         }
-        return null;
+        return fallback;
+    }
+
+    private static boolean isMediaActiveState(int state) {
+        switch (state) {
+            case PlaybackState.STATE_PAUSED:
+            case PlaybackState.STATE_BUFFERING:
+            case PlaybackState.STATE_FAST_FORWARDING:
+            case PlaybackState.STATE_REWINDING:
+            case PlaybackState.STATE_SKIPPING_TO_NEXT:
+            case PlaybackState.STATE_SKIPPING_TO_PREVIOUS:
+            case PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM:
+            case PlaybackState.STATE_CONNECTING:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private String getAppLabel(String pkg) {

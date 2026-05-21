@@ -120,16 +120,48 @@
             tools:text="Spotify"
             tools:visibility="visible" />
 
-        <dezz.status.widget.MarqueeOutlineTextView
-            android:id="@+id/mediaTitleText"
+        <!-- Title row holds three columns: play/pause indicator, the (possibly scrolling) track
+             subtitle, and an optional duration text. State indicator inherits title's font so
+             it stays visually unified with the subtitle even when the source line is hidden. -->
+        <LinearLayout
+            android:id="@+id/mediaTitleRow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/roboto_condensed_medium"
-            android:includeFontPadding="false"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            tools:text="Track — Artist"
-            tools:visibility="visible" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <dezz.status.widget.OutlineTextView
+                android:id="@+id/mediaStateIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4sp"
+                android:fontFamily="@font/roboto_condensed_medium"
+                android:includeFontPadding="false"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                tools:text="▶" />
+
+            <dezz.status.widget.MarqueeOutlineTextView
+                android:id="@+id/mediaTitleText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/roboto_condensed_medium"
+                android:includeFontPadding="false"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                tools:text="Track — Artist"
+                tools:visibility="visible" />
+
+            <dezz.status.widget.OutlineTextView
+                android:id="@+id/mediaDurationText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/roboto_condensed_medium"
+                android:includeFontPadding="false"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                tools:text=" 4:56" />
+        </LinearLayout>
 
         <dezz.status.widget.MediaProgressBar
             android:id="@+id/mediaProgressBar"

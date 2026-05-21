@@ -209,6 +209,22 @@ public class Preferences {
          * Default on. Off-state hides the bar entirely without affecting the rest of the brick.
          */
         public final Bool progressBarEnabled;
+        /**
+         * Show the track's total duration to the right of the title (e.g. "4:56"). Default on.
+         * Hidden automatically when the player doesn't report a usable duration.
+         */
+        public final Bool showDuration;
+
+        /**
+         * Duration text settings — independent from the title's font so the user can tune it to a
+         * smaller / less prominent style without affecting the track subtitle. Font family / bold
+         * / italic are inherited from the title (these covers the common case; can be split out
+         * later if anyone asks).
+         */
+        public final Int durationFontSize;
+        public final Int durationContentAlpha;
+        public final Int durationOutlineAlpha;
+        public final Int durationOutlineWidth;
 
         /**
          * Source-line ("now playing in &lt;app&gt;") text settings. Title keeps using the
@@ -238,6 +254,11 @@ public class Preferences {
             lineGap = new Int(p, "mediaLineGap", 0);
             marqueeEnabled = new Bool(p, "mediaMarqueeEnabled", true);
             progressBarEnabled = new Bool(p, "mediaProgressBarEnabled", true);
+            showDuration = new Bool(p, "mediaShowDuration", true);
+            durationFontSize = new Int(p, "mediaDurationFontSize", 16);
+            durationContentAlpha = new Int(p, "mediaDurationContentAlpha", 255);
+            durationOutlineAlpha = new Int(p, "mediaDurationOutlineAlpha", 0xAA);
+            durationOutlineWidth = new Int(p, "mediaDurationOutlineWidth", 2);
             sourceFontSize = new Int(p, "mediaSourceFontSize", 20);
             sourceFontFamily = new Str(p, "mediaSourceFontFamily", Fonts.DEFAULT_KEY);
             sourceFontBold = new Bool(p, "mediaSourceFontBold", false);

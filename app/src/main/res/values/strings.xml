@@ -104,8 +104,10 @@
     <string name="brick_media_max_width">Media maximum width</string>
     <string name="brick_media_show_source">Show source app</string>
     <string name="brick_media_title_first">Title before artist</string>
-    <string name="brick_media_marquee_enabled">Scroll long text</string>
+    <string name="brick_media_marquee_enabled">Scroll long title</string>
     <string name="brick_media_progress_bar_enabled">Show track progress</string>
+    <string name="brick_media_duration_section">Duration</string>
+    <string name="brick_media_show_duration">Show duration</string>
     <string name="brick_media_line_gap">Spacing between source and title</string>
     <string name="brick_media_source_section">Source</string>
     <string name="brick_media_title_section">Title</string>

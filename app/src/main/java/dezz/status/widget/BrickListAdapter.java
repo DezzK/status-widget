@@ -262,6 +262,13 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialButton brickMediaTitleFontBold;
         final MaterialButton brickMediaTitleFontItalic;
         final MaterialAutoCompleteTextView brickMediaTitleAlignmentDropdown;
+        // Длительность
+        final MaterialSwitch brickMediaShowDuration;
+        final LinearLayout brickMediaDurationSection;
+        final Slider brickMediaDurationFontSizeSlider;
+        final Slider brickMediaDurationContentAlphaSlider;
+        final Slider brickMediaDurationOutlineAlphaSlider;
+        final Slider brickMediaDurationOutlineWidthSlider;
 
         final MaterialButton brickMediaPermissionButton;
         final LinearLayout brickFontBlock;
@@ -352,6 +359,12 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaTitleFontBold = itemView.findViewById(R.id.brickMediaTitleFontBold);
             brickMediaTitleFontItalic = itemView.findViewById(R.id.brickMediaTitleFontItalic);
             brickMediaTitleAlignmentDropdown = itemView.findViewById(R.id.brickMediaTitleAlignmentDropdown);
+            brickMediaShowDuration = itemView.findViewById(R.id.brickMediaShowDuration);
+            brickMediaDurationSection = itemView.findViewById(R.id.brickMediaDurationSection);
+            brickMediaDurationFontSizeSlider = itemView.findViewById(R.id.brickMediaDurationFontSizeSlider);
+            brickMediaDurationContentAlphaSlider = itemView.findViewById(R.id.brickMediaDurationContentAlphaSlider);
+            brickMediaDurationOutlineAlphaSlider = itemView.findViewById(R.id.brickMediaDurationOutlineAlphaSlider);
+            brickMediaDurationOutlineWidthSlider = itemView.findViewById(R.id.brickMediaDurationOutlineWidthSlider);
             brickMediaPermissionButton = itemView.findViewById(R.id.brickMediaPermissionButton);
             brickFontBlock = itemView.findViewById(R.id.brickFontBlock);
             brickFontBlockHeader = itemView.findViewById(R.id.brickFontBlockHeader);
@@ -405,6 +418,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaTitleFirst.setOnCheckedChangeListener(null);
             brickMediaMarqueeEnabled.setOnCheckedChangeListener(null);
             brickMediaProgressBarEnabled.setOnCheckedChangeListener(null);
+            brickMediaShowDuration.setOnCheckedChangeListener(null);
+            brickMediaDurationFontSizeSlider.clearOnChangeListeners();
+            brickMediaDurationContentAlphaSlider.clearOnChangeListeners();
+            brickMediaDurationOutlineAlphaSlider.clearOnChangeListeners();
+            brickMediaDurationOutlineWidthSlider.clearOnChangeListeners();
             brickMediaMaxWidthSlider.clearOnChangeListeners();
             brickMediaMarginStartSlider.clearOnChangeListeners();
             brickMediaMarginEndSlider.clearOnChangeListeners();
@@ -797,6 +815,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
         }
 
+        private void refreshMediaDurationSectionVisibility() {
+            brickMediaDurationSection.setVisibility(
+                    prefs.media.showDuration.get() ? View.VISIBLE : View.GONE);
+        }
+
         /** Reusable Start/Center/End alignment dropdown bound to an int 0..2 preference. */
         private void bindAlignmentDropdown(MaterialAutoCompleteTextView dropdown,
                                            Preferences.Int pref) {
@@ -959,6 +982,21 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     brickMediaTitleFontBold, brickMediaTitleFontItalic,
                     prefs.media.fontBold, prefs.media.fontItalic);
             bindAlignmentDropdown(brickMediaTitleAlignmentDropdown, prefs.media.alignment);
+
+            // ============================ Длительность ============================
+            brickMediaShowDuration.setChecked(prefs.media.showDuration.get());
+            brickMediaShowDuration.setOnCheckedChangeListener((v, c) -> {
+                prefs.media.showDuration.set(c);
+                refreshMediaDurationSectionVisibility();
+                notifyService();
+            });
+            bindIntSlider(brickMediaDurationFontSizeSlider, prefs.media.durationFontSize, sizeFormatter());
+            bindIntSlider(brickMediaDurationContentAlphaSlider, prefs.media.durationContentAlpha, plainFormatter());
+            bindIntSlider(brickMediaDurationOutlineAlphaSlider, prefs.media.durationOutlineAlpha, plainFormatter());
+            bindIntSlider(brickMediaDurationOutlineWidthSlider, prefs.media.durationOutlineWidth, sizeFormatter());
+            ViewBinder.linkPairDisableOnZero(
+                    brickMediaDurationOutlineAlphaSlider, brickMediaDurationOutlineWidthSlider);
+            refreshMediaDurationSectionVisibility();
 
             brickMediaPermissionButton.setOnClickListener(v -> {
                 if (Permissions.isNotificationAccessGranted(activity)) {
