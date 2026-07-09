@@ -75,6 +75,7 @@
     <string name="show_gnss_satellite_badge">Show satellite count and mode</string>
     <string name="show_gnss_satellite_badge_hint">Satellite count, or a DR / anti-spoof marker. Requires the GNSS Share app.</string>
     <string name="gnss_dr_badge" translatable="false">DR</string>
+    <string name="gnss_spoof_badge" translatable="false">SP</string>
     <string name="show_media_hint">Showing currently playing media requires Notification access.</string>
     <string name="media_unknown_track">Playing</string>
     <string name="grant_notification_access">Grant Notification access</string>
