@@ -72,8 +72,8 @@
         <item>Центр</item>
         <item>Вправо</item>
     </string-array>
-    <string name="show_gnss_satellite_badge">Показывать число спутников</string>
-    <string name="show_gnss_satellite_badge_hint">Работает только с приложением GNSS Share</string>
+    <string name="show_gnss_satellite_badge">Показывать спутники и режим</string>
+    <string name="show_gnss_satellite_badge_hint">Число спутников или маркер DR / анти-спуфинга. Требуется приложение GNSS Share.</string>
     <string name="show_media_hint">Для отображения воспроизводимого медиа требуется доступ к уведомлениям.</string>
     <string name="media_unknown_track">Идёт воспроизведение</string>
     <string name="grant_notification_access">Открыть настройки доступа к уведомлениям</string>

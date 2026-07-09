@@ -72,8 +72,9 @@
         <item>Center</item>
         <item>End</item>
     </string-array>
-    <string name="show_gnss_satellite_badge">Show satellite count badge</string>
-    <string name="show_gnss_satellite_badge_hint">Requires GNSS Share to be running</string>
+    <string name="show_gnss_satellite_badge">Show satellite count and mode</string>
+    <string name="show_gnss_satellite_badge_hint">Satellite count, or a DR / anti-spoof marker. Requires the GNSS Share app.</string>
+    <string name="gnss_dr_badge" translatable="false">DR</string>
     <string name="show_media_hint">Showing currently playing media requires Notification access.</string>
     <string name="media_unknown_track">Playing</string>
     <string name="grant_notification_access">Grant Notification access</string>

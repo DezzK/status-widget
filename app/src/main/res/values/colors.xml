@@ -30,4 +30,7 @@
     <color name="status_error">#E53935</color>
     <color name="status_off">#8E8E8E</color>
     <color name="status_bluetooth">#0082FC</color>
+    <!-- Fixed dark ink for text badges drawn on a colored pill (DR / anti-spoof). Intentionally
+         has no values-night override so it stays dark on amber / red in both themes. -->
+    <color name="status_badge_text">#FF000000</color>
 </resources>

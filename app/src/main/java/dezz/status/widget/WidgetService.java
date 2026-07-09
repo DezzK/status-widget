@@ -97,6 +97,16 @@ public class WidgetService extends Service {
         OFF, BAD, GOOD
     }
 
+    /**
+     * Positioning mode reported by GNSS Client alongside the satellite count. NORMAL is
+     * ordinary satellite fixing; DR is dead reckoning (no live satellite fix, position
+     * estimated from motion); ANTISPOOF is the spoofing-countermeasure mode, which also
+     * runs on dead reckoning but signals an active attack rather than mere signal loss.
+     */
+    enum GnssMode {
+        NORMAL, DR, ANTISPOOF
+    }
+
     enum WiFiState {
         OFF, NO_INTERNET, LIMITED_INTERNET, INTERNET
     }
@@ -181,7 +191,13 @@ public class WidgetService extends Service {
     private static final long FOREGROUND_APP_LOOKBACK_MS = 60_000L;
     private static final String GNSSSHARE_CLIENT_PACKAGE = "dezz.gnssshare.client";
     private static final String GNSSSHARE_SATELLITE_STATUS_ACTION = "dezz.gnssshare.action.SATELLITE_STATUS";
+    /** Satellite count extra. A value of {@code -1} means "no satellite data" (badge hidden). */
     private static final String GNSSSHARE_EXTRA_SATELLITES_COUNT = "count";
+    /** Optional positioning-mode extra; absent / 0 means normal satellite fixing. */
+    private static final String GNSSSHARE_EXTRA_MODE = "mode";
+    private static final int GNSSSHARE_MODE_NORMAL = 0;
+    private static final int GNSSSHARE_MODE_DR = 1;
+    private static final int GNSSSHARE_MODE_ANTISPOOF = 2;
     private static final long GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS = 30_000L;
 
     private static WidgetService instance;
@@ -287,25 +303,42 @@ public class WidgetService extends Service {
     private final MediaSessionManager.OnActiveSessionsChangedListener activeSessionsChangedListener =
             this::rebindMediaControllers;
 
-    private int satellitesCount = 0;
+    private int satellitesCount = -1;
+    private GnssMode gnssMode = GnssMode.NORMAL;
     private long satellitesCountTimestamp = 0;
     private boolean satelliteReceiverRegistered = false;
     private final BroadcastReceiver satelliteStatusReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            int count = intent.getIntExtra(GNSSSHARE_EXTRA_SATELLITES_COUNT, 0);
-            Log.d(TAG, "GNSS Share satellites count: " + count);
+            int count = intent.getIntExtra(GNSSSHARE_EXTRA_SATELLITES_COUNT, -1);
+            int mode = intent.getIntExtra(GNSSSHARE_EXTRA_MODE, GNSSSHARE_MODE_NORMAL);
+            Log.d(TAG, "GNSS Share satellites count: " + count + ", mode: " + mode);
             satellitesCount = count;
-            satellitesCountTimestamp = System.currentTimeMillis();
+            gnssMode = gnssModeFromExtra(mode);
+            // Monotonic clock (matches the postDelayed reset below), so a boot-time wall-clock
+            // jump from GPS/NTP sync can't prematurely expire or freeze the freshness window.
+            satellitesCountTimestamp = android.os.SystemClock.uptimeMillis();
             mainHandler.removeCallbacks(satellitesCountResetRunnable);
             mainHandler.postDelayed(satellitesCountResetRunnable, GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS);
             updateGnssStatus();
         }
     };
     private final Runnable satellitesCountResetRunnable = () -> {
-        satellitesCount = 0;
+        satellitesCount = -1;
+        gnssMode = GnssMode.NORMAL;
         updateGnssStatus();
     };
+
+    private static GnssMode gnssModeFromExtra(int mode) {
+        switch (mode) {
+            case GNSSSHARE_MODE_DR:
+                return GnssMode.DR;
+            case GNSSSHARE_MODE_ANTISPOOF:
+                return GnssMode.ANTISPOOF;
+            default:
+                return GnssMode.NORMAL;
+        }
+    }
 
     private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
         @Override
@@ -1799,7 +1832,8 @@ public class WidgetService extends Service {
         }
         satelliteReceiverRegistered = false;
         mainHandler.removeCallbacks(satellitesCountResetRunnable);
-        satellitesCount = 0;
+        satellitesCount = -1;
+        gnssMode = GnssMode.NORMAL;
     }
 
     private void registerBluetoothReceiver() {
@@ -2322,21 +2356,40 @@ public class WidgetService extends Service {
             icon.setBadgeDrawable(null);
         }
 
-        // Text badge: GNSS Share satellite count for GPS, connected-device count for Bluetooth.
+        // Text badge: GNSS Share satellite count (or a DR / anti-spoof marker) for GPS,
+        // connected-device count for Bluetooth.
         String badgeText = null;
-        if (iconType == ICON_TYPE_GNSS && prefs.gps.showSatelliteBadge.get() && satellitesCount > 0
-                && System.currentTimeMillis() - satellitesCountTimestamp < GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS) {
-            badgeText = String.valueOf(satellitesCount);
+        int badgeBg = 0;
+        // Foreground defaults to the widget text colour (flips with the theme, pairs with the
+        // style-driven backgrounds below); DR / anti-spoof override it to a fixed dark ink so the
+        // label stays legible on their amber / red pills in either theme (white on amber is ~1.9:1).
+        int badgeFg = ContextCompat.getColor(themedContext, R.color.text_outline) | 0xFF000000;
+        // Default badge background follows the icon's own colouring; DR / anti-spoof override it
+        // below with a fixed semantic colour so the meaning reads the same in both icon styles.
+        int styleBg = (iconStyle == STYLE_COLOR)
+                ? ContextCompat.getColor(themedContext, colorRes[stateIdx])
+                : ContextCompat.getColor(themedContext, R.color.text_primary);
+        if (iconType == ICON_TYPE_GNSS && prefs.gps.showSatelliteBadge.get()
+                && android.os.SystemClock.uptimeMillis() - satellitesCountTimestamp < GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS) {
+            if (gnssMode == GnssMode.ANTISPOOF) {
+                badgeText = getString(R.string.gnss_dr_badge);
+                badgeBg = ContextCompat.getColor(themedContext, R.color.status_error);
+                badgeFg = ContextCompat.getColor(themedContext, R.color.status_badge_text);
+            } else if (gnssMode == GnssMode.DR) {
+                badgeText = getString(R.string.gnss_dr_badge);
+                badgeBg = ContextCompat.getColor(themedContext, R.color.status_warning);
+                badgeFg = ContextCompat.getColor(themedContext, R.color.status_badge_text);
+            } else if (satellitesCount > 0) {
+                badgeText = String.valueOf(satellitesCount);
+                badgeBg = styleBg;
+            }
         } else if (iconType == ICON_TYPE_BT && prefs.bluetooth.showDeviceCountBadge.get()
                 && bluetoothState == BluetoothState.CONNECTED && !btConnectedAddrs.isEmpty()) {
             badgeText = String.valueOf(btConnectedAddrs.size());
+            badgeBg = styleBg;
         }
         if (badgeText != null) {
-            int bgColor = (iconStyle == STYLE_COLOR)
-                    ? ContextCompat.getColor(themedContext, colorRes[stateIdx])
-                    : ContextCompat.getColor(themedContext, R.color.text_primary);
-            int fgColor = ContextCompat.getColor(themedContext, R.color.text_outline) | 0xFF000000;
-            icon.setBadgeText(badgeText, bgColor, fgColor);
+            icon.setBadgeText(badgeText, badgeBg, badgeFg);
         } else {
             icon.setBadgeText(null, 0, 0);
         }
