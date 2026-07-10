@@ -33,6 +33,29 @@ android {
         setProperty("archivesBaseName", "status-widget-${versionName}")
     }
 
+    // Car-specific builds: each flavor wires in one vendor SDK via <flavor>Implementation and
+    // provides a dezz.status.widget.car.CarIntegrationFactory in its own source set
+    // (app/src/<flavor>/java). Code in main must never reference vendor classes directly.
+    flavorDimensions = ["car"]
+    productFlavors {
+        // Geely / eCarX head units (Monjaro and friends). This is the default build — its APK
+        // keeps the historical un-suffixed name (see the output rename below).
+        geely {
+            dimension "car"
+            getIsDefault().set(true)
+        }
+    }
+
+    // geely is the canonical build: status-widget-vX.Y.Z-debug.apk without a flavor tag, matching
+    // the pre-flavor naming users and update instructions already rely on. Any future flavor gets
+    // an explicit -<flavor> tag in the file name.
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach {
+            def flavorTag = variant.flavorName == "geely" ? "" : "-${variant.flavorName}"
+            outputFileName = "status-widget-${variant.versionName}${flavorTag}-${variant.buildType.name}.apk"
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
@@ -70,4 +93,9 @@ dependencies {
     implementation libs.constraintlayout
     implementation libs.material
     implementation libs.recyclerview
+
+    // eCarX AdaptAPI (Geely flavor only) — class-jar converted from the vendor-distributed
+    // dex jar; bundled into the APK the same way the infoDash fork ships it. Main source set
+    // must not import com.ecarx.* — only app/src/geely may.
+    geelyImplementation files('libs/geely/ecarx-adaptapi.jar')
 }

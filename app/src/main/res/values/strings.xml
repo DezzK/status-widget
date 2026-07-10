@@ -94,6 +94,8 @@
     <string name="brick_title_wifi">Wi-Fi</string>
     <string name="brick_title_gps">GPS</string>
     <string name="brick_title_bluetooth">Bluetooth</string>
+    <string name="brick_title_indoor_temp">Cabin temperature</string>
+    <string name="brick_title_outdoor_temp">Outside temperature</string>
     <string name="show_bluetooth_device_count_badge">Show connected device count badge</string>
     <string name="brick_font_size">Font size</string>
     <string name="brick_size">Size</string>

@@ -28,7 +28,17 @@ import java.util.List;
  * comma-separated string in {@link Preferences#brickOrder}; missing types are hidden.
  */
 public enum BrickType {
-    TIME, DATE, MEDIA, WIFI, GPS, BLUETOOTH;
+    // New constants must be APPENDED — the ordinal doubles as the RecyclerView stable id and
+    // the name is persisted in brickOrder / hideSource prefs.
+    TIME, DATE, MEDIA, WIFI, GPS, BLUETOOTH, INDOOR_TEMP, OUTDOOR_TEMP;
+
+    /**
+     * Car-specific bricks are fed by the flavor's {@link dezz.status.widget.car.CarIntegration}
+     * and are only offered in settings when the vehicle actually supports them.
+     */
+    public boolean isCarSpecific() {
+        return this == INDOOR_TEMP || this == OUTDOOR_TEMP;
+    }
 
     @Nullable
     public static BrickType fromName(String name) {

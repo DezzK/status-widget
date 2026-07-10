@@ -198,6 +198,30 @@
         android:paddingHorizontal="4sp"
         android:src="@drawable/ic_status_bt_off"
         tools:ignore="ContentDescription" />
+
+    <!-- Car-specific bricks (fed by the flavor's CarIntegration). Direct children of the
+         container like every other brick so status-bar mode can re-parent them. -->
+    <dezz.status.widget.OutlineTextView
+        android:id="@+id/indoorTempText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:fontFamily="@font/roboto_condensed_medium"
+        android:includeFontPadding="false"
+        android:textColor="@color/text_primary"
+        android:textSize="40sp"
+        tools:text="21°" />
+
+    <dezz.status.widget.OutlineTextView
+        android:id="@+id/outdoorTempText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:fontFamily="@font/roboto_condensed_medium"
+        android:includeFontPadding="false"
+        android:textColor="@color/text_primary"
+        android:textSize="40sp"
+        tools:text="8°" />
     </dezz.status.widget.BufferingLinearLayout>
 
 </FrameLayout>

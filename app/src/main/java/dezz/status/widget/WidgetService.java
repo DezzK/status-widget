@@ -90,6 +90,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import dezz.status.widget.car.CarIntegration;
+import dezz.status.widget.car.CarIntegrations;
 import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
 
 public class WidgetService extends Service {
@@ -505,6 +507,14 @@ public class WidgetService extends Service {
 
         windowManager = getSystemService(WindowManager.class);
 
+        // Re-evaluate brick visibility when the car SDK's asynchronous service connect finally
+        // answers whether the car sensors exist — critical on the boot-autostart path, where
+        // the first applyPreferences runs before the vendor service is up and would otherwise
+        // hide configured car bricks until the user happens to open the settings UI.
+        CarIntegrations.get(this).setAvailabilityChangedListener(() -> {
+            if (binding != null) applyPreferences();
+        });
+
         createOverlayView();
     }
 
@@ -689,6 +699,8 @@ public class WidgetService extends Service {
         applyWifiBrickSettings();
         applyGpsBrickSettings();
         applyBluetoothBrickSettings();
+        applyIndoorTempBrickSettings();
+        applyOutdoorTempBrickSettings();
 
         applyBrickVisibility(bricksSet);
         applyOverlayPosition();
@@ -803,6 +815,45 @@ public class WidgetService extends Service {
             disableMediaTracking();
             binding.mediaContainer.setVisibility(View.GONE);
         }
+
+        // Car temperature bricks — one subscription per brick through the flavor's
+        // CarIntegration; the callback lands on the main thread per its contract.
+        updateCarTempSubscription(BrickType.INDOOR_TEMP, bricksSet, binding.indoorTempText);
+        updateCarTempSubscription(BrickType.OUTDOOR_TEMP, bricksSet, binding.outdoorTempText);
+    }
+
+    private void updateCarTempSubscription(BrickType type, Set<BrickType> bricksSet,
+                                           OutlineTextView target) {
+        CarIntegration car = CarIntegrations.get(this);
+        if (bricksSet.contains(type)) {
+            // Subscribe regardless of isBrickSupported(): right after boot the vendor service
+            // may not have connected yet and support reads as "unknown/error" — but the SDK
+            // queues listener registrations locally, so subscribing now means data starts
+            // flowing the moment the service comes up. Visibility is gated separately in
+            // applyBrickVisibility, and the availability-changed callback re-runs
+            // applyPreferences when the support answer flips.
+            if (target.getText().length() == 0) {
+                // Placeholder until the first value arrives, so the brick occupies its slot
+                // instead of rendering as a zero-width hole.
+                target.setText(TEMP_PLACEHOLDER);
+            }
+            car.subscribe(type, (brickType, value) -> {
+                if (binding == null) return;
+                target.setText(formatTemperature(value));
+            });
+        } else {
+            car.unsubscribe(type);
+            // Reset so a re-added brick starts from the placeholder, not a stale reading.
+            target.setText(TEMP_PLACEHOLDER);
+        }
+    }
+
+    /** Shown while a subscribed temperature brick has not yet received a plausible value. */
+    private static final String TEMP_PLACEHOLDER = "--°";
+
+    private static String formatTemperature(float celsius) {
+        // Integer rounding via Math.round avoids "%.0f"-style "-0°" for readings in (-0.5, 0).
+        return Math.round(celsius) + "°";
     }
 
     private void reorderBricks(List<BrickType> bricks) {
@@ -930,6 +981,10 @@ public class WidgetService extends Service {
                 return binding.gnssStatusIcon;
             case BLUETOOTH:
                 return binding.bluetoothStatusIcon;
+            case INDOOR_TEMP:
+                return binding.indoorTempText;
+            case OUTDOOR_TEMP:
+                return binding.outdoorTempText;
             default:
                 return null;
         }
@@ -937,6 +992,14 @@ public class WidgetService extends Service {
 
     private void applyTimeBrickSettings() {
         applySingleLineTextBrick(binding.timeText, prefs.time);
+    }
+
+    private void applyIndoorTempBrickSettings() {
+        applySingleLineTextBrick(binding.indoorTempText, prefs.indoorTemp);
+    }
+
+    private void applyOutdoorTempBrickSettings() {
+        applySingleLineTextBrick(binding.outdoorTempText, prefs.outdoorTemp);
     }
 
     private void applyDateBrickSettings() {
@@ -1153,6 +1216,14 @@ public class WidgetService extends Service {
         if (binding == null) return;
         boolean dateActive = bricksSet.contains(BrickType.DATE)
                 && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get());
+        // Car bricks only render when the vehicle supports the sensor — a preset imported from
+        // another car may list them in brickOrder, and an unsupported sensor would otherwise
+        // leave a permanently frozen placeholder brick in the row.
+        CarIntegration car = CarIntegrations.get(this);
+        boolean indoorTempActive = bricksSet.contains(BrickType.INDOOR_TEMP)
+                && car.isBrickSupported(BrickType.INDOOR_TEMP);
+        boolean outdoorTempActive = bricksSet.contains(BrickType.OUTDOOR_TEMP)
+                && car.isBrickSupported(BrickType.OUTDOOR_TEMP);
         BrickTarget[] targets = {
                 resolveTarget(BrickType.TIME, bricksSet.contains(BrickType.TIME),
                         binding.timeText, prefs.time.contentAlpha.get()),
@@ -1164,6 +1235,10 @@ public class WidgetService extends Service {
                         binding.gnssStatusIcon, prefs.gps.contentAlpha.get()),
                 resolveTarget(BrickType.BLUETOOTH, bricksSet.contains(BrickType.BLUETOOTH),
                         binding.bluetoothStatusIcon, prefs.bluetooth.contentAlpha.get()),
+                resolveTarget(BrickType.INDOOR_TEMP, indoorTempActive,
+                        binding.indoorTempText, prefs.indoorTemp.contentAlpha.get()),
+                resolveTarget(BrickType.OUTDOOR_TEMP, outdoorTempActive,
+                        binding.outdoorTempText, prefs.outdoorTemp.contentAlpha.get()),
         };
 
         // Media has the extra session gate, so we build its BrickTarget here.
@@ -1441,6 +1516,16 @@ public class WidgetService extends Service {
         }
         if (bricks.contains(BrickType.BLUETOOTH)) {
             h = Math.max(h, prefs.bluetooth.size.get());
+        }
+        // Car bricks only contribute to the height floor when the vehicle actually renders them
+        // (same isBrickSupported gate as applyBrickVisibility) — otherwise a preset from another
+        // car would inflate the widget height for bricks that never appear.
+        CarIntegration car = CarIntegrations.get(this);
+        if (bricks.contains(BrickType.INDOOR_TEMP) && car.isBrickSupported(BrickType.INDOOR_TEMP)) {
+            h = Math.max(h, textLineHeight(binding.indoorTempText, prefs.indoorTemp.fontSize.get()));
+        }
+        if (bricks.contains(BrickType.OUTDOOR_TEMP) && car.isBrickSupported(BrickType.OUTDOOR_TEMP)) {
+            h = Math.max(h, textLineHeight(binding.outdoorTempText, prefs.outdoorTemp.fontSize.get()));
         }
         return h;
     }
@@ -2471,6 +2556,12 @@ public class WidgetService extends Service {
         unregisterSatelliteStatusReceiver();
         unregisterBluetoothReceiver();
         disableMediaTracking();
+        // Drop car sensor subscriptions but keep the process-wide integration alive — the
+        // settings UI may still query isBrickSupported after the overlay service stops.
+        CarIntegration car = CarIntegrations.get(this);
+        car.setAvailabilityChangedListener(null);
+        car.unsubscribe(BrickType.INDOOR_TEMP);
+        car.unsubscribe(BrickType.OUTDOOR_TEMP);
     }
 
     @Nullable

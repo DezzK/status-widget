@@ -366,6 +366,9 @@ public class Preferences {
     public final IconBrickPrefs wifi = new IconBrickPrefs(this, "wifi");
     public final GpsBrickPrefs gps = new GpsBrickPrefs(this);
     public final BluetoothBrickPrefs bluetooth = new BluetoothBrickPrefs(this);
+    // Car-specific temperature bricks (fed by the flavor's CarIntegration).
+    public final TextBrickPrefs indoorTemp = new TextBrickPrefs(this, "indoorTemp", 40);
+    public final TextBrickPrefs outdoorTemp = new TextBrickPrefs(this, "outdoorTemp", 40);
 
     @Nullable
     public TextBrickPrefs textBrickPrefs(BrickType type) {
@@ -376,6 +379,10 @@ public class Preferences {
                 return date;
             case MEDIA:
                 return media;
+            case INDOOR_TEMP:
+                return indoorTemp;
+            case OUTDOOR_TEMP:
+                return outdoorTemp;
             default:
                 return null;
         }
@@ -492,6 +499,8 @@ public class Preferences {
             case WIFI: return "wifi";
             case GPS: return "gps";
             case BLUETOOTH: return "bluetooth";
+            case INDOOR_TEMP: return "indoorTemp";
+            case OUTDOOR_TEMP: return "outdoorTemp";
             default: return null;
         }
     }

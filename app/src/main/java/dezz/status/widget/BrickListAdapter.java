@@ -147,6 +147,10 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                 return R.string.brick_title_gps;
             case BLUETOOTH:
                 return R.string.brick_title_bluetooth;
+            case INDOOR_TEMP:
+                return R.string.brick_title_indoor_temp;
+            case OUTDOOR_TEMP:
+                return R.string.brick_title_outdoor_temp;
             default:
                 return 0;
         }
@@ -496,6 +500,20 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     bindBluetoothBlock();
                     showMediaBlock(false);
                     break;
+                case INDOOR_TEMP:
+                    bindTextBrick(prefs.indoorTemp);
+                    showDateBlock(false);
+                    showGpsBlock(false);
+                    showBluetoothBlock(false);
+                    showMediaBlock(false);
+                    break;
+                case OUTDOOR_TEMP:
+                    bindTextBrick(prefs.outdoorTemp);
+                    showDateBlock(false);
+                    showGpsBlock(false);
+                    showBluetoothBlock(false);
+                    showMediaBlock(false);
+                    break;
             }
 
             bindHideBlock(type);
@@ -689,6 +707,10 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                     return activity.getString(R.string.brick_title_gps);
                 case BLUETOOTH:
                     return activity.getString(R.string.brick_title_bluetooth);
+                case INDOOR_TEMP:
+                    return activity.getString(R.string.brick_title_indoor_temp);
+                case OUTDOOR_TEMP:
+                    return activity.getString(R.string.brick_title_outdoor_temp);
                 default:
                     return "";
             }

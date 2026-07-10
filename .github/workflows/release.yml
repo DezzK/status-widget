@@ -58,8 +58,8 @@ jobs:
         VERSION_NAME: ${{ steps.version.outputs.version }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
-        ./gradlew assembleRelease
-        mv app/build/outputs/apk/release/status-widget-${VERSION_NAME}-release.apk app/build/outputs/apk/release/status-widget-${VERSION_NAME}.apk
+        ./gradlew assembleGeelyRelease
+        mv app/build/outputs/apk/geely/release/status-widget-${VERSION_NAME}-release.apk app/build/outputs/apk/geely/release/status-widget-${VERSION_NAME}.apk
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
@@ -68,4 +68,4 @@ jobs:
         name: Release ${{ steps.version.outputs.version }}
         draft: false
         prerelease: false
-        files: app/build/outputs/apk/release/status-widget-${{ steps.version.outputs.version }}.apk
+        files: app/build/outputs/apk/geely/release/status-widget-${{ steps.version.outputs.version }}.apk
