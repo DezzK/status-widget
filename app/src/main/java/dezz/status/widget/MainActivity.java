@@ -65,6 +65,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import dezz.status.widget.car.CarIntegration;
+import dezz.status.widget.car.CarIntegrations;
 import dezz.status.widget.databinding.ActivityMainBinding;
 import dezz.status.widget.shell.PrivilegedShell;
 
@@ -268,6 +270,11 @@ public class MainActivity extends AppCompatActivity {
             crashFile.delete();
             return;
         }
+        // Consume the report as soon as it is held in memory: deleting the file up front (rather
+        // than only in the button callbacks) makes it show exactly once. Dismissing the dialog via
+        // Back or a tap outside no longer leaves the file behind to re-appear on every launch.
+        //noinspection ResultOfMethodCallIgnored
+        crashFile.delete();
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle(R.string.crash_report_title)
                 .setMessage(content)
@@ -279,28 +286,21 @@ public class MainActivity extends AppCompatActivity {
                                 "Status Widget crash", content));
                     }
                     Toast.makeText(this, R.string.crash_report_copied, Toast.LENGTH_SHORT).show();
-                    //noinspection ResultOfMethodCallIgnored
-                    crashFile.delete();
                 })
-                .setPositiveButton(R.string.crash_report_share, (d, w) -> shareCrashReport(crashFile))
-                .setNegativeButton(R.string.crash_report_dismiss, (d, w) -> {
-                    //noinspection ResultOfMethodCallIgnored
-                    crashFile.delete();
-                })
+                .setPositiveButton(R.string.crash_report_share, (d, w) -> shareCrashReport(content))
+                .setNegativeButton(R.string.crash_report_dismiss, null)
                 .show();
     }
 
-    private void shareCrashReport(File crashFile) {
+    private void shareCrashReport(String content) {
         try {
-            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", crashFile);
+            // Share the report text directly — the backing file is already deleted (show-once), so
+            // there's nothing to attach via FileProvider.
             Intent send = new Intent(Intent.ACTION_SEND);
             send.setType("text/plain");
-            send.putExtra(Intent.EXTRA_STREAM, uri);
             send.putExtra(Intent.EXTRA_SUBJECT, "Status Widget crash");
-            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            send.putExtra(Intent.EXTRA_TEXT, content);
             startActivity(Intent.createChooser(send, getString(R.string.crash_report_chooser)));
-            // File stays on disk until the user comes back; on next maybeShowCrashReport() they can
-            // dismiss/copy/share again.
         } catch (Throwable t) {
             Log.w(TAG, "Failed to share crash report", t);
         }
@@ -504,9 +504,13 @@ public class MainActivity extends AppCompatActivity {
         ChipGroup chipGroup = binding.sectionLayout.addBrickChips;
         chipGroup.removeAllViews();
         List<BrickType> current = brickAdapter.getBricks();
+        CarIntegration car = CarIntegrations.get(this);
         boolean anyMissing = false;
         for (BrickType type : BrickType.values()) {
             if (current.contains(type)) continue;
+            // Don't offer car-specific bricks this vehicle can't feed — an added brick would
+            // just sit as a frozen placeholder.
+            if (type.isCarSpecific() && !car.isBrickSupported(type)) continue;
             anyMissing = true;
             Chip chip = new Chip(this);
             chip.setText(brickTitle(type));
@@ -533,6 +537,10 @@ public class MainActivity extends AppCompatActivity {
                 return getString(R.string.brick_title_gps);
             case BLUETOOTH:
                 return getString(R.string.brick_title_bluetooth);
+            case INDOOR_TEMP:
+                return getString(R.string.brick_title_indoor_temp);
+            case OUTDOOR_TEMP:
+                return getString(R.string.brick_title_outdoor_temp);
             default:
                 return "";
         }
