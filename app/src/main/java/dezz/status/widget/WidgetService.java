@@ -750,7 +750,9 @@ public class WidgetService extends Service {
                 }
 
                 NetworkRequest networkRequest = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build();
-                connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+                // Deliver callbacks on the main thread: they touch the overlay views and the
+                // themedContext, which must not be read from the default ConnectivityThread.
+                connectivityManager.registerNetworkCallback(networkRequest, networkCallback, mainHandler);
 
                 if (wifiPresent) {
                     probeReachability();
@@ -2314,14 +2316,18 @@ public class WidgetService extends Service {
                 iconPrefs = prefs.wifi;
                 break;
         }
+        // themedContext is momentarily null between onConfigurationChanged (which invalidates it)
+        // and the next applyPreferences that rebuilds it. A status update landing in that window
+        // must not crash, so fall back to the service context (matches the guard at getOutlineColor).
+        Context ctx = themedContext != null ? themedContext : this;
         int tint = (iconStyle == STYLE_COLOR)
-                ? ContextCompat.getColor(themedContext, colorRes[stateIdx])
-                : ContextCompat.getColor(themedContext, R.color.text_primary);
+                ? ContextCompat.getColor(ctx, colorRes[stateIdx])
+                : ContextCompat.getColor(ctx, R.color.text_primary);
         ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
 
         int outlineAlpha = iconPrefs.outlineAlpha.get();
         if (outlineAlpha > 0) {
-            int haloColor = (ContextCompat.getColor(themedContext, R.color.text_outline) & 0x00FFFFFF)
+            int haloColor = (ContextCompat.getColor(ctx, R.color.text_outline) & 0x00FFFFFF)
                     | (outlineAlpha << 24);
             icon.setOutlineColor(haloColor);
             icon.setOutlineWidth(iconPrefs.outlineWidth.get());
@@ -2345,12 +2351,12 @@ public class WidgetService extends Service {
         // Foreground defaults to the widget text colour (flips with the theme, pairs with the
         // style-driven backgrounds below); the coloured GNSS markers override it to a fixed dark
         // ink so the label stays legible on their amber / red pills (white on amber is ~1.9:1).
-        int badgeFg = ContextCompat.getColor(themedContext, R.color.text_outline) | 0xFF000000;
+        int badgeFg = ContextCompat.getColor(ctx, R.color.text_outline) | 0xFF000000;
         // Default badge background follows the icon's own colouring; the GNSS markers override it
         // below with a fixed semantic colour so the meaning reads the same in both icon styles.
         int styleBg = (iconStyle == STYLE_COLOR)
-                ? ContextCompat.getColor(themedContext, colorRes[stateIdx])
-                : ContextCompat.getColor(themedContext, R.color.text_primary);
+                ? ContextCompat.getColor(ctx, colorRes[stateIdx])
+                : ContextCompat.getColor(ctx, R.color.text_primary);
         if (iconType == ICON_TYPE_GNSS && prefs.gps.showSatelliteBadge.get()
                 && android.os.SystemClock.uptimeMillis() - satellitesCountTimestamp < GNSSSHARE_SATELLITE_STATUS_TIMEOUT_MS) {
             // Two independent flags: dead reckoning drives the text, spoofing drives the colour,
@@ -2369,12 +2375,12 @@ public class WidgetService extends Service {
             if (badgeText != null) {
                 if (spoofDetected) {
                     // Spoofing detected — red, whether we're on DR or still on GPS.
-                    badgeBg = ContextCompat.getColor(themedContext, R.color.status_error);
-                    badgeFg = ContextCompat.getColor(themedContext, R.color.status_badge_text);
+                    badgeBg = ContextCompat.getColor(ctx, R.color.status_error);
+                    badgeFg = ContextCompat.getColor(ctx, R.color.status_badge_text);
                 } else if (deadReckoning) {
                     // Dead reckoning without a spoof — amber (degraded, not an attack).
-                    badgeBg = ContextCompat.getColor(themedContext, R.color.status_warning);
-                    badgeFg = ContextCompat.getColor(themedContext, R.color.status_badge_text);
+                    badgeBg = ContextCompat.getColor(ctx, R.color.status_warning);
+                    badgeFg = ContextCompat.getColor(ctx, R.color.status_badge_text);
                 } else {
                     badgeBg = styleBg;
                 }
