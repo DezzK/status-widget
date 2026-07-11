@@ -60,6 +60,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -850,6 +851,14 @@ public class WidgetService extends Service {
 
     /** Shown while a subscribed temperature brick has not yet received a plausible value. */
     private static final String TEMP_PLACEHOLDER = "--°";
+
+    /** {@code TextView.setText} drops the layout and forces a relayout even for identical text —
+     *  callers on hot paths (per-second player callbacks) must skip unchanged values. */
+    private static void setTextIfChanged(android.widget.TextView view, CharSequence text) {
+        if (!TextUtils.equals(view.getText(), text)) {
+            view.setText(text);
+        }
+    }
 
     private static String formatTemperature(float celsius) {
         // Integer rounding via Math.round avoids "%.0f"-style "-0°" for readings in (-0.5, 0).
@@ -1676,7 +1685,12 @@ public class WidgetService extends Service {
                 && playbackState.getState() == PlaybackState.STATE_PAUSED)
                 ? "❚❚"    // two U+275A HEAVY VERTICAL BARs — pause shape that stays text-rendered
                 : "▶";    // U+25B6 BLACK RIGHT-POINTING TRIANGLE (text presentation default)
-        binding.mediaStateIcon.setText(stateGlyph);
+        // Players republish PlaybackState continuously (Yandex Music every second), and
+        // TextView.setText unconditionally drops its layout and requests a full re-layout even
+        // for identical text. On OEM head units that per-second layout storm makes the whole
+        // title row visibly jitter while the marquee scrolls — so every setter here must be
+        // a no-op when the value didn't actually change.
+        setTextIfChanged(binding.mediaStateIcon, stateGlyph);
         binding.mediaAppText.setMarqueeText(getAppLabel(playing.getPackageName()));
         binding.mediaAppText.setVisibility(prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
         binding.mediaTitleText.setMarqueeText(subtitle);
@@ -1689,7 +1703,7 @@ public class WidgetService extends Service {
         if (prefs.media.showDuration.get() && durationMs > 0L) {
             // Leading space gives the gap between title and duration without an extra layout
             // margin pref — scales naturally with the duration font size.
-            binding.mediaDurationText.setText(" " + formatTrackDuration(durationMs));
+            setTextIfChanged(binding.mediaDurationText, " " + formatTrackDuration(durationMs));
             binding.mediaDurationText.setVisibility(View.VISIBLE);
         } else {
             binding.mediaDurationText.setVisibility(View.GONE);
