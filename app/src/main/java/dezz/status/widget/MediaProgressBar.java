@@ -68,6 +68,7 @@ public class MediaProgressBar extends View {
 
     /** Set both progress fill color and the (auto-derived translucent) track color in one call. */
     public void setColor(int colorArgb) {
+        if (progressPaint.getColor() == colorArgb) return;
         progressPaint.setColor(colorArgb);
         // Track = 25% alpha of the foreground color, so the bar reads consistently against any
         // background. Keeping RGB identical means the user only has to pick one colour.

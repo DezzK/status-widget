@@ -689,6 +689,15 @@ public class WidgetService extends Service {
         Set<BrickType> bricksSet = EnumSet.noneOf(BrickType.class);
         bricksSet.addAll(bricks);
 
+        // The content-change LayoutTransition only makes sense in floating mode, where the
+        // widget's own width animates as brick content grows/shrinks. In status-bar mode the
+        // row is full-width with fixed groups — there is nothing to animate, but the CHANGING
+        // tracker still arms itself on every layout pass of the container and on OEM head
+        // units it visibly "regroups" the media row once a second (triggered by the periodic
+        // GNSS/status redraws) while the marquee scrolls. Disable it entirely there.
+        binding.overlayContainer.setLayoutTransition(
+                prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR ? null : contentLayoutTransition);
+
         // Reorder children of the root LinearLayout to match brickOrder. Hidden bricks are
         // appended at the end with View.GONE — kept attached so we don't need to re-bind state.
         reorderBricks(bricks);
@@ -848,6 +857,11 @@ public class WidgetService extends Service {
             target.setText(TEMP_PLACEHOLDER);
         }
     }
+
+    /** Last rendered media subtitle — used to distinguish a real track change from the
+     *  once-a-second metadata republishes some players emit (see updateMediaInfo). */
+    @Nullable
+    private String lastMediaSubtitle = null;
 
     /** Shown while a subscribed temperature brick has not yet received a plausible value. */
     private static final String TEMP_PLACEHOLDER = "--°";
@@ -1700,13 +1714,40 @@ public class WidgetService extends Service {
         long durationMs = metadata != null
                 ? metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
                 : 0L;
-        if (prefs.media.showDuration.get() && durationMs > 0L) {
+        // Track identity: duration/progress visibility may only COLLAPSE on a real track
+        // change. Players republish metadata continuously (Yandex Music: every second) and
+        // the duration is transiently absent in some republishes — hiding on those blips
+        // collapsed the row height once a second, which read as the whole widget "regrouping"
+        // while the marquee scrolls.
+        boolean trackChanged = !TextUtils.equals(subtitle, lastMediaSubtitle);
+        lastMediaSubtitle = subtitle;
+
+        if (!prefs.media.showDuration.get()) {
+            binding.mediaDurationText.setVisibility(View.GONE);
+        } else if (durationMs > 0L) {
             // Leading space gives the gap between title and duration without an extra layout
             // margin pref — scales naturally with the duration font size.
             setTextIfChanged(binding.mediaDurationText, " " + formatTrackDuration(durationMs));
             binding.mediaDurationText.setVisibility(View.VISIBLE);
-        } else {
+        } else if (trackChanged) {
+            // New track with no usable duration (live stream) — hide for real.
             binding.mediaDurationText.setVisibility(View.GONE);
+        }
+        // else: transient blip on the same track — keep the last shown value.
+
+        // Progress bar visibility is decided here ONLY (updateMediaProgress never touches it —
+        // see the comment there). Same blip-tolerant policy as the duration text.
+        if (!prefs.media.progressBarEnabled.get()) {
+            binding.mediaProgressBar.setVisibility(View.GONE);
+        } else if (durationMs > 0L) {
+            if (binding.mediaProgressBar.getVisibility() != View.VISIBLE) {
+                binding.mediaProgressBar.setColor(
+                        ContextCompat.getColor(themedContext != null ? themedContext : this,
+                                R.color.text_primary));
+                binding.mediaProgressBar.setVisibility(View.VISIBLE);
+            }
+        } else if (trackChanged) {
+            binding.mediaProgressBar.setVisibility(View.GONE);
         }
 
         binding.mediaContainer.setVisibility(View.VISIBLE);
@@ -1738,8 +1779,15 @@ public class WidgetService extends Service {
      */
     private void updateMediaProgress(@Nullable MediaController playing) {
         if (binding == null) return;
-        if (!prefs.media.progressBarEnabled.get() || playing == null) {
-            binding.mediaProgressBar.setVisibility(View.GONE);
+        // Visibility policy: this method NEVER changes the bar's visibility. Flipping
+        // GONE/VISIBLE changes the media container's height and relayouts the whole brick
+        // row — and players like Yandex Music republish state/metadata every second, with
+        // the duration transiently missing, which turned that flip into a once-a-second
+        // visible "regroup" of the row while the marquee scrolls. Visibility is decided
+        // solely in updateMediaInfo (real track/state changes); here we only advance the
+        // fill fraction — a pure repaint.
+        if (!prefs.media.progressBarEnabled.get() || playing == null
+                || binding.mediaProgressBar.getVisibility() != View.VISIBLE) {
             stopMediaProgressTicker();
             return;
         }
@@ -1749,10 +1797,8 @@ public class WidgetService extends Service {
                 : 0L;
         PlaybackState state = playing.getPlaybackState();
         if (duration <= 0L || state == null) {
-            // No reliable timeline (live stream, podcast pre-buffer, player not reporting
-            // duration). Hide the bar rather than showing an empty or misleading track.
-            binding.mediaProgressBar.setVisibility(View.GONE);
-            stopMediaProgressTicker();
+            // Timeline transiently unavailable (metadata republish in flight) — keep the last
+            // rendered fill and let the next tick catch up rather than touching layout.
             return;
         }
         long now = android.os.SystemClock.elapsedRealtime();
@@ -1765,11 +1811,7 @@ public class WidgetService extends Service {
         if (actualPosition < 0L) actualPosition = 0L;
         if (actualPosition > duration) actualPosition = duration;
 
-        binding.mediaProgressBar.setColor(
-                ContextCompat.getColor(themedContext != null ? themedContext : this,
-                        R.color.text_primary));
         binding.mediaProgressBar.setProgress((float) actualPosition / (float) duration);
-        binding.mediaProgressBar.setVisibility(View.VISIBLE);
 
         if (state.getState() == PlaybackState.STATE_PLAYING) {
             // Re-arm — the new postDelayed replaces any previously queued one, idempotent.
@@ -2422,7 +2464,12 @@ public class WidgetService extends Service {
         int tint = (iconStyle == STYLE_COLOR)
                 ? ContextCompat.getColor(ctx, colorRes[stateIdx])
                 : ContextCompat.getColor(ctx, R.color.text_primary);
-        ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
+        // Skip the no-op tint set: applyImageTint invalidates the drawable unconditionally,
+        // and this runs on every periodic status broadcast.
+        ColorStateList currentTint = ImageViewCompat.getImageTintList(icon);
+        if (currentTint == null || currentTint.getDefaultColor() != tint) {
+            ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
+        }
 
         int outlineAlpha = iconPrefs.outlineAlpha.get();
         if (outlineAlpha > 0) {

@@ -58,6 +58,8 @@ public class OutlineImageView extends AppCompatImageView {
     private int cachedWidth;
     private int cachedHeight;
     private int cachedOutlineWidth;
+    /** Last resource set via {@link #setImageResource}; 0 = none / set via drawable. */
+    private int currentImageResId = 0;
 
     public OutlineImageView(@NonNull Context context) {
         super(context);
@@ -130,12 +132,22 @@ public class OutlineImageView extends AppCompatImageView {
 
     @Override
     public void setImageDrawable(@Nullable Drawable drawable) {
+        currentImageResId = 0;
         super.setImageDrawable(drawable);
         invalidateOutlineCache();
     }
 
     @Override
     public void setImageResource(int resId) {
+        // Periodic status refreshes (e.g. the once-a-second GNSS satellite broadcast) re-set
+        // the same icon resource over and over. ImageView.setImageResource re-decodes the
+        // drawable unconditionally, and our outline cache rebuild on top of that is expensive
+        // at head-unit icon sizes — plus the resulting redraw churn destabilizes the row while
+        // a marquee is animating. Skip the whole pipeline when nothing changed.
+        if (resId != 0 && resId == currentImageResId) {
+            return;
+        }
+        currentImageResId = resId;
         super.setImageResource(resId);
         invalidateOutlineCache();
     }
