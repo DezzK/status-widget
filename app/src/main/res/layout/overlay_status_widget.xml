@@ -109,37 +109,42 @@
         android:orientation="vertical"
         android:visibility="gone">
 
-        <dezz.status.widget.MarqueeOutlineTextView
-            android:id="@+id/mediaAppText"
+        <!-- Source row: play/pause indicator + the app the audio comes from ("▶ Spotify"). The
+             indicator is a drawn shape, not a glyph, and takes its size / colour / outline from
+             whichever line hosts it. WidgetService re-parents it into the title row when the
+             source line is switched off, so the state is never lost. -->
+        <LinearLayout
+            android:id="@+id/mediaSourceRow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/roboto_condensed_medium"
-            android:includeFontPadding="false"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            tools:text="Spotify"
-            tools:visibility="visible" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <!-- Title row holds three columns: play/pause indicator, the (possibly scrolling) track
-             subtitle, and an optional duration text. State indicator inherits title's font so
-             it stays visually unified with the subtitle even when the source line is hidden. -->
+            <dezz.status.widget.MediaStateIconView
+                android:id="@+id/mediaStateIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4sp" />
+
+            <dezz.status.widget.MarqueeOutlineTextView
+                android:id="@+id/mediaAppText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/roboto_condensed_medium"
+                android:includeFontPadding="false"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                tools:text="Spotify"
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <!-- Title row: the (possibly scrolling) track subtitle plus an optional duration text. -->
         <LinearLayout
             android:id="@+id/mediaTitleRow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
-
-            <dezz.status.widget.OutlineTextView
-                android:id="@+id/mediaStateIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4sp"
-                android:fontFamily="@font/roboto_condensed_medium"
-                android:includeFontPadding="false"
-                android:textColor="@color/text_primary"
-                android:textSize="20sp"
-                tools:text="▶" />
 
             <dezz.status.widget.MarqueeOutlineTextView
                 android:id="@+id/mediaTitleText"

@@ -180,6 +180,9 @@ public class WidgetService extends Service {
     /** Cadence for advancing the media progress bar while a track is actively playing. 250ms
      *  is fast enough to look smooth on a thin bar and slow enough to not show up in profilers. */
     private static final long MEDIA_PROGRESS_TICK_MS = 250L;
+    /** Gap between the play/pause indicator and the text it precedes, as a fraction of that
+     *  text's size — same rationale as the icon's own size: it must track the font sliders. */
+    private static final float STATE_ICON_GAP_RATIO = 0.25f;
     private static final long FOREGROUND_APP_CHECK_INTERVAL_MS = 1000L;
     private static final long FOREGROUND_APP_LOOKBACK_MS = 60_000L;
     private static final String GNSSSHARE_CLIENT_PACKAGE = "dezz.gnssshare.client";
@@ -1068,14 +1071,7 @@ public class WidgetService extends Service {
         binding.mediaAppText.setMarqueeEnabled(false);
         binding.mediaTitleText.setMarqueeEnabled(prefs.media.marqueeEnabled.get());
 
-        // State icon (▶/❚❚) — same font as the title so it visually belongs to the same line,
-        // including when the source line is hidden. Outline and alpha track the title too.
-        binding.mediaStateIcon.setTypeface(titleTypeface);
-        binding.mediaStateIcon.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
-        binding.mediaStateIcon.setTextColor(textColor);
-        binding.mediaStateIcon.setOutlineColor(textOutlineColor(prefs.media.outlineAlpha.get()));
-        binding.mediaStateIcon.setOutlineWidth(prefs.media.outlineWidth.get());
-        binding.mediaStateIcon.setAlpha(prefs.media.contentAlpha.get() / 255f);
+        applyMediaStateIcon(textColor);
 
         // Duration text — independent font size / alpha / outline so the user can dial it down
         // (typically the duration is rendered smaller and dimmer than the track subtitle).
@@ -1093,19 +1089,60 @@ public class WidgetService extends Service {
         binding.mediaContainer.setAlpha(1f);
         applyMediaMaxWidth(binding.mediaAppText);
         applyMediaMaxWidth(binding.mediaTitleText);
-        applyMediaChildAlignment(binding.mediaAppText, prefs.media.sourceAlignment.get());
-        applyMediaChildAlignment(binding.mediaTitleText, prefs.media.alignment.get());
-        // Vertical gap is applied as the title's top margin — only effective when the app-name
-        // line is visible (otherwise titleText is the only child and topMargin would push the
-        // whole brick down).
+        // Alignment applies to the two ROWS — they, not the text views, are the children of the
+        // vertical container, and layout_gravity on a child of a horizontal LinearLayout only
+        // ever moves it vertically.
+        applyMediaChildAlignment(binding.mediaSourceRow, prefs.media.sourceAlignment.get());
+        applyMediaChildAlignment(binding.mediaTitleRow, prefs.media.alignment.get());
+        // Vertical gap between the two lines, applied as the title row's top margin.
         LinearLayout.LayoutParams titleLp =
-                (LinearLayout.LayoutParams) binding.mediaTitleText.getLayoutParams();
+                (LinearLayout.LayoutParams) binding.mediaTitleRow.getLayoutParams();
         titleLp.topMargin = prefs.media.lineGap.get();
-        binding.mediaTitleText.setLayoutParams(titleLp);
+        binding.mediaTitleRow.setLayoutParams(titleLp);
     }
 
     /**
-     * Horizontal alignment of a single text line within the vertical media container.
+     * Playback-state indicator. It lives at the head of the source row — "▶ Spotify" reads as one
+     * statement — but the source line is optional, so when it's off the icon is re-parented to the
+     * head of the title row instead of vanishing with its host. Either way it takes the size,
+     * outline and opacity of the line it sits on, so it scales with that line's font-size slider
+     * and flips colour with the widget theme like the text around it.
+     */
+    private void applyMediaStateIcon(int textColor) {
+        boolean onSourceRow = prefs.media.showSource.get();
+        LinearLayout host = onSourceRow ? binding.mediaSourceRow : binding.mediaTitleRow;
+        ViewGroup parent = (ViewGroup) binding.mediaStateIcon.getParent();
+        if (parent != host) {
+            if (parent != null) parent.removeView(binding.mediaStateIcon);
+            host.addView(binding.mediaStateIcon, 0);
+        }
+
+        int fontSize = onSourceRow ? prefs.media.sourceFontSize.get() : prefs.media.fontSize.get();
+        int outlineAlpha = onSourceRow
+                ? prefs.media.sourceOutlineAlpha.get() : prefs.media.outlineAlpha.get();
+        int outlineWidth = onSourceRow
+                ? prefs.media.sourceOutlineWidth.get() : prefs.media.outlineWidth.get();
+        int contentAlpha = onSourceRow
+                ? prefs.media.sourceContentAlpha.get() : prefs.media.contentAlpha.get();
+        binding.mediaStateIcon.setTextSizePx(fontSize);
+        binding.mediaStateIcon.setIconColor(textColor);
+        binding.mediaStateIcon.setOutlineColor(textOutlineColor(outlineAlpha));
+        binding.mediaStateIcon.setOutlineWidth(outlineWidth);
+        binding.mediaStateIcon.setAlpha(contentAlpha / 255f);
+
+        // Gap to the text scales with that text too — a fixed one would glue the icon to a 60px
+        // source line and strand it next to a 12px one.
+        LinearLayout.LayoutParams lp =
+                (LinearLayout.LayoutParams) binding.mediaStateIcon.getLayoutParams();
+        int gap = Math.round(fontSize * STATE_ICON_GAP_RATIO);
+        if (lp.getMarginEnd() != gap) {
+            lp.setMarginEnd(gap);
+            binding.mediaStateIcon.setLayoutParams(lp);
+        }
+    }
+
+    /**
+     * Horizontal alignment of a single line within the vertical media container.
      * Container is wrap_content (sized to the wider of the two children), so the narrower
      * child shifts within that band via its own {@code layout_gravity}.
      */
@@ -1689,24 +1726,19 @@ public class WidgetService extends Service {
             subtitle = getString(R.string.media_unknown_track);
         }
         PlaybackState playbackState = playing.getPlaybackState();
-        // Both glyphs are picked from Unicode blocks whose default Presentation is "text", not
-        // "emoji" — Android's emoji font silently overrides any symbol that defaults to emoji
-        // (e.g. U+23F8 ⏸ renders as a color icon on a coloured background on most builds),
-        // and we want plain glyphs that inherit the surrounding text colour, outline and font.
-        // ❚❚ shown only for actual PAUSED; transient states (buffering / seeking) keep the ▶
-        // so the icon doesn't flicker between play and pause every time the user scrubs.
-        String stateGlyph = (playbackState != null
-                && playbackState.getState() == PlaybackState.STATE_PAUSED)
-                ? "❚❚"    // two U+275A HEAVY VERTICAL BARs — pause shape that stays text-rendered
-                : "▶";    // U+25B6 BLACK RIGHT-POINTING TRIANGLE (text presentation default)
+        // Pause shape only for an actual PAUSED; transient states (buffering / seeking) keep the
+        // play shape so the icon doesn't flicker every time the user scrubs.
         // Players republish PlaybackState continuously (Yandex Music every second), and
         // TextView.setText unconditionally drops its layout and requests a full re-layout even
         // for identical text. On OEM head units that per-second layout storm makes the whole
         // title row visibly jitter while the marquee scrolls — so every setter here must be
-        // a no-op when the value didn't actually change.
-        setTextIfChanged(binding.mediaStateIcon, stateGlyph);
+        // a no-op when the value didn't actually change (MediaStateIconView.setPaused is).
+        binding.mediaStateIcon.setPaused(playbackState != null
+                && playbackState.getState() == PlaybackState.STATE_PAUSED);
         binding.mediaAppText.setMarqueeText(getAppLabel(playing.getPackageName()));
-        binding.mediaAppText.setVisibility(prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
+        // The whole row, not just the label — the indicator rides in it. Nothing is lost when it
+        // goes: applyMediaStateIcon has already moved the icon over to the title row.
+        binding.mediaSourceRow.setVisibility(prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
         binding.mediaTitleText.setMarqueeText(subtitle);
 
         // Duration: format ms → "M:SS" / "H:MM:SS". Hidden when the user opted out or the
