@@ -24,6 +24,7 @@ import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathEffect;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -68,7 +69,10 @@ public class MediaStateIconView extends View {
 
     private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** Play triangle only — the pause bars are drawn as analytic round-rects, see {@link #onDraw}. */
     private final Path shapePath = new Path();
+    private final RectF bar1 = new RectF();
+    private final RectF bar2 = new RectF();
 
     private boolean paused = false;
     private float textSizePx = 20f;
@@ -77,7 +81,10 @@ public class MediaStateIconView extends View {
     private boolean geometryDirty = true;
     @Nullable
     private PathEffect cornerEffect;
+    /** Corner radius used for the pause round-rects; recomputed every rebuild from the glyph height. */
     private float cornerRadius = -1f;
+    /** Radius the cached {@link #cornerEffect} (triangle only) was built for. */
+    private float cornerEffectRadius = -1f;
 
     public MediaStateIconView(@NonNull Context context) {
         super(context);
@@ -163,16 +170,37 @@ public class MediaStateIconView extends View {
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         if (geometryDirty) rebuildGeometry();
-        if (outlineWidth > 0f && Color.alpha(outlinePaint.getColor()) > 0) {
-            canvas.drawPath(shapePath, outlinePaint);
+        boolean stroke = outlineWidth > 0f && Color.alpha(outlinePaint.getColor()) > 0;
+        if (paused) {
+            // Analytic round-rects. A thin, two-contour path drawn through a CornerPathEffect gets
+            // routed off HWUI's analytic fill onto the generic coverage/tessellation renderer, which
+            // on real mobile GPUs (Mali/Adreno) under-resolves the interior coverage of such thin
+            // bars — they came out faded/stippled on head units while the convex play triangle (and
+            // the software-rasterised emulator) stayed solid. drawRoundRect hits Skia's dedicated
+            // RRect fill op (full interior coverage on every driver) and never enters that path.
+            // The bars are disjoint, so per-bar stroking equals stroking the combined silhouette.
+            float r = cornerRadius;
+            if (stroke) {
+                canvas.drawRoundRect(bar1, r, r, outlinePaint);
+                canvas.drawRoundRect(bar2, r, r, outlinePaint);
+            }
+            canvas.drawRoundRect(bar1, r, r, fillPaint);
+            canvas.drawRoundRect(bar2, r, r, fillPaint);
+        } else {
+            // Triangle is a single convex contour; it fills solidly through the path pipeline, and
+            // the CornerPathEffect (set for this state in rebuildGeometry) rounds its corners.
+            if (stroke) canvas.drawPath(shapePath, outlinePaint);
+            canvas.drawPath(shapePath, fillPaint);
         }
-        canvas.drawPath(shapePath, fillPaint);
     }
 
     /**
-     * Rebuild the current shape, centred in the measured box. Both shapes go into a single
-     * {@link Path} so the outline pass is one stroke of the whole silhouette (drawing the two
-     * pause bars separately would be identical, but this keeps the draw path uniform).
+     * Rebuild the current shape, centred in the measured box. The pause bars are stored as two
+     * {@link RectF}s drawn via {@code drawRoundRect} (see {@link #onDraw} for why); the play
+     * triangle stays a {@link Path} rounded by a {@link CornerPathEffect}. The effect is toggled
+     * per state — it must be cleared for the pause bars, since {@code drawRoundRect} with a
+     * non-null {@code PathEffect} silently re-expands the round-rect into the generic tessellated
+     * path and brings the faded-fill bug straight back.
      */
     private void rebuildGeometry() {
         geometryDirty = false;
@@ -181,26 +209,27 @@ public class MediaStateIconView extends View {
         float centerY = getHeight() / 2f;
         float top = centerY - glyphHeight / 2f;
         float bottom = centerY + glyphHeight / 2f;
+        cornerRadius = glyphHeight * CORNER_RATIO;
 
-        float corner = glyphHeight * CORNER_RATIO;
-        if (cornerEffect == null || cornerRadius != corner) {
-            cornerRadius = corner;
-            cornerEffect = new CornerPathEffect(corner);
-            fillPaint.setPathEffect(cornerEffect);
-            outlinePaint.setPathEffect(cornerEffect);
-        }
-
-        shapePath.reset();
         if (paused) {
+            fillPaint.setPathEffect(null);
+            outlinePaint.setPathEffect(null);
             float barWidth = glyphHeight * PAUSE_BAR_RATIO;
             float gap = glyphHeight * PAUSE_GAP_RATIO;
             float left = centerX - (barWidth * 2f + gap) / 2f;
-            shapePath.addRect(left, top, left + barWidth, bottom, Path.Direction.CW);
+            bar1.set(left, top, left + barWidth, bottom);
             float secondLeft = left + barWidth + gap;
-            shapePath.addRect(secondLeft, top, secondLeft + barWidth, bottom, Path.Direction.CW);
+            bar2.set(secondLeft, top, secondLeft + barWidth, bottom);
         } else {
+            if (cornerEffect == null || cornerEffectRadius != cornerRadius) {
+                cornerEffect = new CornerPathEffect(cornerRadius);
+                cornerEffectRadius = cornerRadius;
+            }
+            fillPaint.setPathEffect(cornerEffect);
+            outlinePaint.setPathEffect(cornerEffect);
             float playWidth = glyphHeight * PLAY_WIDTH_RATIO;
             float left = centerX - playWidth / 2f;
+            shapePath.reset();
             shapePath.moveTo(left, top);
             shapePath.lineTo(left + playWidth, centerY);
             shapePath.lineTo(left, bottom);
