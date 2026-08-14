@@ -575,6 +575,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         registerOverlayListener();
+        // Car integration probes the vendor SDK asynchronously; brick availability may have
+        // changed since onCreate (e.g. the eCarX service finished connecting), so rebuild the
+        // "add brick" chips whenever the screen comes back.
+        refreshAddBrickChips();
     }
 
     @Override

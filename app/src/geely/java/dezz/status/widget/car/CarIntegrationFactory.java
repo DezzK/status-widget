@@ -34,6 +34,14 @@ public final class CarIntegrationFactory {
 
     @NonNull
     public static CarIntegration create(@NonNull Context appContext) {
-        return new GeelyCarIntegration(appContext);
+        try {
+            return new GeelyCarIntegration(appContext);
+        } catch (Throwable t) {
+            // Class loading / verification of the vendor-facing implementation can fail on
+            // firmwares the SDK was never built for — fall back to a car-less integration
+            // instead of taking the app down.
+            android.util.Log.w("CarIntegrationFactory", "Geely integration unavailable", t);
+            return new NoCarIntegration();
+        }
     }
 }

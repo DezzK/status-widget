@@ -18,12 +18,15 @@
 package dezz.status.widget.car;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 
 import com.ecarx.xui.adaptapi.FunctionStatus;
 import com.ecarx.xui.adaptapi.car.Car;
@@ -38,21 +41,30 @@ import dezz.status.widget.BrickType;
 /**
  * eCarX AdaptAPI backend for car-specific bricks: cabin ("indoor") and ambient ("outdoor")
  * temperature sensors.
- * <p>
- * All AdaptAPI calls are wrapped in {@code catch (Throwable)} — on vehicles without the eCarX
- * platform service the SDK can fail anywhere from class initialization to binder calls, and a
- * missing sensor must degrade to "brick not supported", never to a crash.
- * <p>
- * Boot race: the AdaptAPI proxy connects to the {@code ecarxcar_service} binder asynchronously.
- * Until it does, {@code isSensorSupported} returns {@link FunctionStatus#error} — indistinguishable
- * up front from a genuinely unsupported vehicle. Two mechanisms bridge that window:
+ *
+ * <h3>Failure containment</h3>
+ * All AdaptAPI calls are wrapped in {@code catch (Throwable)}, but that is not enough on its
+ * own: on some firmwares (first seen on the 2026 Monjaro refresh) the vendor SDK kills the
+ * process natively during initialization — no Java catch can survive that. Two layers handle it:
  * <ul>
- *   <li>{@link #subscribe} registers listeners unconditionally — the SDK queues them locally and
- *       wires them up when the service connects, so no data is lost;</li>
- *   <li>a bounded status poll re-checks sensor support after startup and fires the
- *       availability-changed callback when the answer flips, letting the widget re-evaluate
- *       brick visibility (see {@link #setAvailabilityChangedListener}).</li>
+ *   <li><b>Background init:</b> {@code Car.create()} and the initial sensor probing run on a
+ *       daemon thread, so a hanging vendor service can never ANR the UI. Until the probe
+ *       finishes, {@link #isBrickSupported} reports {@code false} and subscriptions are queued.</li>
+ *   <li><b>Crash canary:</b> a "probe started" marker is committed to device-protected
+ *       preferences before the SDK is touched and cleared when the probe survives. If the
+ *       process dies mid-probe (native crash), the next launch sees the unfinished marker;
+ *       after {@value #MAX_CRASHED_PROBES} such crashes the integration is disabled for good —
+ *       until the firmware fingerprint or app version changes — and the app runs like a
+ *       car-less build instead of crash-looping on startup.</li>
  * </ul>
+ *
+ * <h3>Boot race</h3>
+ * The AdaptAPI proxy connects to the {@code ecarxcar_service} binder asynchronously. Until it
+ * does, {@code isSensorSupported} returns {@link FunctionStatus#error} — indistinguishable up
+ * front from a genuinely unsupported vehicle. Listener registrations are queued by the SDK
+ * locally, so subscriptions made early still start flowing once the service comes up, and a
+ * bounded status poll re-checks support and fires the availability-changed callback when the
+ * answer flips (see {@link #setAvailabilityChangedListener}).
  */
 final class GeelyCarIntegration implements CarIntegration {
 
@@ -69,13 +81,25 @@ final class GeelyCarIntegration implements CarIntegration {
     private static final long AVAILABILITY_POLL_INTERVAL_MS = 2_000L;
     private static final int AVAILABILITY_POLL_MAX_ATTEMPTS = 30;   // 60s total
 
+    /** Crash-canary bookkeeping (device-protected storage, separate file from user prefs). */
+    private static final String PROBE_PREFS = "geely_car_probe";
+    private static final String KEY_PROBE_IN_FLIGHT = "probeInFlight";
+    private static final String KEY_CRASHED_PROBES = "crashedProbes";
+    private static final String KEY_PROBE_OK = "probeOk";
+    private static final String KEY_ENVIRONMENT = "environment";
+    private static final int MAX_CRASHED_PROBES = 2;
+
+    private enum InitState { IDLE, INITIALIZING, READY, FAILED }
+
     private final Context appContext;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Map<BrickType, Subscription> subscriptions = new EnumMap<>(BrickType.class);
+    /** Subscriptions requested before the background init finished; applied on READY. */
+    private final Map<BrickType, ValueListener> pendingSubscriptions = new EnumMap<>(BrickType.class);
 
+    private InitState initState = InitState.IDLE;
     @Nullable
     private ISensor sensors;
-    private boolean sensorsResolveAttempted = false;
 
     @Nullable
     private Runnable availabilityChangedListener;
@@ -117,26 +141,125 @@ final class GeelyCarIntegration implements CarIntegration {
         return celsius >= MIN_PLAUSIBLE_TEMPERATURE_C && celsius <= MAX_PLAUSIBLE_TEMPERATURE_C;
     }
 
-    /** Resolve the AdaptAPI sensor service once; on any failure stay null (unsupported). */
-    @Nullable
-    private ISensor ensureSensors() {
-        if (!sensorsResolveAttempted) {
-            sensorsResolveAttempted = true;
+    // ---------------------------------------------------------------------------------------
+    // Guarded background initialization
+    // ---------------------------------------------------------------------------------------
+
+    private SharedPreferences probePrefs() {
+        return appContext.createDeviceProtectedStorageContext()
+                .getSharedPreferences(PROBE_PREFS, Context.MODE_PRIVATE);
+    }
+
+    /** Firmware+app identity; when it changes, crash history is reset and probing is retried. */
+    private String environmentStamp() {
+        return Build.FINGERPRINT + "|"
+                + dezz.status.widget.VersionGetter.getAppVersionName(appContext);
+    }
+
+    /** Kick off the one-time background init. Safe to call from anywhere on the main thread. */
+    private void ensureInitStarted() {
+        if (initState != InitState.IDLE) return;
+
+        SharedPreferences prefs = probePrefs();
+        if (!environmentStamp().equals(prefs.getString(KEY_ENVIRONMENT, null))) {
+            // New firmware or app build — previous crash verdicts no longer apply.
+            prefs.edit().clear().putString(KEY_ENVIRONMENT, environmentStamp()).commit();
+        }
+
+        int crashedProbes = prefs.getInt(KEY_CRASHED_PROBES, 0);
+        if (prefs.getBoolean(KEY_PROBE_IN_FLIGHT, false)) {
+            // The previous probe never finished — the vendor SDK killed the process natively.
+            crashedProbes++;
+            prefs.edit()
+                    .putInt(KEY_CRASHED_PROBES, crashedProbes)
+                    .putBoolean(KEY_PROBE_IN_FLIGHT, false)
+                    .commit();
+            Log.w(TAG, "Previous eCarX probe crashed the process (count=" + crashedProbes + ")");
+        }
+        if (!prefs.getBoolean(KEY_PROBE_OK, false) && crashedProbes >= MAX_CRASHED_PROBES) {
+            Log.w(TAG, "eCarX integration disabled: probe crashed " + crashedProbes
+                    + " times on this firmware. Car bricks unavailable.");
+            initState = InitState.FAILED;
+            return;
+        }
+
+        initState = InitState.INITIALIZING;
+        // The marker is committed synchronously BEFORE the first vendor call; it is the
+        // canary that survives a native crash.
+        prefs.edit().putBoolean(KEY_PROBE_IN_FLIGHT, true).commit();
+
+        Thread initThread = new Thread(() -> {
+            ISensor resolved = null;
+            boolean survived = false;
             try {
-                sensors = Car.create(appContext).getSensorManager();
+                resolved = probeVendorSdk();
+                survived = true;
             } catch (Throwable t) {
-                Log.w(TAG, "eCarX sensor manager unavailable", t);
+                // Java-level failure — not a crash. Clear the canary so future launches may
+                // retry (e.g. a transient binder error), and degrade to "no car support".
+                Log.w(TAG, "eCarX probe failed (non-fatal)", t);
+            }
+            probePrefs().edit()
+                    .putBoolean(KEY_PROBE_IN_FLIGHT, false)
+                    .putBoolean(KEY_PROBE_OK, survived && resolved != null)
+                    .commit();
+            ISensor finalResolved = resolved;
+            boolean ok = survived && resolved != null;
+            mainHandler.post(() -> onInitFinished(ok, finalResolved));
+        }, "geely-car-init");
+        initThread.setDaemon(true);
+        initThread.start();
+    }
+
+    /**
+     * The actual first contact with the vendor SDK. Runs on the init thread: a native crash
+     * here takes the process down but leaves the canary marker set; a hang here parks a daemon
+     * thread without ever blocking the UI.
+     */
+    @WorkerThread
+    @Nullable
+    private ISensor probeVendorSdk() {
+        ISensor s = Car.create(appContext).getSensorManager();
+        if (s == null) return null;
+        // Touch the sensor-support API for both car sensors once, so the risky first calls all
+        // happen under the canary's protection rather than later on the main thread.
+        for (BrickType type : BrickType.values()) {
+            int sensorType = sensorTypeFor(type);
+            if (sensorType == 0) continue;
+            try {
+                s.isSensorSupported(sensorType);
+            } catch (Throwable t) {
+                Log.w(TAG, "probe isSensorSupported failed for " + type, t);
             }
         }
-        return sensors;
+        return s;
     }
+
+    private void onInitFinished(boolean ok, @Nullable ISensor resolved) {
+        sensors = resolved;
+        initState = ok ? InitState.READY : InitState.FAILED;
+        if (ok) {
+            // Apply subscriptions requested while init was still running.
+            for (Map.Entry<BrickType, ValueListener> e : pendingSubscriptions.entrySet()) {
+                subscribeNow(e.getKey(), e.getValue());
+            }
+        }
+        pendingSubscriptions.clear();
+        // Either way the answer of isBrickSupported may have changed — let the widget re-apply.
+        if (availabilityChangedListener != null) {
+            availabilityChangedListener.run();
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // CarIntegration contract
+    // ---------------------------------------------------------------------------------------
 
     @Nullable
     private FunctionStatus sensorSupportStatus(int sensorType) {
-        ISensor s = ensureSensors();
-        if (s == null) return null;
+        if (initState != InitState.READY || sensors == null) return null;
         try {
-            return s.isSensorSupported(sensorType);
+            return sensors.isSensorSupported(sensorType);
         } catch (Throwable t) {
             Log.w(TAG, "isSensorSupported failed for sensor " + sensorType, t);
             return null;
@@ -147,6 +270,7 @@ final class GeelyCarIntegration implements CarIntegration {
     public boolean isBrickSupported(@NonNull BrickType type) {
         int sensorType = sensorTypeFor(type);
         if (sensorType == 0) return false;
+        ensureInitStarted();
         FunctionStatus status = sensorSupportStatus(sensorType);
         // "notactive" still counts as supported: the sensor exists but is momentarily idle
         // (e.g. ignition state) — the brick should be offered and will update when it wakes.
@@ -200,9 +324,21 @@ final class GeelyCarIntegration implements CarIntegration {
 
     @Override
     public void subscribe(@NonNull BrickType type, @NonNull ValueListener listener) {
+        if (sensorTypeFor(type) == 0) return;
+        ensureInitStarted();
+        if (initState == InitState.INITIALIZING || initState == InitState.IDLE) {
+            // Queue — applied in onInitFinished. Replacing any previous pending entry mirrors
+            // the replace semantics of a live subscribe.
+            pendingSubscriptions.put(type, listener);
+            return;
+        }
+        if (initState == InitState.FAILED) return;
+        subscribeNow(type, listener);
+    }
+
+    private void subscribeNow(@NonNull BrickType type, @NonNull ValueListener listener) {
         int sensorType = sensorTypeFor(type);
-        if (sensorType == 0) return;
-        ISensor s = ensureSensors();
+        ISensor s = sensors;
         if (s == null) return;
 
         Subscription previous = subscriptions.get(type);
@@ -275,6 +411,7 @@ final class GeelyCarIntegration implements CarIntegration {
 
     @Override
     public void unsubscribe(@NonNull BrickType type) {
+        pendingSubscriptions.remove(type);
         Subscription subscription = subscriptions.remove(type);
         if (subscription == null) return;
         subscription.cancelled.set(true);

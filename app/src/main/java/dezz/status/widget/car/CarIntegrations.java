@@ -44,7 +44,14 @@ public final class CarIntegrations {
             synchronized (CarIntegrations.class) {
                 local = instance;
                 if (local == null) {
-                    local = CarIntegrationFactory.create(context.getApplicationContext());
+                    try {
+                        local = CarIntegrationFactory.create(context.getApplicationContext());
+                    } catch (Throwable t) {
+                        // Belt and braces: even a factory that fails to load must not take
+                        // the app down — run car-less instead.
+                        android.util.Log.w("CarIntegrations", "car integration failed to init", t);
+                        local = new NoCarIntegration();
+                    }
                     instance = local;
                 }
             }
