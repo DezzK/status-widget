@@ -1735,11 +1735,27 @@ public class WidgetService extends Service {
         // a no-op when the value didn't actually change (MediaStateIconView.setPaused is).
         binding.mediaStateIcon.setPaused(playbackState != null
                 && playbackState.getState() == PlaybackState.STATE_PAUSED);
-        binding.mediaAppText.setMarqueeText(getAppLabel(playing.getPackageName()));
-        // The whole row, not just the label — the indicator rides in it. Nothing is lost when it
-        // goes: applyMediaStateIcon has already moved the icon over to the title row.
-        binding.mediaSourceRow.setVisibility(prefs.media.showSource.get() ? View.VISIBLE : View.GONE);
+        String sourceLabel = getAppLabel(playing.getPackageName());
+        binding.mediaAppText.setMarqueeText(sourceLabel);
         binding.mediaTitleText.setMarqueeText(subtitle);
+        // Show the source row only when the user enabled it AND there is a name to show. Some
+        // head-unit system audio routes (built-in radio, a Bluetooth profile) own a media session
+        // with no resolvable package/label, so the label comes back empty; a visible-but-empty row
+        // would just add dead vertical space.
+        boolean showSourceRow = prefs.media.showSource.get() && !isEmpty(sourceLabel);
+        binding.mediaSourceRow.setVisibility(showSourceRow ? View.VISIBLE : View.GONE);
+        // Play/pause indicator: an optional adornment (its own setting) that annotates whichever
+        // line hosts it — the source line when showSource is on, the title line otherwise
+        // (applyMediaStateIcon does the re-parenting). It must never float alone, so it is bound to
+        // its host line having text: on the source line that means a non-empty app label (the
+        // no-label head-unit sessions above would otherwise strand a lone triangle in the row), on
+        // the title line the subtitle always has a fallback so it stays. This is why the icon's own
+        // visibility is toggled rather than the row's — with the source line off, the row is gone
+        // yet the indicator still needs to ride the title line.
+        boolean iconHostHasText = prefs.media.showSource.get()
+                ? !isEmpty(sourceLabel) : !isEmpty(subtitle);
+        binding.mediaStateIcon.setVisibility(
+                prefs.media.showPlaybackState.get() && iconHostHasText ? View.VISIBLE : View.GONE);
 
         // Duration: format ms → "M:SS" / "H:MM:SS". Hidden when the user opted out or the
         // player doesn't expose a positive duration (live streams, podcast pre-buffer).

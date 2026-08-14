@@ -108,6 +108,7 @@
     <string name="brick_media_title_first">Название перед исполнителем</string>
     <string name="brick_media_marquee_enabled">Прокручивать длинное название</string>
     <string name="brick_media_progress_bar_enabled">Показывать прогресс трека</string>
+    <string name="brick_media_show_playback_state">Показывать индикатор play/pause</string>
     <string name="brick_media_duration_section">Длительность</string>
     <string name="brick_media_show_duration">Показывать длительность</string>
     <string name="brick_media_line_gap">Интервал между источником и названием</string>

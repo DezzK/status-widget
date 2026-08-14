@@ -237,6 +237,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         final MaterialSwitch brickMediaTitleFirst;
         final MaterialSwitch brickMediaMarqueeEnabled;
         final MaterialSwitch brickMediaProgressBarEnabled;
+        final MaterialSwitch brickMediaShowPlaybackState;
         final Slider brickMediaMaxWidthSlider;
         final Slider brickMediaMarginStartSlider;
         final Slider brickMediaMarginEndSlider;
@@ -337,6 +338,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaTitleFirst = itemView.findViewById(R.id.brickMediaTitleFirst);
             brickMediaMarqueeEnabled = itemView.findViewById(R.id.brickMediaMarqueeEnabled);
             brickMediaProgressBarEnabled = itemView.findViewById(R.id.brickMediaProgressBarEnabled);
+            brickMediaShowPlaybackState = itemView.findViewById(R.id.brickMediaShowPlaybackState);
             brickMediaMaxWidthSlider = itemView.findViewById(R.id.brickMediaMaxWidthSlider);
             brickMediaMarginStartSlider = itemView.findViewById(R.id.brickMediaMarginStartSlider);
             brickMediaMarginEndSlider = itemView.findViewById(R.id.brickMediaMarginEndSlider);
@@ -959,6 +961,11 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickMediaProgressBarEnabled.setChecked(prefs.media.progressBarEnabled.get());
             brickMediaProgressBarEnabled.setOnCheckedChangeListener((v, c) -> {
                 prefs.media.progressBarEnabled.set(c);
+                notifyService();
+            });
+            brickMediaShowPlaybackState.setChecked(prefs.media.showPlaybackState.get());
+            brickMediaShowPlaybackState.setOnCheckedChangeListener((v, c) -> {
+                prefs.media.showPlaybackState.set(c);
                 notifyService();
             });
             refreshMediaSourceSectionVisibility();

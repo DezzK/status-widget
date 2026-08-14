@@ -590,6 +590,15 @@
                     android:text="@string/brick_media_progress_bar_enabled"
                     android:textAppearance="?attr/textAppearanceBodyLarge" />
 
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/brickMediaShowPlaybackState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/optionsMarginSmall"
+                    android:minHeight="@dimen/optionsLineHeight"
+                    android:text="@string/brick_media_show_playback_state"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

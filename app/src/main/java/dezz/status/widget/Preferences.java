@@ -214,6 +214,12 @@ public class Preferences {
          * Hidden automatically when the player doesn't report a usable duration.
          */
         public final Bool showDuration;
+        /**
+         * Show the play/pause indicator (a drawn triangle / two bars) at the head of the line it
+         * rides on — the source line when {@link #showSource} is on, the title line otherwise.
+         * Default on. Independent of the two lines' own visibility.
+         */
+        public final Bool showPlaybackState;
 
         /**
          * Duration text settings — independent from the title's font so the user can tune it to a
@@ -255,6 +261,7 @@ public class Preferences {
             marqueeEnabled = new Bool(p, "mediaMarqueeEnabled", true);
             progressBarEnabled = new Bool(p, "mediaProgressBarEnabled", true);
             showDuration = new Bool(p, "mediaShowDuration", true);
+            showPlaybackState = new Bool(p, "mediaShowPlaybackState", true);
             durationFontSize = new Int(p, "mediaDurationFontSize", 16);
             durationContentAlpha = new Int(p, "mediaDurationContentAlpha", 255);
             durationOutlineAlpha = new Int(p, "mediaDurationOutlineAlpha", 0xAA);
