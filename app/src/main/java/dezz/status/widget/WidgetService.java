@@ -1139,6 +1139,15 @@ public class WidgetService extends Service {
             lp.setMarginEnd(gap);
             binding.mediaStateIcon.setLayoutParams(lp);
         }
+
+        // Switching the indicator off has to be honored here too, not only in updateMediaInfo:
+        // this is the only media code that runs when there is no active session, so a stale
+        // VISIBLE icon would otherwise be impossible to turn off until something played again.
+        // Only the off-direction is applied — turning it back on stays with updateMediaInfo,
+        // which additionally requires the line hosting the icon to actually carry text.
+        if (!prefs.media.showPlaybackState.get()) {
+            binding.mediaStateIcon.setVisibility(View.GONE);
+        }
     }
 
     /**
@@ -1301,8 +1310,15 @@ public class WidgetService extends Service {
                         binding.outdoorTempText, prefs.outdoorTemp.contentAlpha.get()),
         };
 
-        // Media has the extra session gate, so we build its BrickTarget here.
-        boolean mediaShouldBeGone = !bricksSet.contains(BrickType.MEDIA);
+        // Media has the extra session gate, so we build its BrickTarget here. The gate is the
+        // session, not just the brick list: with no controller there is nothing to render, and
+        // driving the container VISIBLE anyway paints an empty brick — no source, no title, and
+        // the state icon still at its inflate-default VISIBLE (drawing a play triangle, since
+        // setPaused has never run). That is the phantom indicator seen on head units whose player
+        // leaves no session behind: updateMediaInfo sets the container GONE, then any later
+        // settings pass or foreground-app change re-showed it here.
+        boolean mediaShouldBeGone = !bricksSet.contains(BrickType.MEDIA)
+                || pickActiveMediaController() == null;
         boolean mediaHiddenByApp = !mediaShouldBeGone && isBrickHiddenByApp(BrickType.MEDIA);
         BrickTarget mediaTarget;
         if (mediaShouldBeGone) {
@@ -1688,17 +1704,28 @@ public class WidgetService extends Service {
         updateMediaInfo();
     }
 
+    /**
+     * Nothing to show — hide the brick and reset the children whose visibility is otherwise only
+     * decided on the happy path below. Leaving them at their inflate defaults (row and icon both
+     * VISIBLE, the icon drawing a play triangle because setPaused has never run) is what let a
+     * phantom indicator paint whenever something else drove the container VISIBLE.
+     */
+    private void hideMediaBrick() {
+        binding.mediaContainer.setVisibility(View.GONE);
+        binding.mediaSourceRow.setVisibility(View.GONE);
+        binding.mediaStateIcon.setVisibility(View.GONE);
+        stopMediaProgressTicker();
+    }
+
     private void updateMediaInfo() {
         if (binding == null) return;
         if (!currentBrickSet().contains(BrickType.MEDIA) || isBrickHiddenByApp(BrickType.MEDIA)) {
-            binding.mediaContainer.setVisibility(View.GONE);
-            stopMediaProgressTicker();
+            hideMediaBrick();
             return;
         }
         MediaController playing = pickActiveMediaController();
         if (playing == null) {
-            binding.mediaContainer.setVisibility(View.GONE);
-            stopMediaProgressTicker();
+            hideMediaBrick();
             return;
         }
         MediaMetadata metadata = playing.getMetadata();
