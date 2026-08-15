@@ -526,6 +526,8 @@ public class WidgetService extends Service {
         // Create the overlay view
         LayoutInflater layoutInflater = LayoutInflater.from(this);
         binding = OverlayStatusWidgetBinding.inflate(layoutInflater);
+        // Fresh views, fresh state: the progress bar starts out gone in the layout.
+        progressBarShown = false;
         // Start invisible — the addView() below makes the window appear instantly; we then
         // fade the content in to match the symmetric fade-out the overlay does elsewhere.
         binding.getRoot().setAlpha(0f);
@@ -865,6 +867,11 @@ public class WidgetService extends Service {
      *  once-a-second metadata republishes some players emit (see updateMediaInfo). */
     @Nullable
     private String lastMediaSubtitle = null;
+
+    /** Intended progress-bar visibility. Ours, not the view's: {@code View.getVisibility()} is not
+     *  authoritative while a transition owns the view — see {@link #setProgressBarShown}. Reset
+     *  whenever the overlay is re-inflated, since the XML default is {@code gone}. */
+    private boolean progressBarShown = false;
 
     /** Shown while a subscribed temperature brick has not yet received a plausible value. */
     private static final String TEMP_PLACEHOLDER = "--°";
@@ -1352,10 +1359,14 @@ public class WidgetService extends Service {
         if (mediaTarget.view.getVisibility() != mediaTarget.visibility) {
             visibilityFlips.add(mediaTarget);
             if (mediaTarget.visibility == View.VISIBLE) expanding = true;
-        } else if (mediaTarget.visibility == View.VISIBLE && !mediaShouldBeGone
-                && !mediaHiddenByApp) {
-            // media stays visible — just bring metadata up to date (also might tweak its
-            // alpha via the brick target below).
+        }
+        // Deliberately NOT an "else": the brick's children keep whatever hideMediaBrick() left
+        // behind (row, icon and bar all GONE), and applyBrickTarget only touches the container —
+        // so a container flipping back to VISIBLE would come up empty until the next player
+        // callback. Refresh in both cases. This has to stay AFTER the flip check above, because
+        // updateMediaInfo ends by setting the container VISIBLE itself, which would hide the flip
+        // from that comparison and cost us the transition.
+        if (mediaTarget.visibility == View.VISIBLE && !mediaShouldBeGone && !mediaHiddenByApp) {
             updateMediaInfo();
         }
 
@@ -1464,11 +1475,29 @@ public class WidgetService extends Service {
         }
 
         android.transition.TransitionSet tx = new android.transition.TransitionSet();
-        tx.addTransition(new android.transition.ChangeBounds());
-        tx.addTransition(new android.transition.Fade());
+        android.transition.ChangeBounds changeBounds = new android.transition.ChangeBounds();
+        android.transition.Fade fade = new android.transition.Fade();
+        tx.addTransition(changeBounds);
+        tx.addTransition(fade);
         tx.setOrdering(android.transition.TransitionSet.ORDERING_TOGETHER);
         tx.setDuration(BRICK_TRANSITION_DURATION_MS);
         tx.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+        // This transition choreographs BRICKS — the direct children of the scene root. A brick's
+        // internals are not part of that choreography, but the capture walk is recursive, so
+        // without this every descendant is a legal Fade/ChangeBounds target. The media brick's
+        // children flip visibility on the player's schedule (a metadata republish lands about once
+        // a second); one landing between beginDelayedTransition and the end-value capture on the
+        // next pre-draw makes Fade adopt the view, and Fade writes setTransitionAlpha eagerly when
+        // it creates the animator. If that animator is then dropped (Transition.createAnimators
+        // favors an already-running one on the same view), nothing restores the alpha and the child
+        // reports VISIBLE while drawing nothing — which is how hiding the clock over the desktop
+        // took the media progress bar down with it.
+        // excludeChildren keeps mediaContainer itself a target, so the brick still fades and
+        // re-bounds as a unit; only its internals are off limits. TransitionSet forwards
+        // excludeTarget to the transitions it holds but NOT excludeChildren, hence all three calls.
+        changeBounds.excludeChildren(binding.mediaContainer, true);
+        fade.excludeChildren(binding.mediaContainer, true);
+        tx.excludeChildren(binding.mediaContainer, true);
         // Listener can leak the buffer counter if TransitionManager decides nothing
         // animatable changed and never fires the lifecycle callbacks — known foot-gun.
         // Guard with a single-shot close flag and a safety runnable that runs unconditionally
@@ -1714,6 +1743,7 @@ public class WidgetService extends Service {
         binding.mediaContainer.setVisibility(View.GONE);
         binding.mediaSourceRow.setVisibility(View.GONE);
         binding.mediaStateIcon.setVisibility(View.GONE);
+        setProgressBarShown(false);
         stopMediaProgressTicker();
     }
 
@@ -1813,16 +1843,11 @@ public class WidgetService extends Service {
         // Progress bar visibility is decided here ONLY (updateMediaProgress never touches it —
         // see the comment there). Same blip-tolerant policy as the duration text.
         if (!prefs.media.progressBarEnabled.get()) {
-            binding.mediaProgressBar.setVisibility(View.GONE);
+            setProgressBarShown(false);
         } else if (durationMs > 0L) {
-            if (binding.mediaProgressBar.getVisibility() != View.VISIBLE) {
-                binding.mediaProgressBar.setColor(
-                        ContextCompat.getColor(themedContext != null ? themedContext : this,
-                                R.color.text_primary));
-                binding.mediaProgressBar.setVisibility(View.VISIBLE);
-            }
+            setProgressBarShown(true);
         } else if (trackChanged) {
-            binding.mediaProgressBar.setVisibility(View.GONE);
+            setProgressBarShown(false);
         }
 
         binding.mediaContainer.setVisibility(View.VISIBLE);
@@ -1848,6 +1873,34 @@ public class WidgetService extends Service {
     }
 
     /**
+     * Single writer for the progress bar's visibility, deduplicated against our OWN field rather
+     * than against {@code getVisibility()}.
+     * <p>
+     * The per-second player republishes must not re-run {@code setColor}, which is why the show
+     * path was originally guarded by reading the view's visibility back. But a running
+     * {@link android.transition.Visibility} transition rewrites those flags: when it adopts a view
+     * it calls {@code setTransitionVisibility(VISIBLE)} and fades {@code transitionAlpha} to 0, so
+     * the view reports VISIBLE while drawing nothing. The read-back then saw "already VISIBLE",
+     * skipped {@code setVisibility}, and the bar stayed invisible until some unrelated brick
+     * transition happened to clear the state — which is exactly how hiding the clock over the
+     * desktop took the progress bar down with it. Owning the flag here makes the recovery
+     * unconditional, like every other child of the brick.
+     */
+    private void setProgressBarShown(boolean shown) {
+        if (progressBarShown == shown && binding.mediaProgressBar.getVisibility()
+                == (shown ? View.VISIBLE : View.GONE)) {
+            return;
+        }
+        progressBarShown = shown;
+        if (shown) {
+            binding.mediaProgressBar.setColor(
+                    ContextCompat.getColor(themedContext != null ? themedContext : this,
+                            R.color.text_primary));
+        }
+        binding.mediaProgressBar.setVisibility(shown ? View.VISIBLE : View.GONE);
+    }
+
+    /**
      * Snap the progress bar to the current playback position and arm/disarm the periodic ticker.
      * Called both from {@link #updateMediaInfo} (state/metadata flips) and from
      * {@link #mediaProgressTick} (every ~250ms while playing) to advance the bar smoothly.
@@ -1861,8 +1914,7 @@ public class WidgetService extends Service {
         // visible "regroup" of the row while the marquee scrolls. Visibility is decided
         // solely in updateMediaInfo (real track/state changes); here we only advance the
         // fill fraction — a pure repaint.
-        if (!prefs.media.progressBarEnabled.get() || playing == null
-                || binding.mediaProgressBar.getVisibility() != View.VISIBLE) {
+        if (!prefs.media.progressBarEnabled.get() || playing == null || !progressBarShown) {
             stopMediaProgressTicker();
             return;
         }
