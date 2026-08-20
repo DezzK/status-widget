@@ -64,7 +64,6 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumMap;
@@ -140,9 +139,6 @@ public class WidgetService extends Service implements WidgetHost {
 
     private int touchSlop;
 
-    private SimpleDateFormat timeFormat;
-    private SimpleDateFormat dateFormat;
-    private String currentDateFormatPattern;
 
     private UsageStatsManager usageStatsManager = null;
     private Set<String> hiddenInPackages;
@@ -234,9 +230,15 @@ public class WidgetService extends Service implements WidgetHost {
     @Override
     public void onCreate() {
         prefs = new Preferences(this);
+        renderBricks.put(BrickType.TIME, new TimeRenderBrick(this));
+        renderBricks.put(BrickType.DATE, new DateRenderBrick(this));
         renderBricks.put(BrickType.WIFI, new WifiRenderBrick(this));
         renderBricks.put(BrickType.GPS, new GpsRenderBrick(this));
         renderBricks.put(BrickType.BLUETOOTH, new BluetoothRenderBrick(this));
+        renderBricks.put(BrickType.INDOOR_TEMP, new TempRenderBrick(this, BrickType.INDOOR_TEMP,
+                prefs.indoorTemp, R.id.indoorTempText));
+        renderBricks.put(BrickType.OUTDOOR_TEMP, new TempRenderBrick(this, BrickType.OUTDOOR_TEMP,
+                prefs.outdoorTemp, R.id.outdoorTempText));
 
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, createNotification());
@@ -252,7 +254,6 @@ public class WidgetService extends Service implements WidgetHost {
         instance = this;
 
         touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
-        timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
 
         windowManager = getSystemService(WindowManager.class);
 
@@ -422,8 +423,9 @@ public class WidgetService extends Service implements WidgetHost {
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         // Re-create date/time formatters so a locale change is reflected.
-        timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
-        currentDateFormatPattern = null;
+        for (RenderBrick brick : renderBricks.values()) {
+            brick.onConfigurationChanged();
+        }
         // If the user is in "follow system" mode, the system uiMode flip means the cached
         // themedContext now points at the wrong configuration — invalidate so the next
         // applyPreferences() rebuilds it.
@@ -469,14 +471,10 @@ public class WidgetService extends Service implements WidgetHost {
         reorderBricks(bricks);
 
         // Apply each brick's settings (size/font, outline, margins) — independent of visibility.
-        applyTimeBrickSettings();
-        applyDateBrickSettings();
         applyMediaBrickSettings();
         for (RenderBrick brick : renderBricks.values()) {
             brick.applySettings();
         }
-        applyIndoorTempBrickSettings();
-        applyOutdoorTempBrickSettings();
 
         applyBrickVisibility(bricksSet);
         applyOverlayPosition();
@@ -536,39 +534,6 @@ public class WidgetService extends Service implements WidgetHost {
             binding.mediaContainer.setVisibility(View.GONE);
         }
 
-        // Car temperature bricks — one subscription per brick through the flavor's
-        // CarIntegration; the callback lands on the main thread per its contract.
-        updateCarTempSubscription(BrickType.INDOOR_TEMP, bricksSet, binding.indoorTempText);
-        updateCarTempSubscription(BrickType.OUTDOOR_TEMP, bricksSet, binding.outdoorTempText);
-    }
-
-    private void updateCarTempSubscription(BrickType type, Set<BrickType> bricksSet,
-                                           OutlineTextView target) {
-        CarIntegration car = CarIntegrations.get(this);
-        if (bricksSet.contains(type)) {
-            // Subscribe regardless of isBrickSupported(): right after boot the vendor service
-            // may not have connected yet and support reads as "unknown/error" — but the SDK
-            // queues listener registrations locally, so subscribing now means data starts
-            // flowing the moment the service comes up. Visibility is gated separately in
-            // applyBrickVisibility, and the availability-changed callback re-runs
-            // applyPreferences when the support answer flips.
-            if (target.getText().length() == 0) {
-                // Placeholder until the first value arrives, so the brick occupies its slot
-                // instead of rendering as a zero-width hole.
-                target.setText(TEMP_PLACEHOLDER);
-            }
-            car.subscribe(type, (brickType, value) -> {
-                if (binding == null) return;
-                // Hot path: the vendor SDK pushes a reading about once a second and a cabin
-                // temperature usually rounds to the same integer for minutes on end. An
-                // unconditional setText would relayout the whole row at that cadence.
-                setTextIfChanged(target, formatTemperature(value));
-            });
-        } else {
-            car.unsubscribe(type);
-            // Reset so a re-added brick starts from the placeholder, not a stale reading.
-            target.setText(TEMP_PLACEHOLDER);
-        }
     }
 
     /** Last rendered media subtitle — used to distinguish a real track change from the
@@ -581,20 +546,12 @@ public class WidgetService extends Service implements WidgetHost {
      *  whenever the overlay is re-inflated, since the XML default is {@code gone}. */
     private boolean progressBarShown = false;
 
-    /** Shown while a subscribed temperature brick has not yet received a plausible value. */
-    private static final String TEMP_PLACEHOLDER = "--°";
-
     /** {@code TextView.setText} drops the layout and forces a relayout even for identical text —
      *  callers on hot paths (per-second player callbacks) must skip unchanged values. */
     private static void setTextIfChanged(android.widget.TextView view, CharSequence text) {
         if (!TextUtils.equals(view.getText(), text)) {
             view.setText(text);
         }
-    }
-
-    private static String formatTemperature(float celsius) {
-        // Integer rounding via Math.round avoids "%.0f"-style "-0°" for readings in (-0.5, 0).
-        return Math.round(celsius) + "°";
     }
 
     private void reorderBricks(List<BrickType> bricks) {
@@ -707,42 +664,12 @@ public class WidgetService extends Service implements WidgetHost {
         return v < 0 ? 0 : (v > 2 ? 2 : v);
     }
 
+    /** A brick's root view. Everything but the media brick answers for itself. */
     @Nullable
     private View viewForBrick(BrickType type) {
-        switch (type) {
-            case TIME:
-                return binding.timeText;
-            case DATE:
-                return binding.dateText;
-            case MEDIA:
-                return binding.mediaContainer;
-            case WIFI:
-            case GPS:
-            case BLUETOOTH:
-                return renderBricks.get(type).view();
-            case INDOOR_TEMP:
-                return binding.indoorTempText;
-            case OUTDOOR_TEMP:
-                return binding.outdoorTempText;
-            default:
-                return null;
-        }
-    }
-
-    private void applyTimeBrickSettings() {
-        applySingleLineTextBrick(binding.timeText, prefs.time);
-    }
-
-    private void applyIndoorTempBrickSettings() {
-        applySingleLineTextBrick(binding.indoorTempText, prefs.indoorTemp);
-    }
-
-    private void applyOutdoorTempBrickSettings() {
-        applySingleLineTextBrick(binding.outdoorTempText, prefs.outdoorTemp);
-    }
-
-    private void applyDateBrickSettings() {
-        applySingleLineTextBrick(binding.dateText, prefs.date);
+        RenderBrick brick = renderBricks.get(type);
+        if (brick != null) return brick.view();
+        return type == BrickType.MEDIA ? binding.mediaContainer : null;
     }
 
     private void applyMediaBrickSettings() {
@@ -875,36 +802,6 @@ public class WidgetService extends Service implements WidgetHost {
         view.setMaxWidth(prefs.media.maxWidth.get());
     }
 
-    private void applySingleLineTextBrick(OutlineTextView view, Preferences.TextBrickPrefs p) {
-        // Owning an alignment pref is what makes a text brick alignable, so the gravity is
-        // applied here rather than per brick — otherwise a new AlignedTextBrickPrefs subclass
-        // would get a live pref and a bound dropdown that render nothing.
-        if (p instanceof Preferences.AlignedTextBrickPrefs) {
-            view.setGravity(horizontalGravity(
-                    ((Preferences.AlignedTextBrickPrefs) p).alignment.get()));
-        }
-        view.setTextColor(ContextCompat.getColor(themedContext, R.color.text_primary));
-        view.setOutlineColor(textOutlineColor(p.outlineAlpha.get()));
-        view.setOutlineWidth(p.outlineWidth.get());
-        view.setTypeface(Fonts.resolve(this, p.fontFamily.get(), p.fontBold.get(), p.fontItalic.get()));
-        view.setTextSize(TypedValue.COMPLEX_UNIT_PX, p.fontSize.get());
-        view.setTranslationY(p.adjustY.get());
-        view.setAlpha(p.contentAlpha.get() / 255f);
-        RenderBrick.applyHorizontalMargins(view, p.marginStart.get(), p.marginEnd.get());
-    }
-
-    /** Maps the shared 0/1/2 = start/center/end alignment prefs onto a {@link Gravity}. */
-    private static int horizontalGravity(int alignment) {
-        switch (alignment) {
-            case 1:
-                return Gravity.CENTER_HORIZONTAL;
-            case 2:
-                return Gravity.END;
-            default:
-                return Gravity.START;
-        }
-    }
-
     private int textOutlineColor(int alpha) {
         return (ContextCompat.getColor(themedContext, R.color.text_outline) & 0x00FFFFFF) | (alpha << 24);
     }
@@ -966,22 +863,14 @@ public class WidgetService extends Service implements WidgetHost {
 
     private void applyBrickVisibility(Set<BrickType> bricksSet) {
         if (binding == null) return;
-        boolean dateActive = bricksSet.contains(BrickType.DATE)
-                && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get());
-        boolean indoorTempActive = carBrickActive(bricksSet, BrickType.INDOOR_TEMP);
-        boolean outdoorTempActive = carBrickActive(bricksSet, BrickType.OUTDOOR_TEMP);
         BrickTarget[] targets = {
-                resolveTarget(BrickType.TIME, bricksSet.contains(BrickType.TIME),
-                        binding.timeText, prefs.time.contentAlpha.get()),
-                resolveTarget(BrickType.DATE, dateActive,
-                        binding.dateText, prefs.date.contentAlpha.get()),
+                resolveTarget(renderBricks.get(BrickType.TIME), bricksSet),
+                resolveTarget(renderBricks.get(BrickType.DATE), bricksSet),
                 resolveTarget(renderBricks.get(BrickType.WIFI), bricksSet),
                 resolveTarget(renderBricks.get(BrickType.GPS), bricksSet),
                 resolveTarget(renderBricks.get(BrickType.BLUETOOTH), bricksSet),
-                resolveTarget(BrickType.INDOOR_TEMP, indoorTempActive,
-                        binding.indoorTempText, prefs.indoorTemp.contentAlpha.get()),
-                resolveTarget(BrickType.OUTDOOR_TEMP, outdoorTempActive,
-                        binding.outdoorTempText, prefs.outdoorTemp.contentAlpha.get()),
+                resolveTarget(renderBricks.get(BrickType.INDOOR_TEMP), bricksSet),
+                resolveTarget(renderBricks.get(BrickType.OUTDOOR_TEMP), bricksSet),
         };
 
         // Media has the extra session gate, so we build its BrickTarget here. The gate is the
@@ -1279,15 +1168,6 @@ public class WidgetService extends Service implements WidgetHost {
      */
     private int computeMinWidgetHeight(Set<BrickType> bricks) {
         int h = 0;
-        if (bricks.contains(BrickType.TIME)) {
-            h = Math.max(h, textLineHeight(binding.timeText, prefs.time.fontSize.get()));
-        }
-        if (bricks.contains(BrickType.DATE)) {
-            // Two lines when day-of-week + date are both shown and not collapsed into one line.
-            int lines = (prefs.date.showDate.get() && prefs.date.showDayOfWeek.get()
-                    && !prefs.date.oneLineLayout.get()) ? 2 : 1;
-            h = Math.max(h, textLineHeight(binding.dateText, prefs.date.fontSize.get()) * lines);
-        }
         if (bricks.contains(BrickType.MEDIA)) {
             h = Math.max(h, mediaBrickHeight());
         }
@@ -1296,26 +1176,7 @@ public class WidgetService extends Service implements WidgetHost {
                 h = Math.max(h, brick.minHeight());
             }
         }
-        if (carBrickActive(bricks, BrickType.INDOOR_TEMP)) {
-            h = Math.max(h, textLineHeight(binding.indoorTempText, prefs.indoorTemp.fontSize.get()));
-        }
-        if (carBrickActive(bricks, BrickType.OUTDOOR_TEMP)) {
-            h = Math.max(h, textLineHeight(binding.outdoorTempText, prefs.outdoorTemp.fontSize.get()));
-        }
         return h;
-    }
-
-    /**
-     * Whether a car-fed brick both sits in the user's order AND has a sensor behind it on this
-     * vehicle. A preset imported from another car may list a brick this vehicle cannot feed; such
-     * a brick must neither render (it would be a permanently frozen placeholder) nor raise the
-     * height floor (it would inflate the row for something that never appears).
-     *
-     * <p>One method on purpose: the render gate and the floor gate used to be two copies of this
-     * conjunction in two places, kept in agreement only by a comment.
-     */
-    private boolean carBrickActive(Set<BrickType> order, BrickType type) {
-        return order.contains(type) && CarIntegrations.get(this).isBrickSupported(type);
     }
 
     /**
@@ -1329,14 +1190,14 @@ public class WidgetService extends Service implements WidgetHost {
      * the same one the floor already makes for bricks hidden by the per-app rule.
      */
     private int mediaBrickHeight() {
-        int titleRow = textLineHeight(binding.mediaTitleText, prefs.media.fontSize.get());
+        int titleRow = TextRenderBrick.lineHeight(binding.mediaTitleText, prefs.media.fontSize.get());
         if (prefs.media.showDuration.get()) {
-            titleRow = Math.max(titleRow, textLineHeight(binding.mediaDurationText,
+            titleRow = Math.max(titleRow, TextRenderBrick.lineHeight(binding.mediaDurationText,
                     prefs.media.durationFontSize.get()));
         }
         int height;
         if (prefs.media.showSource.get()) {
-            int sourceRow = textLineHeight(binding.mediaAppText, prefs.media.sourceFontSize.get());
+            int sourceRow = TextRenderBrick.lineHeight(binding.mediaAppText, prefs.media.sourceFontSize.get());
             if (prefs.media.showPlaybackState.get()) {
                 // The indicator rides the source line and takes that line's metrics.
                 sourceRow = Math.max(sourceRow, MediaStateIconView.heightFor(
@@ -1369,19 +1230,6 @@ public class WidgetService extends Service implements WidgetHost {
             extent += ((LinearLayout.LayoutParams) lp).topMargin;
         }
         return extent;
-    }
-
-    private static int textLineHeight(OutlineTextView view, int fontSizePx) {
-        // Copy so we don't mutate the live drawing paint. The copy preserves typeface, which is
-        // crucial because Roboto Condensed Medium has different metrics from the default.
-        Paint p = new Paint(view.getPaint());
-        p.setTextSize(fontSizePx);
-        // All text TextViews in the widget have includeFontPadding=false, so a line reserves
-        // exactly ascent..descent — and StaticLayout takes those from getFontMetricsInt, so read
-        // the same integers rather than rounding the float pair ourselves and landing a pixel off
-        // in either direction.
-        Paint.FontMetricsInt fm = p.getFontMetricsInt();
-        return fm.descent - fm.ascent;
     }
 
     public void setOverlayStateListener(@Nullable OverlayStateListener listener) {
@@ -1980,47 +1828,14 @@ public class WidgetService extends Service implements WidgetHost {
         return this.background;
     }
 
+    /** The shared minute tick. Only bricks the user actually has in the row are redrawn. */
     private void updateDateTime() {
-        Set<BrickType> bricks = EnumSet.noneOf(BrickType.class);
-        bricks.addAll(BrickType.parseOrder(prefs.brickOrder.get()));
-        boolean showTime = bricks.contains(BrickType.TIME);
-        boolean dateBrickActive = bricks.contains(BrickType.DATE);
-        boolean showDate = dateBrickActive && prefs.date.showDate.get();
-        boolean showDayOfTheWeek = dateBrickActive && prefs.date.showDayOfWeek.get();
-
-        if (!showTime && !showDate && !showDayOfTheWeek) {
-            return;
-        }
-
-        boolean showFullDayAndMonth = prefs.date.showFullName.get();
-
-        String divider = (showDate && showDayOfTheWeek) ? (prefs.date.oneLineLayout.get() ? "," : " \n") : "";
-        String dayOfTheWeekFormatStr = showFullDayAndMonth ? "EEEE" : "EEE";
-        String dateFormatStr = showFullDayAndMonth ? "d MMMM" : "d MMM";
-
-        // We add spaces at the start/end to avoid outline cropping by canvas which is not ready for the outline
-        String dayPart = showDayOfTheWeek ? " " + dayOfTheWeekFormatStr : "";
-        String datePart = showDate ? " " + dateFormatStr : "";
-        String fullFormatStr = prefs.date.dateBeforeDayOfWeek.get()
-                ? datePart + (showDate && showDayOfTheWeek ? divider : "") + dayPart + " "
-                : dayPart + (showDate && showDayOfTheWeek ? divider : "") + datePart + " ";
-
-        if (!fullFormatStr.equals(currentDateFormatPattern)) {
-            dateFormat = new SimpleDateFormat(fullFormatStr, Locale.getDefault());
-            currentDateFormatPattern = fullFormatStr;
-        }
-
-        Date now = new Date();
-        if (showTime) {
-            String timeStr = timeFormat.format(now);
-            if (!timeStr.contentEquals(binding.timeText.getText())) {
-                binding.timeText.setText(timeStr);
-            }
-        }
-        if (showDate || showDayOfTheWeek) {
-            String dateStr = dateFormat.format(now);
-            if (!dateStr.contentEquals(binding.dateText.getText())) {
-                binding.dateText.setText(dateStr);
+        if (binding == null) return;
+        Set<BrickType> order = currentBrickSet();
+        java.util.Date now = new java.util.Date();
+        for (RenderBrick brick : renderBricks.values()) {
+            if (brick.needsClockTick() && order.contains(brick.type)) {
+                brick.onClockTick(now);
             }
         }
     }

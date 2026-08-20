@@ -130,6 +130,21 @@ abstract class RenderBrick {
 
     // ── phase: data sources ──────────────────────────────────────────────────
 
+    // ── phase: shared clock ──────────────────────────────────────────────────
+
+    /** Whether this brick redraws on the minute tick. Drives whether the tick runs at all. */
+    boolean needsClockTick() {
+        return false;
+    }
+
+    /** Redraw whatever depends on the wall clock. Only called for bricks in the user's order. */
+    void onClockTick(@NonNull java.util.Date now) {
+    }
+
+    /** The configuration changed — locale-derived state must be rebuilt. */
+    void onConfigurationChanged() {
+    }
+
     /**
      * Reconcile whatever feeds this brick with whether the user still has it in the row. Runs on
      * every settings pass; each brick owns its own idempotence, because the three shapes in this
@@ -149,6 +164,12 @@ abstract class RenderBrick {
      * Set a brick's horizontal margins. Bricks are direct children of a horizontal LinearLayout
      * in both widget modes, so the cast holds for every one of them.
      */
+    /** The widget's outline colour at the given alpha, read from the theme-resolved context. */
+    static int outlineColor(@NonNull android.content.Context themed, int alpha) {
+        return (androidx.core.content.ContextCompat.getColor(themed, R.color.text_outline)
+                & 0x00FFFFFF) | (alpha << 24);
+    }
+
     static void applyHorizontalMargins(@Nullable View view, int start, int end) {
         if (view == null) return;
         LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
