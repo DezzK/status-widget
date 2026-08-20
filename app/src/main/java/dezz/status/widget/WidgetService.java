@@ -1317,14 +1317,8 @@ public class WidgetService extends Service {
         if (binding == null) return;
         boolean dateActive = bricksSet.contains(BrickType.DATE)
                 && (prefs.date.showDate.get() || prefs.date.showDayOfWeek.get());
-        // Car bricks only render when the vehicle supports the sensor — a preset imported from
-        // another car may list them in brickOrder, and an unsupported sensor would otherwise
-        // leave a permanently frozen placeholder brick in the row.
-        CarIntegration car = CarIntegrations.get(this);
-        boolean indoorTempActive = bricksSet.contains(BrickType.INDOOR_TEMP)
-                && car.isBrickSupported(BrickType.INDOOR_TEMP);
-        boolean outdoorTempActive = bricksSet.contains(BrickType.OUTDOOR_TEMP)
-                && car.isBrickSupported(BrickType.OUTDOOR_TEMP);
+        boolean indoorTempActive = carBrickActive(bricksSet, BrickType.INDOOR_TEMP);
+        boolean outdoorTempActive = carBrickActive(bricksSet, BrickType.OUTDOOR_TEMP);
         BrickTarget[] targets = {
                 resolveTarget(BrickType.TIME, bricksSet.contains(BrickType.TIME),
                         binding.timeText, prefs.time.contentAlpha.get()),
@@ -1652,17 +1646,26 @@ public class WidgetService extends Service {
         if (bricks.contains(BrickType.BLUETOOTH)) {
             h = Math.max(h, prefs.bluetooth.size.get());
         }
-        // Car bricks only contribute to the height floor when the vehicle actually renders them
-        // (same isBrickSupported gate as applyBrickVisibility) — otherwise a preset from another
-        // car would inflate the widget height for bricks that never appear.
-        CarIntegration car = CarIntegrations.get(this);
-        if (bricks.contains(BrickType.INDOOR_TEMP) && car.isBrickSupported(BrickType.INDOOR_TEMP)) {
+        if (carBrickActive(bricks, BrickType.INDOOR_TEMP)) {
             h = Math.max(h, textLineHeight(binding.indoorTempText, prefs.indoorTemp.fontSize.get()));
         }
-        if (bricks.contains(BrickType.OUTDOOR_TEMP) && car.isBrickSupported(BrickType.OUTDOOR_TEMP)) {
+        if (carBrickActive(bricks, BrickType.OUTDOOR_TEMP)) {
             h = Math.max(h, textLineHeight(binding.outdoorTempText, prefs.outdoorTemp.fontSize.get()));
         }
         return h;
+    }
+
+    /**
+     * Whether a car-fed brick both sits in the user's order AND has a sensor behind it on this
+     * vehicle. A preset imported from another car may list a brick this vehicle cannot feed; such
+     * a brick must neither render (it would be a permanently frozen placeholder) nor raise the
+     * height floor (it would inflate the row for something that never appears).
+     *
+     * <p>One method on purpose: the render gate and the floor gate used to be two copies of this
+     * conjunction in two places, kept in agreement only by a comment.
+     */
+    private boolean carBrickActive(Set<BrickType> order, BrickType type) {
+        return order.contains(type) && CarIntegrations.get(this).isBrickSupported(type);
     }
 
     /**
