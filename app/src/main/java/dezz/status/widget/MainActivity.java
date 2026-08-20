@@ -84,7 +84,13 @@ public class MainActivity extends AppCompatActivity {
 
     private Preferences prefs;
 
+
     ActivityMainBinding binding;
+
+    /** Rebuilds the "add brick" chips when the car integration's availability answer changes. */
+    private final Runnable carAvailabilityListener = () -> {
+        if (binding != null) refreshAddBrickChips();
+    };
 
     private final ActivityResultLauncher<String[]> importLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
@@ -558,14 +564,17 @@ public class MainActivity extends AppCompatActivity {
         registerOverlayListener();
         // Car integration probes the vendor SDK asynchronously; brick availability may have
         // changed since onCreate (e.g. the eCarX service finished connecting), so rebuild the
-        // "add brick" chips whenever the screen comes back.
+        // "add brick" chips now and again whenever the integration learns something new — the
+        // probe usually finishes while this screen is already open.
         refreshAddBrickChips();
+        CarIntegrations.get(this).addAvailabilityListener(carAvailabilityListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         overlayRegisterHandler.removeCallbacksAndMessages(null);
+        CarIntegrations.get(this).removeAvailabilityListener(carAvailabilityListener);
         if (WidgetService.isRunning()) {
             WidgetService.getInstance().setOverlayStateListener(null);
         }

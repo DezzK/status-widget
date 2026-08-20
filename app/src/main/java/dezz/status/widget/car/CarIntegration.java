@@ -52,10 +52,14 @@ public interface CarIntegration {
     /**
      * Register a callback (main thread) invoked whenever the answer of {@link #isBrickSupported}
      * may have changed — typically when the vendor platform service finishes its asynchronous
-     * connect after boot. The widget re-applies brick visibility in response. Pass {@code null}
-     * to clear. Implementations with static support (e.g. {@link NoCarIntegration}) may ignore it.
+     * connect after boot, or when a sensor first delivers data. Registration is multicast: the
+     * overlay service and the settings screen both need it and must not evict each other.
+     * Implementations with static support (e.g. {@link NoCarIntegration}) may ignore it.
      */
-    void setAvailabilityChangedListener(@androidx.annotation.Nullable Runnable listener);
+    void addAvailabilityListener(@NonNull Runnable listener);
+
+    /** Unregister a callback added by {@link #addAvailabilityListener}. */
+    void removeAvailabilityListener(@NonNull Runnable listener);
 
     /** Start delivering values for the brick. Replaces any existing subscription for it. */
     void subscribe(@NonNull BrickType type, @NonNull ValueListener listener);

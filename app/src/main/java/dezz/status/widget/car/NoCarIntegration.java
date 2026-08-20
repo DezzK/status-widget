@@ -43,7 +43,11 @@ public final class NoCarIntegration implements CarIntegration {
     }
 
     @Override
-    public void setAvailabilityChangedListener(@Nullable Runnable listener) {
+    public void addAvailabilityListener(@NonNull Runnable listener) {
+    }
+
+    @Override
+    public void removeAvailabilityListener(@NonNull Runnable listener) {
     }
 
     @Override

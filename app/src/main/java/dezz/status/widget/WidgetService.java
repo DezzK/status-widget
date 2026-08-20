@@ -116,6 +116,16 @@ public class WidgetService extends Service implements WidgetHost {
     private float initialTouchX;
     private float initialTouchY;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    /**
+     * Re-applies preferences when the car integration learns something new about sensor
+     * availability — the vendor service finishing its asynchronous connect, or a sensor
+     * delivering its first reading. Without this, car bricks configured by the user stay hidden
+     * after a boot-autostart, because the first applyPreferences ran before the SDK was ready.
+     */
+    private final Runnable carAvailabilityListener = () -> {
+        if (binding != null) applyPreferences();
+    };
     private GradientDrawable background = null;
     private int bgColor = -1;
     private int bgCornerRadius = -1;
@@ -230,9 +240,7 @@ public class WidgetService extends Service implements WidgetHost {
         // answers whether the car sensors exist — critical on the boot-autostart path, where
         // the first applyPreferences runs before the vendor service is up and would otherwise
         // hide configured car bricks until the user happens to open the settings UI.
-        CarIntegrations.get(this).setAvailabilityChangedListener(() -> {
-            if (binding != null) applyPreferences();
-        });
+        CarIntegrations.get(this).addAvailabilityListener(carAvailabilityListener);
 
         createOverlayView();
     }
@@ -1388,7 +1396,7 @@ public class WidgetService extends Service implements WidgetHost {
         // Keep the process-wide car integration alive — the settings UI may still query
         // isBrickSupported after the overlay service stops. The sensor subscriptions themselves
         // are dropped by the temperature bricks in their own onDestroy.
-        CarIntegrations.get(this).setAvailabilityChangedListener(null);
+        CarIntegrations.get(this).removeAvailabilityListener(carAvailabilityListener);
     }
 
     @Nullable
