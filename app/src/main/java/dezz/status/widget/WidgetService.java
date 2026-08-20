@@ -870,7 +870,10 @@ public class WidgetService extends Service {
             }
             car.subscribe(type, (brickType, value) -> {
                 if (binding == null) return;
-                target.setText(formatTemperature(value));
+                // Hot path: the vendor SDK pushes a reading about once a second and a cabin
+                // temperature usually rounds to the same integer for minutes on end. An
+                // unconditional setText would relayout the whole row at that cadence.
+                setTextIfChanged(target, formatTemperature(value));
             });
         } else {
             car.unsubscribe(type);
