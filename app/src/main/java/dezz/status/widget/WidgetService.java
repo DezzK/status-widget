@@ -62,7 +62,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-import dezz.status.widget.car.CarIntegration;
 import dezz.status.widget.car.CarIntegrations;
 import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
 
@@ -480,7 +479,7 @@ public class WidgetService extends Service implements WidgetHost {
                 computeMinWidgetHeight(bricksSet) + verticalPadding);
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
-        if (bricksSet.contains(BrickType.TIME) || bricksSet.contains(BrickType.DATE)) {
+        if (anyBrickNeedsClockTick(bricksSet)) {
             long now = System.currentTimeMillis();
             long delay = DATETIME_UPDATE_INTERVAL_MS - (now % DATETIME_UPDATE_INTERVAL_MS);
             mainHandler.postDelayed(updateDateTimeRunnable, delay);
@@ -688,18 +687,20 @@ public class WidgetService extends Service implements WidgetHost {
         return false;
     }
 
+    /** True when at least one brick the user has in the row redraws on the minute tick. */
+    private boolean anyBrickNeedsClockTick(Set<BrickType> order) {
+        for (RenderBrick brick : renderBricks.values()) {
+            if (brick.needsClockTick() && order.contains(brick.type)) return true;
+        }
+        return false;
+    }
+
     private void applyBrickVisibility(Set<BrickType> bricksSet) {
         if (binding == null) return;
-        BrickTarget[] targets = {
-                resolveTarget(renderBricks.get(BrickType.TIME), bricksSet),
-                resolveTarget(renderBricks.get(BrickType.DATE), bricksSet),
-                resolveTarget(renderBricks.get(BrickType.WIFI), bricksSet),
-                resolveTarget(renderBricks.get(BrickType.GPS), bricksSet),
-                resolveTarget(renderBricks.get(BrickType.BLUETOOTH), bricksSet),
-                resolveTarget(renderBricks.get(BrickType.INDOOR_TEMP), bricksSet),
-                resolveTarget(renderBricks.get(BrickType.OUTDOOR_TEMP), bricksSet),
-                resolveTarget(renderBricks.get(BrickType.MEDIA), bricksSet),
-        };
+        List<BrickTarget> targets = new ArrayList<>(renderBricks.size());
+        for (RenderBrick brick : renderBricks.values()) {
+            targets.add(resolveTarget(brick, bricksSet));
+        }
 
         // Categorise the changes. Visibility flips (VISIBLE↔GONE) get the TransitionManager +
         // window-buffer treatment; pure alpha changes (keep-space mode where the brick stays
@@ -1384,12 +1385,10 @@ public class WidgetService extends Service implements WidgetHost {
             windowManager.removeView(binding.getRoot());
         }
 
-        // Drop car sensor subscriptions but keep the process-wide integration alive — the
-        // settings UI may still query isBrickSupported after the overlay service stops.
-        CarIntegration car = CarIntegrations.get(this);
-        car.setAvailabilityChangedListener(null);
-        car.unsubscribe(BrickType.INDOOR_TEMP);
-        car.unsubscribe(BrickType.OUTDOOR_TEMP);
+        // Keep the process-wide car integration alive — the settings UI may still query
+        // isBrickSupported after the overlay service stops. The sensor subscriptions themselves
+        // are dropped by the temperature bricks in their own onDestroy.
+        CarIntegrations.get(this).setAvailabilityChangedListener(null);
     }
 
     @Nullable
