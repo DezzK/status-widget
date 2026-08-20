@@ -1583,6 +1583,10 @@ public class WidgetService extends Service {
     private void endBufferedTransition() {
         if (pendingBufferedTransitions <= 0) return;
         if (--pendingBufferedTransitions == 0) {
+            // The safety runnable exists only to close a buffer nobody else closed. Once the
+            // buffer is genuinely shut, a pending one would decrement a counter that by then
+            // belongs to the NEXT transition and snap the window narrow mid-animation.
+            mainHandler.removeCallbacks(shrinkBufferSafetyClose);
             restoreWindowToWrapContent();
         }
     }
@@ -2802,6 +2806,8 @@ public class WidgetService extends Service {
         mainHandler.removeCallbacks(foregroundAppCheckRunnable);
         mainHandler.removeCallbacks(reachabilityProbeRunnable);
         mainHandler.removeCallbacks(mediaProgressTick);
+        mainHandler.removeCallbacks(satellitesCountResetRunnable);
+        mainHandler.removeCallbacks(shrinkBufferSafetyClose);
 
         if (binding != null && windowManager != null) {
             windowManager.removeView(binding.getRoot());
