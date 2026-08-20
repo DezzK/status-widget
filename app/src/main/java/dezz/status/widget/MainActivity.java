@@ -479,6 +479,10 @@ public class MainActivity extends AppCompatActivity {
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder source,
                                   @NonNull RecyclerView.ViewHolder target) {
+                if (source.getBindingAdapterPosition() == RecyclerView.NO_POSITION
+                        || target.getBindingAdapterPosition() == RecyclerView.NO_POSITION) {
+                    return false;
+                }
                 brickAdapter.moveBrick(source.getBindingAdapterPosition(),
                         target.getBindingAdapterPosition());
                 return true;
@@ -513,7 +517,7 @@ public class MainActivity extends AppCompatActivity {
             if (type.isCarSpecific() && !car.isBrickSupported(type)) continue;
             anyMissing = true;
             Chip chip = new Chip(this);
-            chip.setText(brickTitle(type));
+            chip.setText(type.titleRes());
             chip.setCheckable(false);
             chip.setChipIcon(ContextCompat.getDrawable(this, android.R.drawable.ic_input_add));
             chip.setOnClickListener(v -> brickAdapter.addBrick(type));
@@ -521,29 +525,6 @@ public class MainActivity extends AppCompatActivity {
         }
         binding.sectionLayout.addBrickLabel.setVisibility(anyMissing ? View.VISIBLE : View.GONE);
         chipGroup.setVisibility(anyMissing ? View.VISIBLE : View.GONE);
-    }
-
-    private String brickTitle(BrickType type) {
-        switch (type) {
-            case TIME:
-                return getString(R.string.brick_title_time);
-            case DATE:
-                return getString(R.string.brick_title_date);
-            case MEDIA:
-                return getString(R.string.brick_title_media);
-            case WIFI:
-                return getString(R.string.brick_title_wifi);
-            case GPS:
-                return getString(R.string.brick_title_gps);
-            case BLUETOOTH:
-                return getString(R.string.brick_title_bluetooth);
-            case INDOOR_TEMP:
-                return getString(R.string.brick_title_indoor_temp);
-            case OUTDOOR_TEMP:
-                return getString(R.string.brick_title_outdoor_temp);
-            default:
-                return "";
-        }
     }
 
     private void bindDropdown(MaterialAutoCompleteTextView dropdown, int arrayRes, Preferences.Int preference) {

@@ -18,9 +18,9 @@
 package dezz.status.widget;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -28,9 +28,37 @@ import java.util.List;
  * comma-separated string in {@link Preferences#brickOrder}; missing types are hidden.
  */
 public enum BrickType {
-    // New constants must be APPENDED — the ordinal doubles as the RecyclerView stable id and
-    // the name is persisted in brickOrder / hideSource prefs.
-    TIME, DATE, MEDIA, WIFI, GPS, BLUETOOTH, INDOOR_TEMP, OUTDOOR_TEMP;
+    // New constants must be APPENDED — the ordinal doubles as the RecyclerView stable id AND
+    // its view type, and the name is persisted in brickOrder / hideSource prefs. Existing
+    // constants may gain constructor arguments, but must never be reordered or renamed.
+    TIME(R.string.brick_title_time),
+    DATE(R.string.brick_title_date),
+    MEDIA(R.string.brick_title_media),
+    WIFI(R.string.brick_title_wifi),
+    GPS(R.string.brick_title_gps),
+    BLUETOOTH(R.string.brick_title_bluetooth),
+    INDOOR_TEMP(R.string.brick_title_indoor_temp),
+    OUTDOOR_TEMP(R.string.brick_title_outdoor_temp);
+
+    private static final BrickType[] VALUES = values();
+
+    /** Inverse of {@link #ordinal()} without re-cloning the constant array on every call. */
+    public static BrickType byOrdinal(int ordinal) {
+        return VALUES[ordinal];
+    }
+
+    @StringRes
+    private final int titleRes;
+
+    BrickType(@StringRes int titleRes) {
+        this.titleRes = titleRes;
+    }
+
+    /** Human-readable brick name — the one source used by settings, chips and hints. */
+    @StringRes
+    public int titleRes() {
+        return titleRes;
+    }
 
     /**
      * Car-specific bricks are fed by the flavor's {@link dezz.status.widget.car.CarIntegration}
@@ -70,9 +98,5 @@ public enum BrickType {
             sb.append(b.name());
         }
         return sb.toString();
-    }
-
-    public static List<BrickType> all() {
-        return new ArrayList<>(Arrays.asList(values()));
     }
 }

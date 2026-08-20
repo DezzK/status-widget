@@ -22,12 +22,15 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -41,6 +44,11 @@ public class Preferences {
         public Preference(Preferences preferences, String key) {
             this.preferences = preferences;
             this.key = key;
+        }
+
+        /** The raw storage key — needed where a pref has to be passed across an Intent. */
+        public String key() {
+            return key;
         }
 
         public void reset() {
@@ -115,19 +123,38 @@ public class Preferences {
         }
     }
 
-    /** Common settings for any text-based brick. */
-    public static class TextBrickPrefs {
+    /**
+     * Everything a brick has regardless of what it draws: geometry, outline, opacity, per-app
+     * hiding and status-bar placement. Subclasses add only what their kind of brick can actually
+     * use — {@link TextBrickPrefs} the font, {@link IconBrickPrefs} the icon size — so a new brick
+     * never re-declares the shared set.
+     *
+     * <p>Every key is {@code prefix + PascalSuffix}, and the bare prefix doubles as the wipe
+     * pattern in {@link Preferences#resetBrick(BrickType)}. So a prefix must not be a textual
+     * prefix of another brick's prefix — asserted at construction — and must not be a prefix of a
+     * global key either, or "Reset brick" would silently clear an unrelated setting. No global
+     * pref collides today. Note that a stored key can outlive its field: bundled presets still
+     * carry {@code mediaEnabled}, so importing one re-creates a key under the {@code media}
+     * prefix that resetBrick will wipe — harmless precisely because nothing reads it any more.
+     */
+    public static abstract class BrickPrefs {
         public final String prefix;
-        public final Int fontSize;
+        /**
+         * The brick's one "how big" pref — font size for text, icon size for icons. The key
+         * suffix and the defaults differ per kind, so they come in through the constructor
+         * rather than through an override.
+         */
+        public final Int size;
+        /** Label and content description for {@link #size}. */
+        @StringRes
+        public final int sizeLabelRes;
+        public final int sizeMin;
+        public final int sizeMax;
         public final Int outlineAlpha;
         public final Int outlineWidth;
         public final Int marginStart;
         public final Int marginEnd;
         public final Int adjustY;
-        /** {@link Fonts.Family#key} of the chosen font family. */
-        public final Str fontFamily;
-        public final Bool fontBold;
-        public final Bool fontItalic;
         /** Apps where the brick should be hidden when its own list is in effect. */
         public final StringSet hideInPackages;
         /**
@@ -145,17 +172,18 @@ public class Preferences {
         /** Whole-element opacity 0..255 — applied to the View via {@code setAlpha(value/255f)}. */
         public final Int contentAlpha;
 
-        public TextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
+        protected BrickPrefs(Preferences p, String prefix, String sizeKeySuffix, int defaultSize,
+                             @StringRes int sizeLabelRes, int sizeMin, int sizeMax) {
             this.prefix = prefix;
-            fontSize = new Int(p, prefix + "FontSize", defaultFontSize);
+            this.sizeLabelRes = sizeLabelRes;
+            this.sizeMin = sizeMin;
+            this.sizeMax = sizeMax;
+            size = new Int(p, prefix + sizeKeySuffix, defaultSize);
             outlineAlpha = new Int(p, prefix + "OutlineAlpha", 0xAA);
             outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
             marginStart = new Int(p, prefix + "MarginStart", 0);
             marginEnd = new Int(p, prefix + "MarginEnd", 0);
             adjustY = new Int(p, prefix + "AdjustY", 0);
-            fontFamily = new Str(p, prefix + "FontFamily", Fonts.DEFAULT_KEY);
-            fontBold = new Bool(p, prefix + "FontBold", false);
-            fontItalic = new Bool(p, prefix + "FontItalic", false);
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
@@ -163,19 +191,77 @@ public class Preferences {
             contentAlpha = new Int(p, prefix + "ContentAlpha", 255);
         }
 
-        public String hideInPackagesKey() {
-            return prefix + "HideInPackages";
+        /**
+         * Which parts of the shared brick card this brick shows — the answer the settings screen
+         * used to get from a per-type switch.
+         *
+         * <p>Always returns a FRESH mutable set: overrides are expected to take
+         * {@code super.controls()} and add/remove, so the result must never be cached in a field.
+         */
+        public EnumSet<BrickControl> controls() {
+            return EnumSet.of(
+                    BrickControl.COL_SIZE,
+                    BrickControl.COL_ADJUST_Y,
+                    BrickControl.ROW_OUTLINE,
+                    BrickControl.ROW_CONTENT_ALPHA,
+                    BrickControl.ROW_MARGIN,
+                    BrickControl.SHARED_STATUS_ALIGNMENT);
+        }
+    }
+
+    /** A brick that draws text. Adds the font on top of everything in {@link BrickPrefs}. */
+    public static class TextBrickPrefs extends BrickPrefs {
+        /** Same object as {@link BrickPrefs#size} — for text bricks the size IS the font size. */
+        public final Int fontSize;
+        /** {@link Fonts.Family#key} of the chosen font family. */
+        public final Str fontFamily;
+        public final Bool fontBold;
+        public final Bool fontItalic;
+
+        public TextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
+            super(p, prefix, "FontSize", defaultFontSize, R.string.brick_font_size, 10, 500);
+            fontSize = size;
+            fontFamily = new Str(p, prefix + "FontFamily", Fonts.DEFAULT_KEY);
+            fontBold = new Bool(p, prefix + "FontBold", false);
+            fontItalic = new Bool(p, prefix + "FontItalic", false);
+        }
+
+        /**
+         * {@link BrickControl#BLOCK_FONT} is added here and NOWHERE else — the settings screen
+         * casts to this class when it sees the flag, and that cast is only safe while this stays
+         * the single origin.
+         */
+        @Override
+        public EnumSet<BrickControl> controls() {
+            EnumSet<BrickControl> set = super.controls();
+            set.add(BrickControl.BLOCK_FONT);
+            return set;
+        }
+    }
+
+    /**
+     * A text brick that also owns a horizontal alignment of its own content. Storage only —
+     * whether the brick shows the shared status-alignment dropdown or hosts its own inside its
+     * block is decided by the brick, not by owning this field. Keeping the two apart means a
+     * brick can gain an alignment pref without losing a working control.
+     */
+    public static abstract class AlignedTextBrickPrefs extends TextBrickPrefs {
+        /** Horizontal alignment of the brick's own text: 0/1/2 = start/center/end. */
+        public final Int alignment;
+
+        protected AlignedTextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
+            super(p, prefix, defaultFontSize);
+            alignment = new Int(p, prefix + "Alignment", 0);
         }
     }
 
     /** Date brick — date number, day of week, formatting and ordering options. */
-    public static final class DateBrickPrefs extends TextBrickPrefs {
+    public static final class DateBrickPrefs extends AlignedTextBrickPrefs {
         public final Bool showDate;
         public final Bool showDayOfWeek;
         public final Bool showFullName;
         public final Bool dateBeforeDayOfWeek;
         public final Bool oneLineLayout;
-        public final Int alignment;
 
         public DateBrickPrefs(Preferences p) {
             super(p, "date", 20);
@@ -184,15 +270,23 @@ public class Preferences {
             showFullName = new Bool(p, "dateShowFullName", false);
             dateBeforeDayOfWeek = new Bool(p, "dateBeforeDayOfWeek", false);
             oneLineLayout = new Bool(p, "dateOneLineLayout", false);
-            alignment = new Int(p, "dateAlignment", 0);
+        }
+
+        /**
+         * The date block pairs its own status-alignment dropdown with the text-alignment one in a
+         * single two-column row, so the shared dropdown above would be a duplicate.
+         */
+        @Override
+        public EnumSet<BrickControl> controls() {
+            EnumSet<BrickControl> set = super.controls();
+            set.remove(BrickControl.SHARED_STATUS_ALIGNMENT);
+            return set;
         }
     }
 
     /** Media brick — has its own max-width to bound marquee scrolling. */
-    public static final class MediaBrickPrefs extends TextBrickPrefs {
+    public static final class MediaBrickPrefs extends AlignedTextBrickPrefs {
         public final Int maxWidth;
-        /** Horizontal alignment of the two text lines inside the media container: 0/1/2 = start/center/end. */
-        public final Int alignment;
         /** Whether to show the app-name line above the track title. */
         public final Bool showSource;
         /** {@code true} → render as "title — artist"; {@code false} (default) → "artist — title". */
@@ -246,15 +340,14 @@ public class Preferences {
         public final Int sourceOutlineWidth;
         /**
          * Horizontal alignment of the source line within the media container: 0/1/2 =
-         * start/center/end. Title uses the existing {@link #alignment} pref so old presets
-         * keep working unchanged.
+         * start/center/end. The title uses the inherited {@link AlignedTextBrickPrefs#alignment}
+         * pref so old presets keep working unchanged.
          */
         public final Int sourceAlignment;
 
         public MediaBrickPrefs(Preferences p) {
             super(p, "media", 20);
             maxWidth = new Int(p, "mediaMaxWidth", 500);
-            alignment = new Int(p, "mediaAlignment", 0);
             showSource = new Bool(p, "mediaShowSource", true);
             titleFirst = new Bool(p, "mediaTitleFirst", false);
             lineGap = new Int(p, "mediaLineGap", 0);
@@ -275,43 +368,44 @@ public class Preferences {
             sourceOutlineWidth = new Int(p, "mediaSourceOutlineWidth", 2);
             sourceAlignment = new Int(p, "mediaSourceAlignment", 0);
         }
+
+        /**
+         * Media drops only what it genuinely splits three ways between source, title and
+         * duration — size, outline, opacity and the font picker. It keeps the vertical offset,
+         * the margins and the status-bar alignment, which apply to the brick as a whole and
+         * which its block used to duplicate against these very same preferences.
+         */
+        @Override
+        public EnumSet<BrickControl> controls() {
+            EnumSet<BrickControl> set = super.controls();
+            set.remove(BrickControl.COL_SIZE);
+            set.remove(BrickControl.ROW_OUTLINE);
+            set.remove(BrickControl.ROW_CONTENT_ALPHA);
+            set.remove(BrickControl.BLOCK_FONT);
+            return set;
+        }
     }
 
-    /** Common settings for an icon brick. */
-    public static class IconBrickPrefs {
-        public final String prefix;
-        public final Int size;
-        public final Int outlineAlpha;
-        public final Int outlineWidth;
-        public final Int marginStart;
-        public final Int marginEnd;
-        public final Int adjustY;
-        public final StringSet hideInPackages;
-        public final Str hideSource;
-        /** Position group inside status-bar mode: 0 = start, 1 = center, 2 = end. */
-        public final Int statusAlignment;
-        /** Reserve space instead of collapsing when hidden by an app match. */
-        public final Bool hideKeepsSpace;
-        /** Icon opacity 0..255 — applied to the ImageView via {@code setAlpha(value/255f)}. */
-        public final Int contentAlpha;
-
-        public IconBrickPrefs(Preferences p, String prefix) {
-            this.prefix = prefix;
-            size = new Int(p, prefix + "Size", 70);
-            outlineAlpha = new Int(p, prefix + "OutlineAlpha", 0xAA);
-            outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
-            marginStart = new Int(p, prefix + "MarginStart", 0);
-            marginEnd = new Int(p, prefix + "MarginEnd", 0);
-            adjustY = new Int(p, prefix + "AdjustY", 0);
-            hideInPackages = new StringSet(p, prefix + "HideInPackages");
-            hideSource = new Str(p, prefix + "HideSource", "");
-            statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
-            hideKeepsSpace = new Bool(p, prefix + "HideKeepsSpace", false);
-            contentAlpha = new Int(p, prefix + "ContentAlpha", 255);
+    /**
+     * Cabin and outside temperature. Intentionally empty today: it exists so the two car bricks
+     * share one type instead of being bare {@link TextBrickPrefs}, and so that a future unit /
+     * decimals / placeholder pref lands here instead of leaking onto every text brick (adding it
+     * to {@link TextBrickPrefs} would mint timeUnit / dateUnit / mediaUnit keys for bricks that
+     * have no use for them).
+     */
+    public static final class TempBrickPrefs extends TextBrickPrefs {
+        public TempBrickPrefs(Preferences p, String prefix) {
+            super(p, prefix, 40);
         }
+    }
 
-        public String hideInPackagesKey() {
-            return prefix + "HideInPackages";
+    /**
+     * A brick that draws an icon. Adds nothing of its own — an icon brick is exactly the base set,
+     * with {@link BrickPrefs#size} meaning the icon's edge length.
+     */
+    public static class IconBrickPrefs extends BrickPrefs {
+        public IconBrickPrefs(Preferences p, String prefix) {
+            super(p, prefix, "Size", 70, R.string.brick_size, 10, 600);
         }
     }
 
@@ -360,12 +454,6 @@ public class Preferences {
     /** Comma-separated list of brick types in display order. Missing types are hidden. */
     public final Str brickOrder = new Str(this, "brickOrder", "TIME,DATE,WIFI,GPS");
 
-    /**
-     * Whether the user has been shown the notification access prompt at least once. Used to keep
-     * the media brick "active" only when the user has explicitly granted access.
-     */
-    public final Bool mediaEnabled = new Bool(this, "mediaEnabled", false);
-
     // Per-brick settings.
     public final TextBrickPrefs time = new TextBrickPrefs(this, "time", 60);
     public final DateBrickPrefs date = new DateBrickPrefs(this);
@@ -374,80 +462,68 @@ public class Preferences {
     public final GpsBrickPrefs gps = new GpsBrickPrefs(this);
     public final BluetoothBrickPrefs bluetooth = new BluetoothBrickPrefs(this);
     // Car-specific temperature bricks (fed by the flavor's CarIntegration).
-    public final TextBrickPrefs indoorTemp = new TextBrickPrefs(this, "indoorTemp", 40);
-    public final TextBrickPrefs outdoorTemp = new TextBrickPrefs(this, "outdoorTemp", 40);
+    public final TempBrickPrefs indoorTemp = new TempBrickPrefs(this, "indoorTemp");
+    public final TempBrickPrefs outdoorTemp = new TempBrickPrefs(this, "outdoorTemp");
 
-    @Nullable
-    public TextBrickPrefs textBrickPrefs(BrickType type) {
-        switch (type) {
-            case TIME:
-                return time;
-            case DATE:
-                return date;
-            case MEDIA:
-                return media;
-            case INDOOR_TEMP:
-                return indoorTemp;
-            case OUTDOOR_TEMP:
-                return outdoorTemp;
-            default:
-                return null;
+    /**
+     * The single brick → settings registry. Every {@link BrickType} must be present; adding a
+     * brick means adding its prefs field above and one line here, and nothing else in this class.
+     */
+    private final EnumMap<BrickType, BrickPrefs> brickPrefsByType = new EnumMap<>(BrickType.class);
+
+    {
+        brickPrefsByType.put(BrickType.TIME, time);
+        brickPrefsByType.put(BrickType.DATE, date);
+        brickPrefsByType.put(BrickType.MEDIA, media);
+        brickPrefsByType.put(BrickType.WIFI, wifi);
+        brickPrefsByType.put(BrickType.GPS, gps);
+        brickPrefsByType.put(BrickType.BLUETOOTH, bluetooth);
+        brickPrefsByType.put(BrickType.INDOOR_TEMP, indoorTemp);
+        brickPrefsByType.put(BrickType.OUTDOOR_TEMP, outdoorTemp);
+        if (brickPrefsByType.size() != BrickType.values().length) {
+            // Fail at construction rather than on the one screen that happens to touch the new
+            // brick — a missing entry is a compile-time-invisible omission.
+            throw new IllegalStateException("Every BrickType needs a BrickPrefs registration");
+        }
+        for (BrickPrefs a : brickPrefsByType.values()) {
+            for (BrickPrefs b : brickPrefsByType.values()) {
+                if (a != b && b.prefix.startsWith(a.prefix)) {
+                    // resetBrick() wipes by prefix, so this would make one brick's reset clear
+                    // another brick's settings.
+                    throw new IllegalStateException(
+                            "Brick prefix '" + a.prefix + "' shadows '" + b.prefix + "'");
+                }
+            }
         }
     }
 
-    @Nullable
-    public IconBrickPrefs iconBrickPrefs(BrickType type) {
-        switch (type) {
-            case WIFI:
-                return wifi;
-            case GPS:
-                return gps;
-            case BLUETOOTH:
-                return bluetooth;
-            default:
-                return null;
-        }
+    /** Settings of a brick. Never {@code null} — every {@link BrickType} is registered above. */
+    @NonNull
+    public BrickPrefs brickPrefs(BrickType type) {
+        BrickPrefs p = brickPrefsByType.get(type);
+        if (p == null) throw new IllegalArgumentException("Unknown brick type: " + type);
+        return p;
     }
 
     public StringSet hideListFor(BrickType type) {
-        TextBrickPrefs t = textBrickPrefs(type);
-        if (t != null) return t.hideInPackages;
-        IconBrickPrefs i = iconBrickPrefs(type);
-        if (i != null) return i.hideInPackages;
-        throw new IllegalArgumentException("Unknown brick type: " + type);
+        return brickPrefs(type).hideInPackages;
     }
 
     public Int statusAlignmentFor(BrickType type) {
-        TextBrickPrefs t = textBrickPrefs(type);
-        if (t != null) return t.statusAlignment;
-        IconBrickPrefs i = iconBrickPrefs(type);
-        if (i != null) return i.statusAlignment;
-        throw new IllegalArgumentException("Unknown brick type: " + type);
+        return brickPrefs(type).statusAlignment;
     }
 
     public Str hideSourceFor(BrickType type) {
-        TextBrickPrefs t = textBrickPrefs(type);
-        if (t != null) return t.hideSource;
-        IconBrickPrefs i = iconBrickPrefs(type);
-        if (i != null) return i.hideSource;
-        throw new IllegalArgumentException("Unknown brick type: " + type);
+        return brickPrefs(type).hideSource;
     }
 
     /** Per-brick INVISIBLE-vs-GONE toggle for foreground-app hiding. */
     public Bool hideKeepsSpaceFor(BrickType type) {
-        TextBrickPrefs t = textBrickPrefs(type);
-        if (t != null) return t.hideKeepsSpace;
-        IconBrickPrefs i = iconBrickPrefs(type);
-        if (i != null) return i.hideKeepsSpace;
-        throw new IllegalArgumentException("Unknown brick type: " + type);
+        return brickPrefs(type).hideKeepsSpace;
     }
 
     public String hideListKeyFor(BrickType type) {
-        TextBrickPrefs t = textBrickPrefs(type);
-        if (t != null) return t.hideInPackagesKey();
-        IconBrickPrefs i = iconBrickPrefs(type);
-        if (i != null) return i.hideInPackagesKey();
-        throw new IllegalArgumentException("Unknown brick type: " + type);
+        return brickPrefs(type).hideInPackages.key();
     }
 
     /**
@@ -486,8 +562,7 @@ public class Preferences {
      * are reset.
      */
     public void resetBrick(BrickType type) {
-        String prefix = brickPrefix(type);
-        if (prefix == null) return;
+        String prefix = brickPrefs(type).prefix;
         SharedPreferences.Editor editor = prefs.edit();
         for (String key : prefs.getAll().keySet()) {
             if (key.startsWith(prefix)) {
@@ -495,21 +570,6 @@ public class Preferences {
             }
         }
         editor.apply();
-    }
-
-    @Nullable
-    private static String brickPrefix(BrickType type) {
-        switch (type) {
-            case TIME: return "time";
-            case DATE: return "date";
-            case MEDIA: return "media";
-            case WIFI: return "wifi";
-            case GPS: return "gps";
-            case BLUETOOTH: return "bluetooth";
-            case INDOOR_TEMP: return "indoorTemp";
-            case OUTDOOR_TEMP: return "outdoorTemp";
-            default: return null;
-        }
     }
 
     /**
@@ -537,8 +597,6 @@ public class Preferences {
         if (prefs.getBoolean("showWifiIcon", true)) appendOrder(order, BrickType.WIFI);
         if (prefs.getBoolean("showGnssIcon", true)) appendOrder(order, BrickType.GPS);
         e.putString("brickOrder", order.toString());
-
-        e.putBoolean("mediaEnabled", prefs.getBoolean("showMedia", false));
 
         // Carry over the date sub-toggles into the new namespace.
         e.putBoolean("dateShowDate", prefs.getBoolean("showDate", true));

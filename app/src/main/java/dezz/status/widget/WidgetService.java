@@ -1037,17 +1037,6 @@ public class WidgetService extends Service {
 
     private void applyDateBrickSettings() {
         applySingleLineTextBrick(binding.dateText, prefs.date);
-        switch (prefs.date.alignment.get()) {
-            case 1:
-                binding.dateText.setGravity(Gravity.CENTER_HORIZONTAL);
-                break;
-            case 2:
-                binding.dateText.setGravity(Gravity.END);
-                break;
-            default:
-                binding.dateText.setGravity(Gravity.START);
-                break;
-        }
     }
 
     private void applyMediaBrickSettings() {
@@ -1212,6 +1201,13 @@ public class WidgetService extends Service {
     }
 
     private void applySingleLineTextBrick(OutlineTextView view, Preferences.TextBrickPrefs p) {
+        // Owning an alignment pref is what makes a text brick alignable, so the gravity is
+        // applied here rather than per brick — otherwise a new AlignedTextBrickPrefs subclass
+        // would get a live pref and a bound dropdown that render nothing.
+        if (p instanceof Preferences.AlignedTextBrickPrefs) {
+            view.setGravity(horizontalGravity(
+                    ((Preferences.AlignedTextBrickPrefs) p).alignment.get()));
+        }
         view.setTextColor(ContextCompat.getColor(themedContext, R.color.text_primary));
         view.setOutlineColor(textOutlineColor(p.outlineAlpha.get()));
         view.setOutlineWidth(p.outlineWidth.get());
@@ -1220,6 +1216,18 @@ public class WidgetService extends Service {
         view.setTranslationY(p.adjustY.get());
         view.setAlpha(p.contentAlpha.get() / 255f);
         applyHorizontalMargins(view, p.marginStart.get(), p.marginEnd.get());
+    }
+
+    /** Maps the shared 0/1/2 = start/center/end alignment prefs onto a {@link Gravity}. */
+    private static int horizontalGravity(int alignment) {
+        switch (alignment) {
+            case 1:
+                return Gravity.CENTER_HORIZONTAL;
+            case 2:
+                return Gravity.END;
+            default:
+                return Gravity.START;
+        }
     }
 
     private int textOutlineColor(int alpha) {
