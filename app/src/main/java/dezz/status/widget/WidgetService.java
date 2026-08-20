@@ -1610,9 +1610,19 @@ public class WidgetService extends Service {
      * {@code brickOrder}, regardless of per-app visibility. Used as the widget's minimum height so
      * a brick disappearing on a particular app doesn't shrink the row.
      *
-     * Text bricks use {@link Paint#getFontMetrics()} on a copy of the TextView's paint at the
-     * given pixel size — this matches exactly the height the TextView itself would measure for a
-     * single line (with {@code includeFontPadding=true}, the default).
+     * Text bricks use {@link Paint#getFontMetricsInt()} on a copy of the TextView's paint at the
+     * given pixel size — the same metrics {@code StaticLayout} reserves for one line, and every
+     * text view here sets {@code includeFontPadding=false}.
+     *
+     * <p>The model assumes each text brick occupies the number of lines it is configured for.
+     * That holds because the floating container measures its children against the display (see
+     * {@link BufferingLinearLayout}) and the status-bar row is as wide as the screen, so nothing
+     * wraps to an unplanned extra line.
+     *
+     * <p>It cannot see fallback line spacing: on a line that falls back to another font for some
+     * glyph, {@code StaticLayout} widens ascent/descent to cover that font too, which no paint of
+     * ours reports. The floor is then a little short — the same direction the old estimate erred
+     * in, and bounded by the fallback font's overshoot.
      */
     private int computeMinWidgetHeight(Set<BrickType> bricks) {
         int h = 0;
@@ -1626,16 +1636,7 @@ public class WidgetService extends Service {
             h = Math.max(h, textLineHeight(binding.dateText, prefs.date.fontSize.get()) * lines);
         }
         if (bricks.contains(BrickType.MEDIA)) {
-            // Source and title can have different font sizes now, so sum them up properly when
-            // both lines are shown; otherwise just the title line.
-            int titleHeight = textLineHeight(binding.mediaTitleText, prefs.media.fontSize.get());
-            int mediaHeight = titleHeight;
-            if (prefs.media.showSource.get()) {
-                int sourceHeight = textLineHeight(binding.mediaAppText,
-                        prefs.media.sourceFontSize.get());
-                mediaHeight = sourceHeight + titleHeight + prefs.media.lineGap.get();
-            }
-            h = Math.max(h, mediaHeight);
+            h = Math.max(h, mediaBrickHeight());
         }
         if (bricks.contains(BrickType.WIFI)) {
             h = Math.max(h, prefs.wifi.size.get());
@@ -1659,15 +1660,70 @@ public class WidgetService extends Service {
         return h;
     }
 
+    /**
+     * The media brick's height floor, modelled on the real layout: two rows — each as tall as the
+     * tallest view it holds — plus the progress bar.
+     *
+     * <p>Every term comes from the preference rather than from what is on screen right now: the
+     * floor's whole job is to hold the row still while the brick's own parts come and go (a live
+     * stream with no duration, the gap after a track change, a session with no app label). A
+     * brick that stays 5sp taller than its content for a radio station is the intended trade —
+     * the same one the floor already makes for bricks hidden by the per-app rule.
+     */
+    private int mediaBrickHeight() {
+        int titleRow = textLineHeight(binding.mediaTitleText, prefs.media.fontSize.get());
+        if (prefs.media.showDuration.get()) {
+            titleRow = Math.max(titleRow, textLineHeight(binding.mediaDurationText,
+                    prefs.media.durationFontSize.get()));
+        }
+        int height;
+        if (prefs.media.showSource.get()) {
+            int sourceRow = textLineHeight(binding.mediaAppText, prefs.media.sourceFontSize.get());
+            if (prefs.media.showPlaybackState.get()) {
+                // The indicator rides the source line and takes that line's metrics.
+                sourceRow = Math.max(sourceRow, MediaStateIconView.heightFor(
+                        prefs.media.sourceFontSize.get(), prefs.media.sourceOutlineWidth.get()));
+            }
+            height = sourceRow + titleRow;
+        } else {
+            // With the source line off the indicator is re-parented onto the title row.
+            if (prefs.media.showPlaybackState.get()) {
+                titleRow = Math.max(titleRow, MediaStateIconView.heightFor(
+                        prefs.media.fontSize.get(), prefs.media.outlineWidth.get()));
+            }
+            height = titleRow;
+        }
+        // The title row's top margin is applied unconditionally (applyMediaBrickSettings) and the
+        // row is never hidden, so LinearLayout counts it even with the source line off.
+        height += prefs.media.lineGap.get();
+        if (prefs.media.progressBarEnabled.get()) {
+            height += progressBarExtent();
+        }
+        return height;
+    }
+
+    /** Progress bar height plus its top margin, read from the layout so the sp values stay there. */
+    private int progressBarExtent() {
+        ViewGroup.LayoutParams lp = binding.mediaProgressBar.getLayoutParams();
+        if (lp == null || lp.height < 0) return 0;   // WRAP_CONTENT / MATCH_PARENT: nothing to add
+        int extent = lp.height;
+        if (lp instanceof LinearLayout.LayoutParams) {
+            extent += ((LinearLayout.LayoutParams) lp).topMargin;
+        }
+        return extent;
+    }
+
     private static int textLineHeight(OutlineTextView view, int fontSizePx) {
         // Copy so we don't mutate the live drawing paint. The copy preserves typeface, which is
         // crucial because Roboto Condensed Medium has different metrics from the default.
         Paint p = new Paint(view.getPaint());
         p.setTextSize(fontSizePx);
-        Paint.FontMetrics fm = p.getFontMetrics();
-        // All text TextViews in the widget have includeFontPadding=false — layout bounds use
-        // ascent/descent (just the glyph metrics, no extra accent/descender reserve).
-        return (int) Math.ceil(fm.descent - fm.ascent);
+        // All text TextViews in the widget have includeFontPadding=false, so a line reserves
+        // exactly ascent..descent — and StaticLayout takes those from getFontMetricsInt, so read
+        // the same integers rather than rounding the float pair ourselves and landing a pixel off
+        // in either direction.
+        Paint.FontMetricsInt fm = p.getFontMetricsInt();
+        return fm.descent - fm.ascent;
     }
 
     public void setOverlayStateListener(@Nullable OverlayStateListener listener) {

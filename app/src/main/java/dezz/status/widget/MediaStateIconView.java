@@ -152,11 +152,20 @@ public class MediaStateIconView extends View {
         invalidate();
     }
 
+    /**
+     * The height this view measures to for a given host line. Exposed so the widget's min-height
+     * model can include the indicator without re-deriving {@link #GLYPH_HEIGHT_RATIO}, and usable
+     * before the first layout pass.
+     */
+    public static int heightFor(float textSizePx, float outlineWidth) {
+        return (int) Math.ceil(textSizePx * GLYPH_HEIGHT_RATIO + outlineWidth);
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         float glyphHeight = textSizePx * GLYPH_HEIGHT_RATIO;
         int width = (int) Math.ceil(glyphHeight * BOX_WIDTH_RATIO + outlineWidth);
-        int height = (int) Math.ceil(glyphHeight + outlineWidth);
+        int height = heightFor(textSizePx, outlineWidth);
         setMeasuredDimension(resolveSize(width, widthMeasureSpec),
                 resolveSize(height, heightMeasureSpec));
     }
