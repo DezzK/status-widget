@@ -58,4 +58,14 @@ interface WidgetHost {
      */
     @NonNull
     Handler handler();
+
+    /** The user's brick order, for callbacks that arrive without a settings pass in flight. */
+    @NonNull
+    java.util.Set<BrickType> currentOrder();
+
+    /**
+     * The row's per-app hide verdict for a brick. Asked rather than computed, because the answer
+     * follows the {@code hideSource} inheritance and is snapshotted once per settings pass.
+     */
+    boolean isBrickHiddenByApp(@NonNull BrickType type);
 }

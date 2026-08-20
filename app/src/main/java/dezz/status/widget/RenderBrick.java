@@ -109,6 +109,14 @@ abstract class RenderBrick {
         return order.contains(type);
     }
 
+    /**
+     * The brick is about to be rendered for real — visible, and not hidden by the foreground-app
+     * rule. Composite bricks refresh their content here; a brick whose children were emptied while
+     * it was hidden would otherwise come back blank.
+     */
+    void onWillRender() {
+    }
+
     /** Target opacity when visible, 0..1. Overridable: the media brick's container is not it. */
     float contentAlpha() {
         return prefs().brickPrefs(type).contentAlpha.get() / 255f;

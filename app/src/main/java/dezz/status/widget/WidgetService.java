@@ -25,22 +25,14 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.media.MediaMetadata;
-import android.media.session.MediaController;
-import android.media.session.MediaSessionManager;
-import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -48,7 +40,6 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -69,7 +60,6 @@ import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 import dezz.status.widget.car.CarIntegration;
@@ -101,12 +91,6 @@ public class WidgetService extends Service implements WidgetHost {
     private static final int NOTIFICATION_ID = 1001;
     private static final String CHANNEL_ID = "WidgetServiceChannel";
     private static final long DATETIME_UPDATE_INTERVAL_MS = 60_000L;
-    /** Cadence for advancing the media progress bar while a track is actively playing. 250ms
-     *  is fast enough to look smooth on a thin bar and slow enough to not show up in profilers. */
-    private static final long MEDIA_PROGRESS_TICK_MS = 250L;
-    /** Gap between the play/pause indicator and the text it precedes, as a fraction of that
-     *  text's size — same rationale as the icon's own size: it must track the font sliders. */
-    private static final float STATE_ICON_GAP_RATIO = 0.25f;
     private static final long FOREGROUND_APP_CHECK_INTERVAL_MS = 1000L;
     private static final long FOREGROUND_APP_LOOKBACK_MS = 60_000L;
     private static final String GNSSSHARE_CLIENT_PACKAGE = "dezz.gnssshare.client";
@@ -193,21 +177,6 @@ public class WidgetService extends Service implements WidgetHost {
 
     @Nullable private OverlayStateListener overlayStateListener;
 
-    private MediaSessionManager mediaSessionManager;
-    private final List<MediaController> activeMediaControllers = new ArrayList<>();
-    private final MediaController.Callback mediaControllerCallback = new MediaController.Callback() {
-        @Override
-        public void onPlaybackStateChanged(@Nullable PlaybackState state) {
-            updateMediaInfo();
-        }
-
-        @Override
-        public void onMetadataChanged(@Nullable MediaMetadata metadata) {
-            updateMediaInfo();
-        }
-    };
-    private final MediaSessionManager.OnActiveSessionsChangedListener activeSessionsChangedListener =
-            this::rebindMediaControllers;
 
     private final Runnable updateDateTimeRunnable = new Runnable() {
         @Override
@@ -232,6 +201,7 @@ public class WidgetService extends Service implements WidgetHost {
         prefs = new Preferences(this);
         renderBricks.put(BrickType.TIME, new TimeRenderBrick(this));
         renderBricks.put(BrickType.DATE, new DateRenderBrick(this));
+        renderBricks.put(BrickType.MEDIA, new MediaRenderBrick(this));
         renderBricks.put(BrickType.WIFI, new WifiRenderBrick(this));
         renderBricks.put(BrickType.GPS, new GpsRenderBrick(this));
         renderBricks.put(BrickType.BLUETOOTH, new BluetoothRenderBrick(this));
@@ -275,8 +245,6 @@ public class WidgetService extends Service implements WidgetHost {
         for (RenderBrick brick : renderBricks.values()) {
             brick.bind(binding);
         }
-        // Fresh views, fresh state: the progress bar starts out gone in the layout.
-        progressBarShown = false;
         // Start invisible — the addView() below makes the window appear instantly; we then
         // fade the content in to match the symmetric fade-out the overlay does elsewhere.
         binding.getRoot().setAlpha(0f);
@@ -471,7 +439,6 @@ public class WidgetService extends Service implements WidgetHost {
         reorderBricks(bricks);
 
         // Apply each brick's settings (size/font, outline, margins) — independent of visibility.
-        applyMediaBrickSettings();
         for (RenderBrick brick : renderBricks.values()) {
             brick.applySettings();
         }
@@ -527,24 +494,10 @@ public class WidgetService extends Service implements WidgetHost {
             brick.syncSource(bricksSet.contains(brick.type));
         }
 
-        if (bricksSet.contains(BrickType.MEDIA) && Permissions.isNotificationAccessGranted(this)) {
-            enableMediaTracking();
-        } else {
-            disableMediaTracking();
-            binding.mediaContainer.setVisibility(View.GONE);
-        }
 
     }
 
-    /** Last rendered media subtitle — used to distinguish a real track change from the
-     *  once-a-second metadata republishes some players emit (see updateMediaInfo). */
-    @Nullable
-    private String lastMediaSubtitle = null;
 
-    /** Intended progress-bar visibility. Ours, not the view's: {@code View.getVisibility()} is not
-     *  authoritative while a transition owns the view — see {@link #setProgressBarShown}. Reset
-     *  whenever the overlay is re-inflated, since the XML default is {@code gone}. */
-    private boolean progressBarShown = false;
 
     /** {@code TextView.setText} drops the layout and forces a relayout even for identical text —
      *  callers on hot paths (per-second player callbacks) must skip unchanged values. */
@@ -664,143 +617,16 @@ public class WidgetService extends Service implements WidgetHost {
         return v < 0 ? 0 : (v > 2 ? 2 : v);
     }
 
-    /** A brick's root view. Everything but the media brick answers for itself. */
+    /** A brick's root view — every brick type has a render object that answers for itself. */
     @Nullable
     private View viewForBrick(BrickType type) {
         RenderBrick brick = renderBricks.get(type);
-        if (brick != null) return brick.view();
-        return type == BrickType.MEDIA ? binding.mediaContainer : null;
+        return brick != null ? brick.view() : null;
     }
 
-    private void applyMediaBrickSettings() {
-        int textColor = ContextCompat.getColor(themedContext, R.color.text_primary);
 
-        // Source line: independent font, opacity, outline.
-        Typeface sourceTypeface = Fonts.resolve(this, prefs.media.sourceFontFamily.get(),
-                prefs.media.sourceFontBold.get(), prefs.media.sourceFontItalic.get());
-        binding.mediaAppText.setOutlineColor(textOutlineColor(prefs.media.sourceOutlineAlpha.get()));
-        binding.mediaAppText.setOutlineWidth(prefs.media.sourceOutlineWidth.get());
-        binding.mediaAppText.setTextColor(textColor);
-        binding.mediaAppText.setTypeface(sourceTypeface);
-        binding.mediaAppText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.sourceFontSize.get());
-        binding.mediaAppText.setAlpha(prefs.media.sourceContentAlpha.get() / 255f);
 
-        // Title line: existing media.* font + opacity + outline (TextBrickPrefs inherited).
-        Typeface titleTypeface = Fonts.resolve(this, prefs.media.fontFamily.get(),
-                prefs.media.fontBold.get(), prefs.media.fontItalic.get());
-        binding.mediaTitleText.setOutlineColor(textOutlineColor(prefs.media.outlineAlpha.get()));
-        binding.mediaTitleText.setOutlineWidth(prefs.media.outlineWidth.get());
-        binding.mediaTitleText.setTextColor(textColor);
-        binding.mediaTitleText.setTypeface(titleTypeface);
-        binding.mediaTitleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.fontSize.get());
-        binding.mediaTitleText.setAlpha(prefs.media.contentAlpha.get() / 255f);
 
-        // Source line is always static + ellipsized; only the title scrolls. Source is short
-        // and a constant moving marquee on it would be more distracting than helpful.
-        binding.mediaAppText.setMarqueeEnabled(false);
-        binding.mediaTitleText.setMarqueeEnabled(prefs.media.marqueeEnabled.get());
-
-        applyMediaStateIcon(textColor);
-
-        // Duration text — independent font size / alpha / outline so the user can dial it down
-        // (typically the duration is rendered smaller and dimmer than the track subtitle).
-        binding.mediaDurationText.setTypeface(titleTypeface);
-        binding.mediaDurationText.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.media.durationFontSize.get());
-        binding.mediaDurationText.setTextColor(textColor);
-        binding.mediaDurationText.setOutlineColor(textOutlineColor(prefs.media.durationOutlineAlpha.get()));
-        binding.mediaDurationText.setOutlineWidth(prefs.media.durationOutlineWidth.get());
-        binding.mediaDurationText.setAlpha(prefs.media.durationContentAlpha.get() / 255f);
-
-        RenderBrick.applyHorizontalMargins(binding.mediaContainer, prefs.media.marginStart.get(), prefs.media.marginEnd.get());
-        binding.mediaContainer.setTranslationY(prefs.media.adjustY.get());
-        // Container alpha back to full — per-line alpha is set above so the two values don't
-        // multiply through the parent.
-        binding.mediaContainer.setAlpha(1f);
-        applyMediaMaxWidth(binding.mediaAppText);
-        applyMediaMaxWidth(binding.mediaTitleText);
-        // Alignment applies to the two ROWS — they, not the text views, are the children of the
-        // vertical container, and layout_gravity on a child of a horizontal LinearLayout only
-        // ever moves it vertically.
-        applyMediaChildAlignment(binding.mediaSourceRow, prefs.media.sourceAlignment.get());
-        applyMediaChildAlignment(binding.mediaTitleRow, prefs.media.alignment.get());
-        // Vertical gap between the two lines, applied as the title row's top margin.
-        LinearLayout.LayoutParams titleLp =
-                (LinearLayout.LayoutParams) binding.mediaTitleRow.getLayoutParams();
-        titleLp.topMargin = prefs.media.lineGap.get();
-        binding.mediaTitleRow.setLayoutParams(titleLp);
-    }
-
-    /**
-     * Playback-state indicator. It lives at the head of the source row — "▶ Spotify" reads as one
-     * statement — but the source line is optional, so when it's off the icon is re-parented to the
-     * head of the title row instead of vanishing with its host. Either way it takes the size,
-     * outline and opacity of the line it sits on, so it scales with that line's font-size slider
-     * and flips colour with the widget theme like the text around it.
-     */
-    private void applyMediaStateIcon(int textColor) {
-        boolean onSourceRow = prefs.media.showSource.get();
-        LinearLayout host = onSourceRow ? binding.mediaSourceRow : binding.mediaTitleRow;
-        ViewGroup parent = (ViewGroup) binding.mediaStateIcon.getParent();
-        if (parent != host) {
-            if (parent != null) parent.removeView(binding.mediaStateIcon);
-            host.addView(binding.mediaStateIcon, 0);
-        }
-
-        int fontSize = onSourceRow ? prefs.media.sourceFontSize.get() : prefs.media.fontSize.get();
-        int outlineAlpha = onSourceRow
-                ? prefs.media.sourceOutlineAlpha.get() : prefs.media.outlineAlpha.get();
-        int outlineWidth = onSourceRow
-                ? prefs.media.sourceOutlineWidth.get() : prefs.media.outlineWidth.get();
-        int contentAlpha = onSourceRow
-                ? prefs.media.sourceContentAlpha.get() : prefs.media.contentAlpha.get();
-        binding.mediaStateIcon.setTextSizePx(fontSize);
-        binding.mediaStateIcon.setIconColor(textColor);
-        binding.mediaStateIcon.setOutlineColor(textOutlineColor(outlineAlpha));
-        binding.mediaStateIcon.setOutlineWidth(outlineWidth);
-        binding.mediaStateIcon.setAlpha(contentAlpha / 255f);
-
-        // Gap to the text scales with that text too — a fixed one would glue the icon to a 60px
-        // source line and strand it next to a 12px one.
-        LinearLayout.LayoutParams lp =
-                (LinearLayout.LayoutParams) binding.mediaStateIcon.getLayoutParams();
-        int gap = Math.round(fontSize * STATE_ICON_GAP_RATIO);
-        if (lp.getMarginEnd() != gap) {
-            lp.setMarginEnd(gap);
-            binding.mediaStateIcon.setLayoutParams(lp);
-        }
-
-        // Switching the indicator off has to be honored here too, not only in updateMediaInfo:
-        // this is the only media code that runs when there is no active session, so a stale
-        // VISIBLE icon would otherwise be impossible to turn off until something played again.
-        // Only the off-direction is applied — turning it back on stays with updateMediaInfo,
-        // which additionally requires the line hosting the icon to actually carry text.
-        if (!prefs.media.showPlaybackState.get()) {
-            binding.mediaStateIcon.setVisibility(View.GONE);
-        }
-    }
-
-    /**
-     * Horizontal alignment of a single line within the vertical media container.
-     * Container is wrap_content (sized to the wider of the two children), so the narrower
-     * child shifts within that band via its own {@code layout_gravity}.
-     */
-    private static void applyMediaChildAlignment(View view, int alignment) {
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
-        int gravity;
-        switch (alignment) {
-            case 1: gravity = Gravity.CENTER_HORIZONTAL; break;
-            case 2: gravity = Gravity.END; break;
-            default: gravity = Gravity.START; break;
-        }
-        lp.gravity = gravity;
-        view.setLayoutParams(lp);
-    }
-
-    private void applyMediaMaxWidth(MarqueeOutlineTextView view) {
-        // The view itself toggles between WRAP_CONTENT (text fits) and a fixed maxWidth
-        // (overflow + scrolling). All we need here is to tell it the upper bound.
-        view.setMaxWidth(prefs.media.maxWidth.get());
-    }
 
     private int textOutlineColor(int alpha) {
         return (ContextCompat.getColor(themedContext, R.color.text_outline) & 0x00FFFFFF) | (alpha << 24);
@@ -848,7 +674,8 @@ public class WidgetService extends Service implements WidgetHost {
         }
     }
 
-    private boolean isBrickHiddenByApp(BrickType type) {
+    @Override
+    public boolean isBrickHiddenByApp(@NonNull BrickType type) {
         if (lastForegroundPackage == null) return false;
         Set<String> list = effectiveHideLists.get(type);
         return list != null && list.contains(lastForegroundPackage);
@@ -871,31 +698,8 @@ public class WidgetService extends Service implements WidgetHost {
                 resolveTarget(renderBricks.get(BrickType.BLUETOOTH), bricksSet),
                 resolveTarget(renderBricks.get(BrickType.INDOOR_TEMP), bricksSet),
                 resolveTarget(renderBricks.get(BrickType.OUTDOOR_TEMP), bricksSet),
+                resolveTarget(renderBricks.get(BrickType.MEDIA), bricksSet),
         };
-
-        // Media has the extra session gate, so we build its BrickTarget here. The gate is the
-        // session, not just the brick list: with no controller there is nothing to render, and
-        // driving the container VISIBLE anyway paints an empty brick — no source, no title, and
-        // the state icon still at its inflate-default VISIBLE (drawing a play triangle, since
-        // setPaused has never run). That is the phantom indicator seen on head units whose player
-        // leaves no session behind: updateMediaInfo sets the container GONE, then any later
-        // settings pass or foreground-app change re-showed it here.
-        boolean mediaShouldBeGone = !bricksSet.contains(BrickType.MEDIA)
-                || pickActiveMediaController() == null;
-        boolean mediaHiddenByApp = !mediaShouldBeGone && isBrickHiddenByApp(BrickType.MEDIA);
-        BrickTarget mediaTarget;
-        if (mediaShouldBeGone) {
-            mediaTarget = new BrickTarget(binding.mediaContainer, View.GONE, 1f);
-        } else if (mediaHiddenByApp) {
-            if (prefs.hideKeepsSpaceFor(BrickType.MEDIA).get()) {
-                mediaTarget = new BrickTarget(binding.mediaContainer, View.VISIBLE, 0f);
-            } else {
-                mediaTarget = new BrickTarget(binding.mediaContainer, View.GONE, 1f);
-            }
-        } else {
-            mediaTarget = new BrickTarget(binding.mediaContainer, View.VISIBLE,
-                    prefs.media.contentAlpha.get() / 255f);
-        }
 
         // Categorise the changes. Visibility flips (VISIBLE↔GONE) get the TransitionManager +
         // window-buffer treatment; pure alpha changes (keep-space mode where the brick stays
@@ -911,19 +715,15 @@ public class WidgetService extends Service implements WidgetHost {
                 alphaOnly.add(t);
             }
         }
-        // Media too.
-        if (mediaTarget.view.getVisibility() != mediaTarget.visibility) {
-            visibilityFlips.add(mediaTarget);
-            if (mediaTarget.visibility == View.VISIBLE) expanding = true;
-        }
-        // Deliberately NOT an "else": the brick's children keep whatever hideMediaBrick() left
-        // behind (row, icon and bar all GONE), and applyBrickTarget only touches the container —
-        // so a container flipping back to VISIBLE would come up empty until the next player
-        // callback. Refresh in both cases. This has to stay AFTER the flip check above, because
-        // updateMediaInfo ends by setting the container VISIBLE itself, which would hide the flip
-        // from that comparison and cost us the transition.
-        if (mediaTarget.visibility == View.VISIBLE && !mediaShouldBeGone && !mediaHiddenByApp) {
-            updateMediaInfo();
+        // Deliberately NOT an "else" on the flip check: a composite brick's children keep
+        // whatever it left behind while hidden, and applyBrickTarget only touches the root — so a
+        // root flipping back to VISIBLE would come up empty until the next data callback. This
+        // has to stay AFTER the flip check above, because refreshing content can set the root
+        // VISIBLE itself, which would hide the flip from that comparison and cost the transition.
+        for (RenderBrick brick : renderBricks.values()) {
+            if (brick.activeInLayout(bricksSet) && !isBrickHiddenByApp(brick.type)) {
+                brick.onWillRender();
+            }
         }
 
         if (!visibilityFlips.isEmpty()) {
@@ -938,8 +738,6 @@ public class WidgetService extends Service implements WidgetHost {
         for (BrickTarget t : targets) {
             applyBrickTarget(t, visibilityFlips.contains(t));
         }
-        applyBrickTarget(mediaTarget, visibilityFlips.contains(mediaTarget));
-
         // Per-brick alpha not covered by the Fade transition (keep-space VISIBLE→VISIBLE).
         // The bricks in alphaOnly might still want a visible-alpha update if contentAlpha
         // pref changed — handled by applyXxxBrickSettings setAlpha which runs before this.
@@ -1054,12 +852,16 @@ public class WidgetService extends Service implements WidgetHost {
         // favors an already-running one on the same view), nothing restores the alpha and the child
         // reports VISIBLE while drawing nothing — which is how hiding the clock over the desktop
         // took the media progress bar down with it.
-        // excludeChildren keeps mediaContainer itself a target, so the brick still fades and
-        // re-bounds as a unit; only its internals are off limits. TransitionSet forwards
-        // excludeTarget to the transitions it holds but NOT excludeChildren, hence all three calls.
-        changeBounds.excludeChildren(binding.mediaContainer, true);
-        fade.excludeChildren(binding.mediaContainer, true);
-        tx.excludeChildren(binding.mediaContainer, true);
+        // excludeChildren keeps the brick's own root a target, so it still fades and re-bounds as
+        // a unit; only its internals are off limits. TransitionSet forwards excludeTarget to the
+        // transitions it holds but NOT excludeChildren, hence all three calls per brick.
+        for (RenderBrick brick : renderBricks.values()) {
+            View root = brick.view();
+            if (!(root instanceof android.view.ViewGroup)) continue;
+            changeBounds.excludeChildren(root, true);
+            fade.excludeChildren(root, true);
+            tx.excludeChildren(root, true);
+        }
         // Listener can leak the buffer counter if TransitionManager decides nothing
         // animatable changed and never fires the lifecycle callbacks — known foot-gun.
         // Guard with a single-shot close flag and a safety runnable that runs unconditionally
@@ -1168,9 +970,6 @@ public class WidgetService extends Service implements WidgetHost {
      */
     private int computeMinWidgetHeight(Set<BrickType> bricks) {
         int h = 0;
-        if (bricks.contains(BrickType.MEDIA)) {
-            h = Math.max(h, mediaBrickHeight());
-        }
         for (RenderBrick brick : renderBricks.values()) {
             if (brick.countsTowardFloor(bricks)) {
                 h = Math.max(h, brick.minHeight());
@@ -1179,58 +978,7 @@ public class WidgetService extends Service implements WidgetHost {
         return h;
     }
 
-    /**
-     * The media brick's height floor, modelled on the real layout: two rows — each as tall as the
-     * tallest view it holds — plus the progress bar.
-     *
-     * <p>Every term comes from the preference rather than from what is on screen right now: the
-     * floor's whole job is to hold the row still while the brick's own parts come and go (a live
-     * stream with no duration, the gap after a track change, a session with no app label). A
-     * brick that stays 5sp taller than its content for a radio station is the intended trade —
-     * the same one the floor already makes for bricks hidden by the per-app rule.
-     */
-    private int mediaBrickHeight() {
-        int titleRow = TextRenderBrick.lineHeight(binding.mediaTitleText, prefs.media.fontSize.get());
-        if (prefs.media.showDuration.get()) {
-            titleRow = Math.max(titleRow, TextRenderBrick.lineHeight(binding.mediaDurationText,
-                    prefs.media.durationFontSize.get()));
-        }
-        int height;
-        if (prefs.media.showSource.get()) {
-            int sourceRow = TextRenderBrick.lineHeight(binding.mediaAppText, prefs.media.sourceFontSize.get());
-            if (prefs.media.showPlaybackState.get()) {
-                // The indicator rides the source line and takes that line's metrics.
-                sourceRow = Math.max(sourceRow, MediaStateIconView.heightFor(
-                        prefs.media.sourceFontSize.get(), prefs.media.sourceOutlineWidth.get()));
-            }
-            height = sourceRow + titleRow;
-        } else {
-            // With the source line off the indicator is re-parented onto the title row.
-            if (prefs.media.showPlaybackState.get()) {
-                titleRow = Math.max(titleRow, MediaStateIconView.heightFor(
-                        prefs.media.fontSize.get(), prefs.media.outlineWidth.get()));
-            }
-            height = titleRow;
-        }
-        // The title row's top margin is applied unconditionally (applyMediaBrickSettings) and the
-        // row is never hidden, so LinearLayout counts it even with the source line off.
-        height += prefs.media.lineGap.get();
-        if (prefs.media.progressBarEnabled.get()) {
-            height += progressBarExtent();
-        }
-        return height;
-    }
 
-    /** Progress bar height plus its top margin, read from the layout so the sp values stay there. */
-    private int progressBarExtent() {
-        ViewGroup.LayoutParams lp = binding.mediaProgressBar.getLayoutParams();
-        if (lp == null || lp.height < 0) return 0;   // WRAP_CONTENT / MATCH_PARENT: nothing to add
-        int extent = lp.height;
-        if (lp instanceof LinearLayout.LayoutParams) {
-            extent += ((LinearLayout.LayoutParams) lp).topMargin;
-        }
-        return extent;
-    }
 
     public void setOverlayStateListener(@Nullable OverlayStateListener listener) {
         this.overlayStateListener = listener;
@@ -1278,374 +1026,21 @@ public class WidgetService extends Service implements WidgetHost {
         }
     }
 
-    private void enableMediaTracking() {
-        if (mediaSessionManager != null) return;
-        mediaSessionManager = (MediaSessionManager) getSystemService(MEDIA_SESSION_SERVICE);
-        if (mediaSessionManager == null) return;
-        ComponentName component = new ComponentName(this, MediaNotificationListener.class);
-        try {
-            mediaSessionManager.addOnActiveSessionsChangedListener(activeSessionsChangedListener, component, mainHandler);
-            rebindMediaControllers(mediaSessionManager.getActiveSessions(component));
-        } catch (SecurityException e) {
-            Log.w(TAG, "Notification access not granted; media tracking disabled", e);
-            mediaSessionManager = null;
-        }
-    }
 
-    private void disableMediaTracking() {
-        if (mediaSessionManager == null) return;
-        try {
-            mediaSessionManager.removeOnActiveSessionsChangedListener(activeSessionsChangedListener);
-        } catch (Exception ignored) {
-        }
-        for (MediaController c : activeMediaControllers) {
-            c.unregisterCallback(mediaControllerCallback);
-        }
-        activeMediaControllers.clear();
-        mediaSessionManager = null;
-    }
 
-    private void rebindMediaControllers(@Nullable List<MediaController> controllers) {
-        for (MediaController c : activeMediaControllers) {
-            c.unregisterCallback(mediaControllerCallback);
-        }
-        activeMediaControllers.clear();
-        if (controllers != null) {
-            for (MediaController c : controllers) {
-                activeMediaControllers.add(c);
-                c.registerCallback(mediaControllerCallback, mainHandler);
-            }
-        }
-        updateMediaInfo();
-    }
 
-    /**
-     * Nothing to show — hide the brick and reset the children whose visibility is otherwise only
-     * decided on the happy path below. Leaving them at their inflate defaults (row and icon both
-     * VISIBLE, the icon drawing a play triangle because setPaused has never run) is what let a
-     * phantom indicator paint whenever something else drove the container VISIBLE.
-     */
-    private void hideMediaBrick() {
-        binding.mediaContainer.setVisibility(View.GONE);
-        binding.mediaSourceRow.setVisibility(View.GONE);
-        binding.mediaStateIcon.setVisibility(View.GONE);
-        setProgressBarShown(false);
-        stopMediaProgressTicker();
-    }
 
-    private void updateMediaInfo() {
-        if (binding == null) return;
-        if (!currentBrickSet().contains(BrickType.MEDIA) || isBrickHiddenByApp(BrickType.MEDIA)) {
-            hideMediaBrick();
-            return;
-        }
-        MediaController playing = pickActiveMediaController();
-        if (playing == null) {
-            hideMediaBrick();
-            return;
-        }
-        MediaMetadata metadata = playing.getMetadata();
-        String title = pickMediaTitle(metadata);
-        String artist = metadata != null ? metadata.getString(MediaMetadata.METADATA_KEY_ARTIST) : null;
-        if (isUnknownArtistPlaceholder(artist)) {
-            // Some players (notably stock Android Music) fill the artist field with a literal
-            // "Unknown artist" / "Неизвестный исполнитель" string when the tag is missing.
-            // Treat that as no artist so the subtitle falls back to the title alone.
-            artist = null;
-        }
-        String subtitle;
-        boolean titleFirst = prefs.media.titleFirst.get();
-        String first = titleFirst ? title : artist;
-        String second = titleFirst ? artist : title;
-        if (!isEmpty(first) && !isEmpty(second)) {
-            subtitle = first + " — " + second;
-        } else if (!isEmpty(title)) {
-            subtitle = title;
-        } else if (!isEmpty(artist)) {
-            subtitle = artist;
-        } else {
-            // Something is playing but the player exposes no metadata at all — at least show a
-            // placeholder so the user can see that media playback is active.
-            subtitle = getString(R.string.media_unknown_track);
-        }
-        PlaybackState playbackState = playing.getPlaybackState();
-        // Pause shape only for an actual PAUSED; transient states (buffering / seeking) keep the
-        // play shape so the icon doesn't flicker every time the user scrubs.
-        // Players republish PlaybackState continuously (Yandex Music every second), and
-        // TextView.setText unconditionally drops its layout and requests a full re-layout even
-        // for identical text. On OEM head units that per-second layout storm makes the whole
-        // title row visibly jitter while the marquee scrolls — so every setter here must be
-        // a no-op when the value didn't actually change (MediaStateIconView.setPaused is).
-        binding.mediaStateIcon.setPaused(playbackState != null
-                && playbackState.getState() == PlaybackState.STATE_PAUSED);
-        String sourceLabel = getAppLabel(playing.getPackageName());
-        binding.mediaAppText.setMarqueeText(sourceLabel);
-        binding.mediaTitleText.setMarqueeText(subtitle);
-        // Show the source row only when the user enabled it AND there is a name to show. Some
-        // head-unit system audio routes (built-in radio, a Bluetooth profile) own a media session
-        // with no resolvable package/label, so the label comes back empty; a visible-but-empty row
-        // would just add dead vertical space.
-        boolean showSourceRow = prefs.media.showSource.get() && !isEmpty(sourceLabel);
-        binding.mediaSourceRow.setVisibility(showSourceRow ? View.VISIBLE : View.GONE);
-        // Play/pause indicator: an optional adornment (its own setting) that annotates whichever
-        // line hosts it — the source line when showSource is on, the title line otherwise
-        // (applyMediaStateIcon does the re-parenting). It must never float alone, so it is bound to
-        // its host line having text: on the source line that means a non-empty app label (the
-        // no-label head-unit sessions above would otherwise strand a lone triangle in the row), on
-        // the title line the subtitle always has a fallback so it stays. This is why the icon's own
-        // visibility is toggled rather than the row's — with the source line off, the row is gone
-        // yet the indicator still needs to ride the title line.
-        boolean iconHostHasText = prefs.media.showSource.get()
-                ? !isEmpty(sourceLabel) : !isEmpty(subtitle);
-        binding.mediaStateIcon.setVisibility(
-                prefs.media.showPlaybackState.get() && iconHostHasText ? View.VISIBLE : View.GONE);
 
-        // Duration: format ms → "M:SS" / "H:MM:SS". Hidden when the user opted out or the
-        // player doesn't expose a positive duration (live streams, podcast pre-buffer).
-        long durationMs = metadata != null
-                ? metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
-                : 0L;
-        // Track identity: duration/progress visibility may only COLLAPSE on a real track
-        // change. Players republish metadata continuously (Yandex Music: every second) and
-        // the duration is transiently absent in some republishes — hiding on those blips
-        // collapsed the row height once a second, which read as the whole widget "regrouping"
-        // while the marquee scrolls.
-        boolean trackChanged = !TextUtils.equals(subtitle, lastMediaSubtitle);
-        lastMediaSubtitle = subtitle;
 
-        if (!prefs.media.showDuration.get()) {
-            binding.mediaDurationText.setVisibility(View.GONE);
-        } else if (durationMs > 0L) {
-            // Leading space gives the gap between title and duration without an extra layout
-            // margin pref — scales naturally with the duration font size.
-            setTextIfChanged(binding.mediaDurationText, " " + formatTrackDuration(durationMs));
-            binding.mediaDurationText.setVisibility(View.VISIBLE);
-        } else if (trackChanged) {
-            // New track with no usable duration (live stream) — hide for real.
-            binding.mediaDurationText.setVisibility(View.GONE);
-        }
-        // else: transient blip on the same track — keep the last shown value.
 
-        // Progress bar visibility is decided here ONLY (updateMediaProgress never touches it —
-        // see the comment there). Same blip-tolerant policy as the duration text.
-        if (!prefs.media.progressBarEnabled.get()) {
-            setProgressBarShown(false);
-        } else if (durationMs > 0L) {
-            setProgressBarShown(true);
-        } else if (trackChanged) {
-            setProgressBarShown(false);
-        }
 
-        binding.mediaContainer.setVisibility(View.VISIBLE);
 
-        updateMediaProgress(playing);
-    }
 
-    /**
-     * Format a positive duration in milliseconds as {@code M:SS} (under an hour) or
-     * {@code H:MM:SS} (one hour or longer). Locale-independent — uses the same digit forms
-     * everywhere because the duration is displayed alongside the marquee subtitle, where
-     * regional digit substitutions would look out of place.
-     */
-    private static String formatTrackDuration(long ms) {
-        long totalSeconds = ms / 1000L;
-        long hours = totalSeconds / 3600L;
-        long minutes = (totalSeconds % 3600L) / 60L;
-        long seconds = totalSeconds % 60L;
-        if (hours > 0) {
-            return String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds);
-        }
-        return String.format(java.util.Locale.ROOT, "%d:%02d", minutes, seconds);
-    }
 
-    /**
-     * Single writer for the progress bar's visibility, deduplicated against our OWN field rather
-     * than against {@code getVisibility()}.
-     * <p>
-     * The per-second player republishes must not re-run {@code setColor}, which is why the show
-     * path was originally guarded by reading the view's visibility back. But a running
-     * {@link android.transition.Visibility} transition rewrites those flags: when it adopts a view
-     * it calls {@code setTransitionVisibility(VISIBLE)} and fades {@code transitionAlpha} to 0, so
-     * the view reports VISIBLE while drawing nothing. The read-back then saw "already VISIBLE",
-     * skipped {@code setVisibility}, and the bar stayed invisible until some unrelated brick
-     * transition happened to clear the state — which is exactly how hiding the clock over the
-     * desktop took the progress bar down with it. Owning the flag here makes the recovery
-     * unconditional, like every other child of the brick.
-     */
-    private void setProgressBarShown(boolean shown) {
-        if (progressBarShown == shown && binding.mediaProgressBar.getVisibility()
-                == (shown ? View.VISIBLE : View.GONE)) {
-            return;
-        }
-        progressBarShown = shown;
-        if (shown) {
-            binding.mediaProgressBar.setColor(
-                    ContextCompat.getColor(themedContext != null ? themedContext : this,
-                            R.color.text_primary));
-        }
-        binding.mediaProgressBar.setVisibility(shown ? View.VISIBLE : View.GONE);
-    }
 
-    /**
-     * Snap the progress bar to the current playback position and arm/disarm the periodic ticker.
-     * Called both from {@link #updateMediaInfo} (state/metadata flips) and from
-     * {@link #mediaProgressTick} (every ~250ms while playing) to advance the bar smoothly.
-     */
-    private void updateMediaProgress(@Nullable MediaController playing) {
-        if (binding == null) return;
-        // Visibility policy: this method NEVER changes the bar's visibility. Flipping
-        // GONE/VISIBLE changes the media container's height and relayouts the whole brick
-        // row — and players like Yandex Music republish state/metadata every second, with
-        // the duration transiently missing, which turned that flip into a once-a-second
-        // visible "regroup" of the row while the marquee scrolls. Visibility is decided
-        // solely in updateMediaInfo (real track/state changes); here we only advance the
-        // fill fraction — a pure repaint.
-        if (!prefs.media.progressBarEnabled.get() || playing == null || !progressBarShown) {
-            stopMediaProgressTicker();
-            return;
-        }
-        MediaMetadata metadata = playing.getMetadata();
-        long duration = metadata != null
-                ? metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
-                : 0L;
-        PlaybackState state = playing.getPlaybackState();
-        if (duration <= 0L || state == null) {
-            // Timeline transiently unavailable (metadata republish in flight) — keep the last
-            // rendered fill and let the next tick catch up rather than touching layout.
-            return;
-        }
-        long now = android.os.SystemClock.elapsedRealtime();
-        long lastUpdate = state.getLastPositionUpdateTime();
-        long basePosition = state.getPosition();
-        // PlaybackState.getPosition() returns the position as of getLastPositionUpdateTime();
-        // for the *current* moment we extrapolate with the reported playback speed (typically 1.0).
-        long actualPosition = basePosition
-                + (long) ((now - lastUpdate) * state.getPlaybackSpeed());
-        if (actualPosition < 0L) actualPosition = 0L;
-        if (actualPosition > duration) actualPosition = duration;
 
-        binding.mediaProgressBar.setProgress((float) actualPosition / (float) duration);
 
-        if (state.getState() == PlaybackState.STATE_PLAYING) {
-            // Re-arm — the new postDelayed replaces any previously queued one, idempotent.
-            mainHandler.removeCallbacks(mediaProgressTick);
-            mainHandler.postDelayed(mediaProgressTick, MEDIA_PROGRESS_TICK_MS);
-        } else {
-            stopMediaProgressTicker();
-        }
-    }
 
-    private void stopMediaProgressTicker() {
-        mainHandler.removeCallbacks(mediaProgressTick);
-    }
-
-    private final Runnable mediaProgressTick = () -> updateMediaProgress(pickActiveMediaController());
-
-    /**
-     * Best-effort extraction of a track title from the media metadata. Falls back through several
-     * standard keys, then to the file name parsed out of the media URI, so we still show something
-     * useful for players that don't populate {@link MediaMetadata#METADATA_KEY_TITLE}.
-     */
-    @Nullable
-    private static String pickMediaTitle(@Nullable MediaMetadata metadata) {
-        if (metadata == null) return null;
-        String[] keys = {
-                MediaMetadata.METADATA_KEY_TITLE,
-                MediaMetadata.METADATA_KEY_DISPLAY_TITLE,
-                MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE,
-                MediaMetadata.METADATA_KEY_DISPLAY_DESCRIPTION,
-        };
-        for (String key : keys) {
-            String value = metadata.getString(key);
-            if (!isEmpty(value)) return value;
-        }
-        String uriFilename = filenameFromUri(metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_URI));
-        if (!isEmpty(uriFilename)) return uriFilename;
-        return filenameFromUri(metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID));
-    }
-
-    /**
-     * Recognise the literal "Unknown artist" / "Неизвестный исполнитель" placeholders that
-     * some players write into the artist field when the tag is missing — case-insensitive
-     * and whitespace-tolerant.
-     */
-    private static boolean isUnknownArtistPlaceholder(@Nullable String s) {
-        if (s == null) return false;
-        String trimmed = s.trim();
-        return trimmed.equalsIgnoreCase("unknown artist")
-                || trimmed.equalsIgnoreCase("неизвестный исполнитель");
-    }
-
-    @Nullable
-    private static String filenameFromUri(@Nullable String raw) {
-        if (isEmpty(raw)) return null;
-        String last = null;
-        try {
-            android.net.Uri uri = android.net.Uri.parse(raw);
-            last = uri.getLastPathSegment();
-        } catch (Exception ignored) {
-        }
-        if (isEmpty(last)) {
-            int slash = Math.max(raw.lastIndexOf('/'), raw.lastIndexOf('\\'));
-            last = (slash >= 0 && slash < raw.length() - 1) ? raw.substring(slash + 1) : raw;
-        }
-        if (isEmpty(last)) return null;
-        int dot = last.lastIndexOf('.');
-        if (dot > 0) {
-            last = last.substring(0, dot);
-        }
-        return android.net.Uri.decode(last);
-    }
-
-    @Nullable
-    private MediaController pickActiveMediaController() {
-        // Prefer a controller that is currently playing. If none is playing, fall back to any
-        // controller in a transient "media is loaded and the user is doing something with it"
-        // state — paused, buffering, fast-forwarding, rewinding, skipping. Keeping the brick
-        // visible across these short-lived transitions avoids a VISIBLE→GONE→VISIBLE blink
-        // (which would re-layout the title text from zero size and reset the marquee scroll)
-        // every time the user seeks or the player briefly buffers.
-        MediaController fallback = null;
-        for (MediaController c : activeMediaControllers) {
-            PlaybackState s = c.getPlaybackState();
-            if (s == null) continue;
-            int state = s.getState();
-            if (state == PlaybackState.STATE_PLAYING) {
-                return c;
-            }
-            if (fallback == null && isMediaActiveState(state)) {
-                fallback = c;
-            }
-        }
-        return fallback;
-    }
-
-    private static boolean isMediaActiveState(int state) {
-        switch (state) {
-            case PlaybackState.STATE_PAUSED:
-            case PlaybackState.STATE_BUFFERING:
-            case PlaybackState.STATE_FAST_FORWARDING:
-            case PlaybackState.STATE_REWINDING:
-            case PlaybackState.STATE_SKIPPING_TO_NEXT:
-            case PlaybackState.STATE_SKIPPING_TO_PREVIOUS:
-            case PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM:
-            case PlaybackState.STATE_CONNECTING:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private String getAppLabel(String pkg) {
-        try {
-            PackageManager pm = getPackageManager();
-            ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
-            CharSequence label = pm.getApplicationLabel(info);
-            return label != null ? label.toString() : pkg;
-        } catch (Exception e) {
-            return pkg;
-        }
-    }
 
     private static boolean isEmpty(@Nullable String s) {
         return s == null || s.isEmpty();
@@ -1967,13 +1362,18 @@ public class WidgetService extends Service implements WidgetHost {
         return mainHandler;
     }
 
+    @NonNull
+    @Override
+    public Set<BrickType> currentOrder() {
+        return currentBrickSet();
+    }
+
     @Override
     public void onDestroy() {
         instance = null;
 
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         mainHandler.removeCallbacks(foregroundAppCheckRunnable);
-        mainHandler.removeCallbacks(mediaProgressTick);
         mainHandler.removeCallbacks(shrinkBufferSafetyClose);
 
         for (RenderBrick brick : renderBricks.values()) {
@@ -1984,7 +1384,6 @@ public class WidgetService extends Service implements WidgetHost {
             windowManager.removeView(binding.getRoot());
         }
 
-        disableMediaTracking();
         // Drop car sensor subscriptions but keep the process-wide integration alive — the
         // settings UI may still query isBrickSupported after the overlay service stops.
         CarIntegration car = CarIntegrations.get(this);
