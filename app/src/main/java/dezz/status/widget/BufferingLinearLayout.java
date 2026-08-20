@@ -46,6 +46,7 @@ public class BufferingLinearLayout extends LinearLayout {
     }
 
     @Nullable private SizeChangeHint hint;
+    private boolean measureUnconstrainedWidth;
     private int lastMeasuredWidth = -1;
     private int lastMeasuredHeight = -1;
 
@@ -65,16 +66,68 @@ public class BufferingLinearLayout extends LinearLayout {
         this.hint = hint;
     }
 
+    /**
+     * Floating mode only: measure children at their natural width, ignoring the width the parent
+     * offers. Must stay OFF for the full-width status-bar row, whose spacers carry
+     * {@code layout_weight} and need a bounded width to distribute.
+     */
+    public void setMeasureUnconstrainedWidth(boolean unconstrained) {
+        if (measureUnconstrainedWidth == unconstrained) return;
+        measureUnconstrainedWidth = unconstrained;
+        // The remembered size belongs to the old regime; comparing against it would report a
+        // phantom resize on the first measure after the switch.
+        lastMeasuredWidth = -1;
+        lastMeasuredHeight = -1;
+        requestLayout();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        int newW = getMeasuredWidth();
-        int newH = getMeasuredHeight();
-        if (hint != null && lastMeasuredWidth >= 0
-                && (newW != lastMeasuredWidth || newH != lastMeasuredHeight)) {
-            hint.onSizeAboutToChange(lastMeasuredWidth, newW, lastMeasuredHeight, newH);
+        int naturalWidth;
+        if (measureUnconstrainedWidth
+                && MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED) {
+            // A floating overlay must never be squeezed to fit a width it was never asked to fit.
+            // ViewRootImpl pre-measures a WRAP_CONTENT window at config_prefDialogWidth (580px on
+            // a 720dp head unit); the text bricks silently wrap to that, so the widget renders
+            // permanently narrower and taller than its content — and, far worse, it renders
+            // DIFFERENTLY from the buffered state, because beginBufferedTransition swaps the
+            // window to an EXACTLY(screenWidth) spec which lifts the cap. The two states then
+            // disagree about the widget's height, every brick re-centres, LayoutTransition
+            // CHANGING arms, and the transition re-opens the buffer that produced the other
+            // state — a self-sustaining relayout loop that reads as a flicker on the window's
+            // right edge (the only edge that can move; params.x is pinned, gravity is TOP|LEFT).
+            //
+            // Measuring the children unconstrained makes the layout identical under both specs,
+            // and resolveSizeAndState reports MEASURED_STATE_TOO_SMALL so ViewRootImpl retries
+            // with the room the content actually needs. Driven by an explicit flag rather than by
+            // the incoming spec, because the status-bar row also arrives as AT_MOST (a
+            // wrap_content container inside a match_parent window) and there the offered width is
+            // real: its spacers carry layout_weight and need it to distribute.
+            // Measure against the DISPLAY, not against whatever the window happens to offer.
+            // Not UNSPECIFIED: content genuinely wider than the screen must still wrap the way it
+            // always did, rather than being laid out off-screen and clipped away for good.
+            super.onMeasure(
+                    MeasureSpec.makeMeasureSpec(
+                            getResources().getDisplayMetrics().widthPixels, MeasureSpec.AT_MOST),
+                    heightMeasureSpec);
+            naturalWidth = getMeasuredWidth();
+            setMeasuredDimension(
+                    resolveSizeAndState(naturalWidth, widthMeasureSpec, 0),
+                    getMeasuredHeightAndState());
+        } else {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            naturalWidth = getMeasuredWidth();
         }
-        lastMeasuredWidth = newW;
+        int newH = getMeasuredHeight();
+        // Compare the NATURAL width, never the value resolveSizeAndState just clamped to the
+        // offered spec: ViewRootImpl probes a WRAP_CONTENT window at config_prefDialogWidth
+        // first, and reporting that probe as a shrink would open the window buffer on a size the
+        // content never actually had.
+        if (hint != null && lastMeasuredWidth >= 0
+                && (naturalWidth != lastMeasuredWidth || newH != lastMeasuredHeight)) {
+            hint.onSizeAboutToChange(lastMeasuredWidth, naturalWidth, lastMeasuredHeight, newH);
+        }
+        lastMeasuredWidth = naturalWidth;
         lastMeasuredHeight = newH;
     }
 }

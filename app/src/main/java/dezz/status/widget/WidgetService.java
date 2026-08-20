@@ -547,6 +547,11 @@ public class WidgetService extends Service {
             int oldWidth = oldRight - oldLeft;
             int newWidth = right - left;
             boolean nonStatusBar = prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR;
+            // No buffer guard here on purpose: the window's own width swings used to leak into
+            // these bounds, but the container now measures against the display rather than the
+            // window (see BufferingLinearLayout), so what arrives here is content width only.
+            // Gating on pendingBufferedTransitions would be worse than useless — the size hint
+            // raises that counter from onMeasure, i.e. before this listener ever runs.
             if (nonStatusBar
                     && prefs.widgetAlignRight.get() && oldWidth > 0 && newWidth > 0 && newWidth != oldWidth) {
                 params.x += oldWidth - newWidth;
@@ -566,6 +571,12 @@ public class WidgetService extends Service {
         // mid-measure lets our updateViewLayout(screenWidth) win the race so the window
         // never snaps below the children that are about to animate. The safety runnable
         // is a fallback in case no LayoutTransition actually plays.
+        // Seed the measure mode here as well as in applyPreferences: addView() happens a few
+        // lines below and the first traversal must already know which regime it is in, without
+        // depending on applyPreferences() being called before it.
+        binding.overlayContainer.setMeasureUnconstrainedWidth(
+                prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR);
+
         binding.overlayContainer.setSizeChangeHint((oldW, newW, oldH, newH) -> {
             if (params == null) return;
             if (prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR) return;
@@ -702,6 +713,11 @@ public class WidgetService extends Service {
         // GNSS/status redraws) while the marquee scrolls. Disable it entirely there.
         binding.overlayContainer.setLayoutTransition(
                 prefs.widgetMode.get() == WIDGET_MODE_STATUS_BAR ? null : contentLayoutTransition);
+
+        // Floating mode must measure at natural width (see BufferingLinearLayout); the status-bar
+        // row must not — it spreads its start/center/end groups across the width it is given.
+        binding.overlayContainer.setMeasureUnconstrainedWidth(
+                prefs.widgetMode.get() != WIDGET_MODE_STATUS_BAR);
 
         // Reorder children of the root LinearLayout to match brickOrder. Hidden bricks are
         // appended at the end with View.GONE — kept attached so we don't need to re-bind state.
