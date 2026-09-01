@@ -91,16 +91,27 @@ abstract class IconRenderBrick extends RenderBrick {
         return null;
     }
 
-    /** A text badge: what to write, and the two colours to write it in. */
+    /** A text badge: what to write, the two colours to write it in, and an optional rim colour. */
     static final class TextBadge {
         final String text;
         final int background;
         final int foreground;
+        /**
+         * Colour of the ring around the pill, or {@code 0} for none. A SECOND channel on one badge:
+         * the fill already carries the brick's primary state, so a badge that has to say two things
+         * at once says the other one on its rim rather than fighting for the fill.
+         */
+        final int ring;
 
         TextBadge(@NonNull String text, int background, int foreground) {
+            this(text, background, foreground, 0);
+        }
+
+        TextBadge(@NonNull String text, int background, int foreground, int ring) {
             this.text = text;
             this.background = background;
             this.foreground = foreground;
+            this.ring = ring;
         }
     }
 
@@ -173,9 +184,9 @@ abstract class IconRenderBrick extends RenderBrick {
         TextBadge badge = textBadge(stateIdx, coloured ? stateColor
                 : ContextCompat.getColor(ctx, R.color.text_primary));
         if (badge != null) {
-            icon.setBadgeText(badge.text, badge.background, badge.foreground);
+            icon.setBadgeText(badge.text, badge.background, badge.foreground, badge.ring);
         } else {
-            icon.setBadgeText(null, 0, 0);
+            icon.setBadgeText(null, 0, 0, 0);
         }
     }
 

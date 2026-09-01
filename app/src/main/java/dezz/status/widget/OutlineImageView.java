@@ -46,9 +46,11 @@ public class OutlineImageView extends AppCompatImageView {
     @Nullable private String badgeText;
     private int badgeTextBackgroundColor;
     private int badgeTextForegroundColor;
+    private int badgeTextRingColor;
 
     private final Paint outlinePaint = new Paint(Paint.FILTER_BITMAP_FLAG);
     private final Paint badgeFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint badgeRingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint badgeTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int filterColor = 0;
 
@@ -117,15 +119,21 @@ public class OutlineImageView extends AppCompatImageView {
      * Sets a text badge (rounded background + centred text) drawn in the bottom-right corner.
      * Pass {@code null} text to remove. If both {@link #setBadgeDrawable(Drawable)} and a text
      * badge are set, the text badge wins.
+     *
+     * <p>{@code ringColor} outlines the pill in a second colour — a channel independent of the fill,
+     * so a badge can carry one state in its background and another on its rim. Fully transparent
+     * (typically {@code 0}) draws no ring, which is the badge as it was before the channel existed.
      */
-    public void setBadgeText(@Nullable String text, int backgroundColor, int textColor) {
+    public void setBadgeText(@Nullable String text, int backgroundColor, int textColor, int ringColor) {
         boolean changed = !java.util.Objects.equals(this.badgeText, text)
                 || this.badgeTextBackgroundColor != backgroundColor
-                || this.badgeTextForegroundColor != textColor;
+                || this.badgeTextForegroundColor != textColor
+                || this.badgeTextRingColor != ringColor;
         if (changed) {
             this.badgeText = text;
             this.badgeTextBackgroundColor = backgroundColor;
             this.badgeTextForegroundColor = textColor;
+            this.badgeTextRingColor = ringColor;
             invalidate();
         }
     }
@@ -211,6 +219,22 @@ public class OutlineImageView extends AppCompatImageView {
         badgeFillPaint.setColor(badgeTextBackgroundColor);
         canvas.drawRoundRect(left, top, right, bottom, corner, corner, badgeFillPaint);
 
+        if (Color.alpha(badgeTextRingColor) > 0) {
+            // Both strokes go INSIDE the pill: the badge keeps the footprint it has whether the ring
+            // is lit or not, so the rim state cannot make the badge twitch in size — and nothing can
+            // be clipped by the view bounds, which the 2 % corner padding would not have cleared.
+            float ringWidth = Math.max(1f, height * 0.12f);
+            float gapWidth = Math.max(1f, height * 0.06f);
+            // The ring's colour is chosen for what it MEANS, the fill's for something else entirely,
+            // and the two are free to coincide — a green rim on the green "GPS is fine" pill would
+            // simply not exist. So a hairline of the badge's own ink separates them; the ink is by
+            // construction readable against the fill, which is what makes this independent of both.
+            strokeBadge(canvas, left, top, right, bottom, ringWidth / 2f, ringWidth,
+                    badgeTextRingColor);
+            strokeBadge(canvas, left, top, right, bottom, ringWidth + gapWidth / 2f, gapWidth,
+                    badgeTextForegroundColor);
+        }
+
         badgeTextPaint.setColor(badgeTextForegroundColor);
         badgeTextPaint.setTextAlign(Paint.Align.CENTER);
         badgeTextPaint.setFakeBoldText(true);
@@ -219,6 +243,19 @@ public class OutlineImageView extends AppCompatImageView {
         float cx = (left + right) / 2f;
         float cy = (top + bottom) / 2f - (fm.ascent + fm.descent) / 2f;
         canvas.drawText(badgeText, cx, cy, badgeTextPaint);
+    }
+
+    /** One band of the badge rim: a stroke of {@code width}, centred {@code inset} in from the pill's
+     *  edge, following the pill's own rounding (which tightens as the band moves inward). */
+    private void strokeBadge(Canvas canvas, float left, float top, float right, float bottom,
+                             float inset, float width, int color) {
+        float radius = (bottom - top) / 2f - inset;
+        if (radius <= 0) return;   // degenerate badge (a tiny icon) — a rim would be mud, draw none
+        badgeRingPaint.setStyle(Paint.Style.STROKE);
+        badgeRingPaint.setStrokeWidth(width);
+        badgeRingPaint.setColor(color);
+        canvas.drawRoundRect(left + inset, top + inset, right - inset, bottom - inset,
+                radius, radius, badgeRingPaint);
     }
 
     @Nullable

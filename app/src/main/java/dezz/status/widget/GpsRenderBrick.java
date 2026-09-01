@@ -39,7 +39,8 @@ import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
 
 /**
  * GNSS status icon. Owns the platform location callbacks, the staleness demotion tick, and the
- * gnss-share broadcast that supplies the satellite-count / dead-reckoning / spoof badge.
+ * gnss-share broadcast that supplies the badge: satellite count / dead reckoning / spoof on the
+ * pill, and the matcher's road anchoring on its rim.
  */
 final class GpsRenderBrick extends IconRenderBrick {
 
@@ -52,12 +53,21 @@ final class GpsRenderBrick extends IconRenderBrick {
     private static final String EXTRA_SATELLITES_COUNT = "count";
     /**
      * Optional positioning-mode extra, treated as a bit mask (absent / 0 = normal satellite
-     * fixing). The two flags are independent — dead reckoning and spoofing-detected can each be
+     * fixing). The flags are independent — dead reckoning and spoofing-detected can each be
      * set on their own or together (3 = dead reckoning entered because of a detected spoof).
      */
     private static final String EXTRA_MODE = "mode";
-    private static final int MODE_DR = 1;     // bit 0: position is dead-reckoned
-    private static final int MODE_SPOOF = 2;  // bit 1: GPS spoofing detected
+    private static final int MODE_DR = 1;          // bit 0: position is dead-reckoned
+    private static final int MODE_SPOOF = 2;       // bit 1: GPS spoofing detected
+    /**
+     * Bits 2 and 3 carry the map matcher's road anchoring, and it takes two of them because the
+     * answer has three values: no verdict at all (no map data loaded, a frozen matcher, an engine
+     * that stopped), a verdict of "off the road", and one of "anchored to a road". Only the third
+     * rings the badge — an absent {@code mode} extra, or an older gnss-share that predates these
+     * bits, therefore reads as "nothing claimed" and leaves the badge exactly as it was.
+     */
+    private static final int MODE_ROAD_KNOWN = 4;  // bit 2: the road verdict below is live
+    private static final int MODE_ON_ROAD = 8;     // bit 3: …and it says the position is on a road
     private static final long SATELLITE_STATUS_TIMEOUT_MS = 30_000L;
 
     enum State {
@@ -117,9 +127,16 @@ final class GpsRenderBrick extends IconRenderBrick {
     }
 
     /**
-     * Satellite count, or a marker when the fix is degraded. Two independent flags: dead reckoning
-     * drives the text, spoofing drives the colour, so both read off the same pill (e.g. "DR" on
-     * red = fell back to dead reckoning because of a detected spoof).
+     * Satellite count, or a marker when the fix is degraded. Three independent flags on one pill:
+     * dead reckoning drives the text, spoofing drives the colour (e.g. "DR" on red = fell back to
+     * dead reckoning because of a detected spoof), and the map matcher's road anchoring drives the
+     * rim.
+     *
+     * <p>The green rim mirrors, exactly, the «на дороге» chip in the gnss-share app — the same
+     * verdict, decided once on that side and sent already decided, so the two indications cannot
+     * disagree about the same second. It is deliberately not restricted to the dead-reckoning
+     * states: whether the position is anchored to a road is the same question, and the same answer,
+     * while the fix still comes from satellites.
      */
     @Nullable
     @Override
@@ -144,17 +161,23 @@ final class GpsRenderBrick extends IconRenderBrick {
             return null;
         }
         Context ctx = host.themed();
+        // Both bits, never just the second: "off the road" and "no road verdict at all" arrive as
+        // different values precisely so the rim stays dark for the second instead of asserting the
+        // first. Testing MODE_ON_ROAD alone would ring the badge off a sender that never set it.
+        int ring = (modeFlags & (MODE_ROAD_KNOWN | MODE_ON_ROAD)) == (MODE_ROAD_KNOWN | MODE_ON_ROAD)
+                ? ContextCompat.getColor(ctx, R.color.status_ok)
+                : 0;
         if (spoofDetected) {
             // Spoofing detected — red, whether we are on dead reckoning or still on GPS.
             return new TextBadge(text, ContextCompat.getColor(ctx, R.color.status_error),
-                    ContextCompat.getColor(ctx, R.color.status_badge_text));
+                    ContextCompat.getColor(ctx, R.color.status_badge_text), ring);
         }
         if (deadReckoning) {
             // Dead reckoning without a spoof — amber (degraded, not an attack).
             return new TextBadge(text, ContextCompat.getColor(ctx, R.color.status_warning),
-                    ContextCompat.getColor(ctx, R.color.status_badge_text));
+                    ContextCompat.getColor(ctx, R.color.status_badge_text), ring);
         }
-        return new TextBadge(text, styleBg, defaultBadgeForeground());
+        return new TextBadge(text, styleBg, defaultBadgeForeground(), ring);
     }
 
     @SuppressLint("MissingPermission")
