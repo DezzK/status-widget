@@ -38,7 +38,8 @@ public enum BrickType {
     GPS(R.string.brick_title_gps),
     BLUETOOTH(R.string.brick_title_bluetooth),
     INDOOR_TEMP(R.string.brick_title_indoor_temp),
-    OUTDOOR_TEMP(R.string.brick_title_outdoor_temp);
+    OUTDOOR_TEMP(R.string.brick_title_outdoor_temp),
+    GNSS_INFO(R.string.brick_title_gnss_info);
 
     private static final BrickType[] VALUES = values();
 

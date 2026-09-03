@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright © 2025-2026 Dezz (https://github.com/DezzK)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/brickGnssInfoBlock"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/brickGnssInfoShowSatellites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/optionsMarginSmall"
+        android:minHeight="@dimen/optionsLineHeight"
+        android:text="@string/gnss_show_satellite_count"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/brickGnssInfoSatellitesUsedInFix"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/optionsMarginSmall"
+        android:minHeight="@dimen/optionsLineHeight"
+        android:text="@string/gnss_satellites_used_in_fix"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/brickGnssInfoShowMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/optionsMarginSmall"
+        android:minHeight="@dimen/optionsLineHeight"
+        android:text="@string/gnss_show_mode"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/brickGnssInfoShowRoad"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/optionsMarginSmall"
+        android:minHeight="@dimen/optionsLineHeight"
+        android:text="@string/gnss_show_road"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/brickGnssInfoShowAccuracy"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/optionsMarginSmall"
+        android:minHeight="@dimen/optionsLineHeight"
+        android:text="@string/gnss_show_accuracy"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/brickGnssInfoShowSpeed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/optionsMarginSmall"
+        android:minHeight="@dimen/optionsLineHeight"
+        android:text="@string/gnss_show_speed"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/brickGnssInfoShowAltitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/optionsMarginSmall"
+        android:minHeight="@dimen/optionsLineHeight"
+        android:text="@string/gnss_show_altitude"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/brickGnssInfoShowFixAge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/optionsMarginSmall"
+        android:minHeight="@dimen/optionsLineHeight"
+        android:text="@string/gnss_show_fix_age"
+        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/gnss_info_block_hint"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+</LinearLayout>

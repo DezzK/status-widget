@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright © 2025-2026 Dezz (https://github.com/DezzK)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+<!-- Accuracy: the uncertainty halo every map app draws around the blue dot — which is exactly
+     what horizontal accuracy is. Deliberately not a crosshair: that shape IS the GPS brick's own
+     ic_status_bars_gps_good, and its thin ring gaps fuse into a disc under the outline. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:antialias="true"
+        android:pathData="M9,12a3,3 0 1,1 6,0 3,3 0 1,1 -6,0zM20.66,17A10,10 0 0,0 20.66,7L18.5,8.25A7.5,7.5 0 0,1 18.5,15.75zM17,3.34A10,10 0 0,0 7,3.34L8.25,5.5A7.5,7.5 0 0,1 15.75,5.5zM3.34,7A10,10 0 0,0 3.34,17L5.5,15.75A7.5,7.5 0 0,1 5.5,8.25zM7,20.66A10,10 0 0,0 17,20.66L15.75,18.5A7.5,7.5 0 0,1 8.25,18.5z" />
+</vector>

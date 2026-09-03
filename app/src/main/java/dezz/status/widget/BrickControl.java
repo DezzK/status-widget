@@ -55,6 +55,13 @@ public enum BrickControl {
      */
     BLOCK_FONT,
     /**
+     * {@code brickTableRow} — row count + cell spacing, for a brick whose content is a table of
+     * cells rather than one run of text. Added by {@link Preferences.TableBrickPrefs} and NOWHERE
+     * else: the binding site casts to that class, and the cast is only safe while this stays the
+     * single origin — the same rule {@link #BLOCK_FONT} lives under.
+     */
+    ROW_TABLE,
+    /**
      * {@code brickStatusAlignmentLayout} — the shared start/center/end dropdown for status-bar
      * mode. Bricks whose own block hosts a paired alignment row drop this and bind their in-block
      * dropdown instead. Its container is driven by the binder rather than by the control set

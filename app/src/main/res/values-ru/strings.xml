@@ -74,6 +74,19 @@
     </string-array>
     <string name="show_gnss_satellite_badge">Показывать спутники и режим</string>
     <string name="show_gnss_satellite_badge_hint">Число спутников или маркер DR / анти-спуфинга. Требуется приложение GNSS Share.</string>
+    <string name="gnss_show_satellite_count">Показывать число спутников</string>
+    <string name="gnss_show_mode">Показывать режим позиционирования</string>
+    <string name="gnss_show_road">Показывать привязку к дороге</string>
+    <string name="gnss_satellites_used_in_fix">Показывать ещё и спутники в фиксе (9/12)</string>
+    <string name="gnss_show_accuracy">Показывать точность</string>
+    <string name="gnss_show_speed">Показывать скорость</string>
+    <string name="gnss_show_altitude">Показывать высоту</string>
+    <string name="gnss_show_fix_age">Показывать возраст фикса</string>
+    <string name="gnss_unit_meters">м</string>
+    <string name="gnss_unit_kilometers">км</string>
+    <string name="gnss_unit_kmh">км/ч</string>
+    <string name="gnss_unit_seconds">с</string>
+    <string name="gnss_info_block_hint">Всё, на что значок с иконки GPS может только намекнуть, — иконкой и числом, со своим размером шрифта. Машинка — счисление пути, щит — обнаружена подмена координат, дорога — позиция привязана к дороге. Число спутников и эти три лампы приходят от приложения GNSS Share и без него показывают прочерк; точность, скорость, высота и возраст фикса берутся у самого головного устройства.</string>
     <string name="show_media_hint">Для отображения воспроизводимого медиа требуется доступ к уведомлениям.</string>
     <string name="media_unknown_track">Идёт воспроизведение</string>
     <string name="grant_notification_access">Открыть настройки доступа к уведомлениям</string>
@@ -94,6 +107,7 @@
     <string name="brick_title_bluetooth">Bluetooth</string>
     <string name="brick_title_indoor_temp">Температура в салоне</string>
     <string name="brick_title_outdoor_temp">Температура за бортом</string>
+    <string name="brick_title_gnss_info">Спутники и режим</string>
     <string name="show_bluetooth_device_count_badge">Показывать число подключённых устройств</string>
     <string name="brick_font_size">Размер шрифта</string>
     <string name="brick_size">Размер</string>
@@ -103,6 +117,8 @@
     <string name="brick_margin_start">Отступ слева</string>
     <string name="brick_margin_end">Отступ справа</string>
     <string name="brick_adjust_y">Сдвиг по вертикали</string>
+    <string name="brick_table_rows">Строк</string>
+    <string name="brick_table_cell_gap">Промежуток между элементами</string>
     <string name="brick_media_max_width">Максимальная ширина медиа</string>
     <string name="brick_media_show_source">Показывать источник</string>
     <string name="brick_media_title_first">Название перед исполнителем</string>

@@ -419,6 +419,80 @@ public class Preferences {
         }
     }
 
+    /**
+     * A brick whose content is a TABLE of cells rather than one run of text: an ordered list of
+     * small readouts laid out into a grid. It adds only the two questions a grid asks that a line
+     * does not — how many rows to use, and how far apart to set the cells — and leaves everything
+     * about what a cell contains to the brick.
+     *
+     * <p>{@link #rows} is the control rather than a column count because vertical space is the
+     * scarce one on a head unit: the user says how tall the brick may get and the columns follow.
+     * One row is the single-line layout, which is why there is no separate boolean for it.
+     */
+    public static abstract class TableBrickPrefs extends TextBrickPrefs {
+        /** How many rows the cells are dealt into; columns are derived from the cell count. */
+        public final Int rows;
+        /** Space between cells, in px — horizontally between columns, vertically between rows. */
+        public final Int cellGap;
+
+        protected TableBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
+            super(p, prefix, defaultFontSize);
+            rows = new Int(p, prefix + "Rows", 1);
+            cellGap = new Int(p, prefix + "CellGap", 12);
+        }
+
+        /**
+         * {@link BrickControl#ROW_TABLE} is added here and NOWHERE else — the settings screen
+         * casts to this class when it sees the flag, and that cast is only safe while this stays
+         * the single origin.
+         */
+        @Override
+        public EnumSet<BrickControl> controls() {
+            EnumSet<BrickControl> set = super.controls();
+            set.add(BrickControl.ROW_TABLE);
+            return set;
+        }
+    }
+
+    /**
+     * The GNSS readout brick — everything the GPS icon's badge can only hint at, drawn as icon +
+     * value cells at a font size of its own, for a user who finds the badge too small to read.
+     * Each field is a switch, and the icons are what let the order be fixed: a cell names itself,
+     * so the user never has to remember which number came third.
+     */
+    public static final class GnssInfoBrickPrefs extends TableBrickPrefs {
+        /** The satellite count. What it counts is decided by {@link #satellitesUsedInFix}. */
+        public final Bool showSatellites;
+        /**
+         * Prefix the satellite total with the number USED IN THE FIX, e.g. {@code 9/12}. Both
+         * numbers come from the same sender, so they can be compared; a sender that does not
+         * report the used count leaves the plain total showing.
+         */
+        public final Bool satellitesUsedInFix;
+        /** The dead-reckoning and substitution lamps, and the colour they wash over the count. */
+        public final Bool showMode;
+        /** The lamp that lights while the position is anchored to a road. */
+        public final Bool showRoad;
+        /** Horizontal accuracy of the last fix. */
+        public final Bool showAccuracy;
+        public final Bool showSpeed;
+        /** Altitude — ellipsoidal, see {@code GnssInfoRenderBrick#altitudeValue}. */
+        public final Bool showAltitude;
+        /** How long ago the last fix arrived. */
+        public final Bool showFixAge;
+        public GnssInfoBrickPrefs(Preferences p) {
+            super(p, "gnssInfo", 40);
+            showSatellites = new Bool(p, "gnssInfoShowSatellites", true);
+            satellitesUsedInFix = new Bool(p, "gnssInfoSatellitesUsedInFix", false);
+            showMode = new Bool(p, "gnssInfoShowMode", true);
+            showRoad = new Bool(p, "gnssInfoShowRoad", true);
+            showAccuracy = new Bool(p, "gnssInfoShowAccuracy", false);
+            showSpeed = new Bool(p, "gnssInfoShowSpeed", false);
+            showAltitude = new Bool(p, "gnssInfoShowAltitude", false);
+            showFixAge = new Bool(p, "gnssInfoShowFixAge", false);
+        }
+    }
+
     /** Bluetooth brick adds the connected-device-count badge toggle. */
     public static final class BluetoothBrickPrefs extends IconBrickPrefs {
         public final Bool showDeviceCountBadge;
@@ -461,6 +535,7 @@ public class Preferences {
     public final IconBrickPrefs wifi = new IconBrickPrefs(this, "wifi");
     public final GpsBrickPrefs gps = new GpsBrickPrefs(this);
     public final BluetoothBrickPrefs bluetooth = new BluetoothBrickPrefs(this);
+    public final GnssInfoBrickPrefs gnssInfo = new GnssInfoBrickPrefs(this);
     // Car-specific temperature bricks (fed by the flavor's CarIntegration).
     public final TempBrickPrefs indoorTemp = new TempBrickPrefs(this, "indoorTemp");
     public final TempBrickPrefs outdoorTemp = new TempBrickPrefs(this, "outdoorTemp");
@@ -478,6 +553,7 @@ public class Preferences {
         brickPrefsByType.put(BrickType.WIFI, wifi);
         brickPrefsByType.put(BrickType.GPS, gps);
         brickPrefsByType.put(BrickType.BLUETOOTH, bluetooth);
+        brickPrefsByType.put(BrickType.GNSS_INFO, gnssInfo);
         brickPrefsByType.put(BrickType.INDOOR_TEMP, indoorTemp);
         brickPrefsByType.put(BrickType.OUTDOOR_TEMP, outdoorTemp);
         if (brickPrefsByType.size() != BrickType.values().length) {

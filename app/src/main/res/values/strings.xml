@@ -74,6 +74,19 @@
     </string-array>
     <string name="show_gnss_satellite_badge">Show satellite count and mode</string>
     <string name="show_gnss_satellite_badge_hint">Satellite count, or a DR / anti-spoof marker. Requires the GNSS Share app.</string>
+    <string name="gnss_show_satellite_count">Show satellite count</string>
+    <string name="gnss_show_mode">Show positioning mode</string>
+    <string name="gnss_show_road">Show road anchoring</string>
+    <string name="gnss_satellites_used_in_fix">Also show satellites used in fix (9/12)</string>
+    <string name="gnss_show_accuracy">Show accuracy</string>
+    <string name="gnss_show_speed">Show speed</string>
+    <string name="gnss_show_altitude">Show altitude</string>
+    <string name="gnss_show_fix_age">Show fix age</string>
+    <string name="gnss_unit_meters">m</string>
+    <string name="gnss_unit_kilometers">km</string>
+    <string name="gnss_unit_kmh">km/h</string>
+    <string name="gnss_unit_seconds">s</string>
+    <string name="gnss_info_block_hint">Everything the GPS icon\'s badge can only hint at, drawn as an icon and a number at this element\'s own font size. The car lamp means dead reckoning, the shield means detected spoofing, the road lamp means the position is anchored to a road. The satellite count and those three lamps come from the GNSS Share app and show a dash without it; accuracy, speed, altitude and fix age come from this head unit.</string>
     <string name="gnss_dr_badge" translatable="false">DR</string>
     <string name="gnss_spoof_badge" translatable="false">SP</string>
     <string name="show_media_hint">Showing currently playing media requires Notification access.</string>
@@ -96,6 +109,7 @@
     <string name="brick_title_bluetooth">Bluetooth</string>
     <string name="brick_title_indoor_temp">Cabin temperature</string>
     <string name="brick_title_outdoor_temp">Outside temperature</string>
+    <string name="brick_title_gnss_info">Satellites and mode</string>
     <string name="show_bluetooth_device_count_badge">Show connected device count badge</string>
     <string name="brick_font_size">Font size</string>
     <string name="brick_size">Size</string>
@@ -105,6 +119,8 @@
     <string name="brick_margin_start">Left spacing</string>
     <string name="brick_margin_end">Right spacing</string>
     <string name="brick_adjust_y">Vertical offset</string>
+    <string name="brick_table_rows">Rows</string>
+    <string name="brick_table_cell_gap">Spacing between items</string>
     <string name="brick_media_max_width">Media maximum width</string>
     <string name="brick_media_show_source">Show source app</string>
     <string name="brick_media_title_first">Title before artist</string>

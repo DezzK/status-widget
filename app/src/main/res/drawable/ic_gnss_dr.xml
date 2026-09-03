@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright © 2025-2026 Dezz (https://github.com/DezzK)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+<!-- Dead reckoning: the car, in side view — the position is coming from the VEHICLE's own
+     sensors rather than from the sky, and this is the only glyph in the app that shows the car.
+     Must stay nonZero: the wheels overlap the body with the same winding, so nonZero unions them
+     where evenOdd would knock two half-disc holes out of it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:antialias="true"
+        android:pathData="M3,15.5L3,10.5 5.5,10.5 8,6 16,6 18.5,10.5 21,10.5 21,15.5zM5,15.5a2.5,2.5 0 1,1 5,0 2.5,2.5 0 1,1 -5,0zM14,15.5a2.5,2.5 0 1,1 5,0 2.5,2.5 0 1,1 -5,0z" />
+</vector>

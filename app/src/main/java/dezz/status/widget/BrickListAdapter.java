@@ -262,6 +262,9 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         private final TextView brickSizeLabel;
         private final Slider brickSizeSlider;
         private final Slider brickAdjustYSlider;
+        private final LinearLayout brickTableRow;
+        private final Slider brickTableRowsSlider;
+        private final Slider brickTableCellGapSlider;
         private final LinearLayout brickOutlineRow;
         private final Slider brickOutlineAlphaSlider;
         private final Slider brickOutlineWidthSlider;
@@ -317,6 +320,9 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickSizeLabel = itemView.findViewById(R.id.brickSizeLabel);
             brickSizeSlider = itemView.findViewById(R.id.brickSizeSlider);
             brickAdjustYSlider = itemView.findViewById(R.id.brickAdjustYSlider);
+            brickTableRow = itemView.findViewById(R.id.brickTableRow);
+            brickTableRowsSlider = itemView.findViewById(R.id.brickTableRowsSlider);
+            brickTableCellGapSlider = itemView.findViewById(R.id.brickTableCellGapSlider);
             brickOutlineRow = itemView.findViewById(R.id.brickOutlineRow);
             brickOutlineAlphaSlider = itemView.findViewById(R.id.brickOutlineAlphaSlider);
             brickOutlineWidthSlider = itemView.findViewById(R.id.brickOutlineWidthSlider);
@@ -365,6 +371,7 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                             ? View.VISIBLE : View.GONE);
             brickSizeColumn.setVisibility(visibilityOf(BrickControl.COL_SIZE));
             brickAdjustYColumn.setVisibility(visibilityOf(BrickControl.COL_ADJUST_Y));
+            brickTableRow.setVisibility(visibilityOf(BrickControl.ROW_TABLE));
             brickOutlineRow.setVisibility(visibilityOf(BrickControl.ROW_OUTLINE));
             brickContentAlphaRow.setVisibility(visibilityOf(BrickControl.ROW_CONTENT_ALPHA));
             brickMarginRow.setVisibility(visibilityOf(BrickControl.ROW_MARGIN));
@@ -408,6 +415,8 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         private void clearListeners() {
             brickSizeSlider.clearOnChangeListeners();
             brickAdjustYSlider.clearOnChangeListeners();
+            brickTableRowsSlider.clearOnChangeListeners();
+            brickTableCellGapSlider.clearOnChangeListeners();
             brickOutlineAlphaSlider.clearOnChangeListeners();
             brickOutlineWidthSlider.clearOnChangeListeners();
             brickContentAlphaSlider.clearOnChangeListeners();
@@ -427,6 +436,14 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             }
             if (controls.contains(BrickControl.COL_ADJUST_Y)) {
                 binderCtx.bindIntSlider(brickAdjustYSlider, p.adjustY, binderCtx.offsetFormatter());
+            }
+            if (controls.contains(BrickControl.ROW_TABLE)) {
+                // Safe cast: ROW_TABLE has exactly one origin, TableBrickPrefs.controls().
+                Preferences.TableBrickPrefs tp = (Preferences.TableBrickPrefs) p;
+                binderCtx.bindIntSlider(brickTableRowsSlider, tp.rows,
+                        binderCtx.plainFormatter());
+                binderCtx.bindIntSlider(brickTableCellGapSlider, tp.cellGap,
+                        binderCtx.sizeFormatter());
             }
             if (controls.contains(BrickControl.ROW_OUTLINE)) {
                 binderCtx.bindIntSlider(brickOutlineAlphaSlider, p.outlineAlpha,

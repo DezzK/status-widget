@@ -227,6 +227,19 @@
         android:textColor="@color/text_primary"
         android:textSize="40sp"
         tools:text="8°" />
+
+    <!-- GNSS readout. Only the container is declared here: its children are one [icon][value]
+         cell per enabled field, built in code because the field list is a list, not a fixed
+         shape. The row/column counts are set at runtime from the brick's "rows" preference —
+         one row IS the single-line layout — and the grid keeps a column's values aligned.
+         See TableRenderBrick. -->
+    <GridLayout
+        android:id="@+id/gnssInfoContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:columnCount="1"
+        android:rowCount="1" />
     </dezz.status.widget.BufferingLinearLayout>
 
 </FrameLayout>

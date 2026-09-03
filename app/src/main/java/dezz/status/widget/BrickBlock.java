@@ -26,6 +26,8 @@ import androidx.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
 
+import static dezz.status.widget.SwitchListBlockBinder.row;
+
 /**
  * The registry of per-brick settings blocks: one constant per brick that has a block of its own,
  * each pairing the block's layout with the binder that reads it. Keeping the two in one constant
@@ -48,22 +50,37 @@ enum BrickBlock {
     GPS(BrickType.GPS, R.layout.brick_block_gps) {
         @Override
         BrickBlockBinder newBinder(BrickBinderContext ctx, View root) {
-            return new SingleSwitchBlockBinder(ctx, root,
-                    R.id.brickGpsShowSatelliteBadge, ctx.prefs.gps.showSatelliteBadge);
+            return new SwitchListBlockBinder(ctx, root,
+                    row(R.id.brickGpsShowSatelliteBadge, ctx.prefs.gps.showSatelliteBadge));
         }
     },
     BLUETOOTH(BrickType.BLUETOOTH, R.layout.brick_block_bluetooth) {
         @Override
         BrickBlockBinder newBinder(BrickBinderContext ctx, View root) {
-            return new SingleSwitchBlockBinder(ctx, root,
-                    R.id.brickBluetoothShowDeviceCountBadge,
-                    ctx.prefs.bluetooth.showDeviceCountBadge);
+            return new SwitchListBlockBinder(ctx, root,
+                    row(R.id.brickBluetoothShowDeviceCountBadge,
+                            ctx.prefs.bluetooth.showDeviceCountBadge));
         }
     },
     MEDIA(BrickType.MEDIA, R.layout.brick_block_media) {
         @Override
         BrickBlockBinder newBinder(BrickBinderContext ctx, View root) {
             return new MediaBlockBinder(ctx, root, ctx.prefs.media);
+        }
+    },
+    GNSS_INFO(BrickType.GNSS_INFO, R.layout.brick_block_gnss_info) {
+        @Override
+        BrickBlockBinder newBinder(BrickBinderContext ctx, View root) {
+            return new SwitchListBlockBinder(ctx, root,
+                    row(R.id.brickGnssInfoShowSatellites, ctx.prefs.gnssInfo.showSatellites),
+                    row(R.id.brickGnssInfoSatellitesUsedInFix,
+                            ctx.prefs.gnssInfo.satellitesUsedInFix),
+                    row(R.id.brickGnssInfoShowMode, ctx.prefs.gnssInfo.showMode),
+                    row(R.id.brickGnssInfoShowRoad, ctx.prefs.gnssInfo.showRoad),
+                    row(R.id.brickGnssInfoShowAccuracy, ctx.prefs.gnssInfo.showAccuracy),
+                    row(R.id.brickGnssInfoShowSpeed, ctx.prefs.gnssInfo.showSpeed),
+                    row(R.id.brickGnssInfoShowAltitude, ctx.prefs.gnssInfo.showAltitude),
+                    row(R.id.brickGnssInfoShowFixAge, ctx.prefs.gnssInfo.showFixAge));
         }
     };
 

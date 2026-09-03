@@ -226,6 +226,7 @@ public class WidgetService extends Service implements WidgetHost {
                 prefs.indoorTemp, R.id.indoorTempText));
         renderBricks.put(BrickType.OUTDOOR_TEMP, new TempRenderBrick(this, BrickType.OUTDOOR_TEMP,
                 prefs.outdoorTemp, R.id.outdoorTempText));
+        renderBricks.put(BrickType.GNSS_INFO, new GnssInfoRenderBrick(this));
 
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, createNotification());
