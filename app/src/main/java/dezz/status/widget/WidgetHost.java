@@ -53,6 +53,14 @@ interface WidgetHost {
     Preferences prefs();
 
     /**
+     * The one subscription to location, satellite status and the gnss-share broadcast. Owned by
+     * the service — a brick declares what it needs through {@link GnssProvider#setNeeds} in its
+     * own {@code syncSource} and never registers a listener of its own.
+     */
+    @NonNull
+    GnssProvider gnss();
+
+    /**
      * The one main-thread handler. A brick may only remove ITS OWN runnables from it —
      * {@code removeCallbacksAndMessages(null)} would take the window-buffer safety close with it.
      */

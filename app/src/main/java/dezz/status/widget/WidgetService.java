@@ -106,6 +106,13 @@ public class WidgetService extends Service implements WidgetHost {
      */
     private final EnumMap<BrickType, RenderBrick> renderBricks = new EnumMap<>(BrickType.class);
 
+    /**
+     * The shared positional feed. Created before the bricks — they capture it in their
+     * constructors — and destroyed here rather than by a brick, so a service stop cannot leave a
+     * location listener or a receiver behind.
+     */
+    private GnssProvider gnssProvider;
+
     private WindowManager windowManager;
     private WindowManager.LayoutParams params;
 
@@ -208,6 +215,7 @@ public class WidgetService extends Service implements WidgetHost {
     @Override
     public void onCreate() {
         prefs = new Preferences(this);
+        gnssProvider = new GnssProvider(this, mainHandler);
         renderBricks.put(BrickType.TIME, new TimeRenderBrick(this));
         renderBricks.put(BrickType.DATE, new DateRenderBrick(this));
         renderBricks.put(BrickType.MEDIA, new MediaRenderBrick(this));
@@ -1367,6 +1375,12 @@ public class WidgetService extends Service implements WidgetHost {
 
     @NonNull
     @Override
+    public GnssProvider gnss() {
+        return gnssProvider;
+    }
+
+    @NonNull
+    @Override
     public Handler handler() {
         return mainHandler;
     }
@@ -1388,6 +1402,9 @@ public class WidgetService extends Service implements WidgetHost {
         for (RenderBrick brick : renderBricks.values()) {
             brick.onDestroy();
         }
+        // After the bricks: each drops its needs in onDestroy, and this is the backstop that
+        // unregisters whatever a brick forgot to release.
+        gnssProvider.destroy();
 
         if (binding != null && windowManager != null) {
             windowManager.removeView(binding.getRoot());
