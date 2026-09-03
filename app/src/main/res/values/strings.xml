@@ -89,6 +89,10 @@
     <string name="gnss_info_block_hint">Everything the GPS icon\'s badge can only hint at, drawn as an icon and a number at this element\'s own font size. The car lamp means dead reckoning, the shield means detected spoofing, the road lamp means the position is anchored to a road. The satellite count and those three lamps come from the GNSS Share app and show a dash without it; accuracy, speed, altitude and fix age come from this head unit.</string>
     <string name="gnss_dr_badge" translatable="false">DR</string>
     <string name="gnss_spoof_badge" translatable="false">SP</string>
+    <!-- Dead reckoning entered BECAUSE of a detected spoof. A third token rather than "DR" in
+         red, so the most alarming state is not the one that degrades to nothing in sunlight or
+         for a colourblind driver. -->
+    <string name="gnss_dr_spoof_badge" translatable="false">DR!</string>
     <string name="show_media_hint">Showing currently playing media requires Notification access.</string>
     <string name="media_unknown_track">Playing</string>
     <string name="grant_notification_access">Grant Notification access</string>

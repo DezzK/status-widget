@@ -108,7 +108,10 @@ final class GpsRenderBrick extends IconRenderBrick implements GnssProvider.Liste
         boolean spoofDetected = host.gnss().spoofDetected();
         String text;
         if (deadReckoning) {
-            text = host.context().getString(R.string.gnss_dr_badge);
+            // Spoof underneath the dead reckoning escalates the token rather than relying on the
+            // red fill alone: colour is the one channel a sunlit or colourblind driver loses.
+            text = host.context().getString(spoofDetected
+                    ? R.string.gnss_dr_spoof_badge : R.string.gnss_dr_badge);
         } else if (spoofDetected) {
             // Spoofing but still on GPS: show the marker, not the count — the count is
             // untrustworthy under a spoof and may be absent (some clients report -1).
