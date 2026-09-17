@@ -45,7 +45,11 @@ jobs:
         cache: 'gradle'
 
     - name: Set up Android SDK
-      uses: android-actions/setup-android@v2
+      uses: android-actions/setup-android@v4
+      with:
+        # The action's default also requests the legacy "tools" package, which Google no longer
+        # serves (android-actions/setup-android#537); the build needs none of it.
+        packages: 'platform-tools'
 
     - name: Decode Keystore
       run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
