@@ -108,6 +108,9 @@
     <string name="brick_title_indoor_temp">Температура в салоне</string>
     <string name="brick_title_outdoor_temp">Температура за бортом</string>
     <string name="brick_title_gnss_info">Спутники и режим</string>
+    <string name="brick_title_fuel_level">Топливо</string>
+    <string name="brick_title_fuel_range">Запас хода</string>
+    <string name="brick_title_battery_voltage">Напряжение АКБ</string>
     <string name="show_bluetooth_device_count_badge">Показывать число подключённых устройств</string>
     <string name="brick_font_size">Размер шрифта</string>
     <string name="brick_size">Размер</string>
@@ -143,6 +146,25 @@
     <string name="font_serif">С засечками</string>
     <string name="font_monospace">Моноширинный</string>
     <string name="brick_status_alignment">Выравнивание в статусной строке</string>
+    <string name="fuel_level_unit">Единицы</string>
+    <string-array name="fuel_level_units">
+        <item>Проценты</item>
+        <item>Литры</item>
+    </string-array>
+    <string name="fuel_tank_capacity">Объём бака</string>
+    <string name="fuel_tank_capacity_auto">Авто</string>
+    <string name="fuel_tank_capacity_value">%d л</string>
+    <string name="fuel_tank_capacity_hint">«Авто» — объём, который сообщает машина. Задайте вручную, если литры не сходятся.</string>
+    <string name="fuel_tank_capacity_unknown_hint">Машина не сообщает объём бака. Задайте его здесь, чтобы видеть литры, — до тех пор элемент показывает проценты.</string>
+    <string name="car_fuel_percent_format">%d%%</string>
+    <string name="car_fuel_percent_placeholder" formatted="false">--%</string>
+    <string name="car_fuel_liters_format">%d\u00A0л</string>
+    <string name="car_fuel_liters_placeholder">--\u00A0л</string>
+    <string name="car_range_format">%d\u00A0км</string>
+    <string name="car_range_placeholder">--\u00A0км</string>
+    <string name="car_voltage_format">%.1f\u00A0В</string>
+    <string name="car_voltage_placeholder">--\u00A0В</string>
+
     <string-array name="brick_status_alignments">
         <item>Слева</item>
         <item>Центр</item>

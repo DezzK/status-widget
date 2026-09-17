@@ -22,6 +22,8 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import androidx.annotation.ArrayRes;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
@@ -177,13 +179,22 @@ final class BrickBinderContext {
 
     /** Reusable Start/Center/End alignment dropdown bound to an int 0..2 preference. */
     void bindAlignmentDropdown(MaterialAutoCompleteTextView dropdown, Preferences.Int pref) {
-        String[] options = activity.getResources()
-                .getStringArray(R.array.calendar_alignment_types);
+        bindIntDropdown(dropdown, R.array.calendar_alignment_types, pref, null);
+    }
+
+    /**
+     * Dropdown over a string array whose selected index is stored in an int preference,
+     * optionally running {@code onChange} after the write.
+     */
+    void bindIntDropdown(MaterialAutoCompleteTextView dropdown, @ArrayRes int arrayRes,
+                         Preferences.Int pref, @Nullable Runnable onChange) {
+        String[] options = activity.getResources().getStringArray(arrayRes);
         dropdown.setAdapter(dropdownAdapter(options));
         int current = clamp(pref.get(), 0, options.length - 1);
         dropdown.setText(options[current], false);
         dropdown.setOnItemClickListener((parent, view, position, id) -> {
             pref.set(position);
+            if (onChange != null) onChange.run();
             notifyService();
         });
     }

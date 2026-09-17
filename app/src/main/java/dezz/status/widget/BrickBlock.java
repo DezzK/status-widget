@@ -82,6 +82,12 @@ enum BrickBlock {
                     row(R.id.brickGnssInfoShowAltitude, ctx.prefs.gnssInfo.showAltitude),
                     row(R.id.brickGnssInfoShowFixAge, ctx.prefs.gnssInfo.showFixAge));
         }
+    },
+    FUEL_LEVEL(BrickType.FUEL_LEVEL, R.layout.brick_block_fuel_level) {
+        @Override
+        BrickBlockBinder newBinder(BrickBinderContext ctx, View root) {
+            return new FuelLevelBlockBinder(ctx, root, ctx.prefs.fuelLevel);
+        }
     };
 
     private static final Map<BrickType, BrickBlock> BY_TYPE = new EnumMap<>(BrickType.class);

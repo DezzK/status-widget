@@ -387,15 +387,45 @@ public class Preferences {
     }
 
     /**
-     * Cabin and outside temperature. Intentionally empty today: it exists so the two car bricks
-     * share one type instead of being bare {@link TextBrickPrefs}, and so that a future unit /
-     * decimals / placeholder pref lands here instead of leaking onto every text brick (adding it
-     * to {@link TextBrickPrefs} would mint timeUnit / dateUnit / mediaUnit keys for bricks that
-     * have no use for them).
+     * A one-line reading fed by the car. Intentionally empty: it exists so a pref every car
+     * reading wants — decimals, a placeholder style — lands here instead of leaking onto every
+     * text brick (adding it to {@link TextBrickPrefs} would mint timeUnit / dateUnit / mediaUnit
+     * keys for bricks that have no use for them).
      */
-    public static final class TempBrickPrefs extends TextBrickPrefs {
-        public TempBrickPrefs(Preferences p, String prefix) {
+    public static class CarTextBrickPrefs extends TextBrickPrefs {
+        public CarTextBrickPrefs(Preferences p, String prefix) {
             super(p, prefix, 40);
+        }
+    }
+
+    /**
+     * Cabin and outside temperature. Intentionally empty today, for the same reason one level
+     * narrower: a temperature unit belongs on the two temperature bricks, not on every reading.
+     */
+    public static final class TempBrickPrefs extends CarTextBrickPrefs {
+        public TempBrickPrefs(Preferences p, String prefix) {
+            super(p, prefix);
+        }
+    }
+
+    /** Fuel level — in percent of the tank, or in liters once a tank capacity is known. */
+    public static final class FuelLevelBrickPrefs extends CarTextBrickPrefs {
+        public static final int UNIT_PERCENT = 0;
+        public static final int UNIT_LITERS = 1;
+
+        /** {@link #UNIT_PERCENT} or {@link #UNIT_LITERS}. */
+        public final Int unit;
+        /**
+         * Tank capacity in liters for the liters readout; 0 takes the capacity the car reports.
+         * An explicit value wins, because the car reports the capacity from its configuration
+         * and a head unit transplanted from a sibling model reports the sibling's tank.
+         */
+        public final Int tankCapacityLiters;
+
+        public FuelLevelBrickPrefs(Preferences p) {
+            super(p, "fuelLevel");
+            unit = new Int(p, "fuelLevelUnit", UNIT_PERCENT);
+            tankCapacityLiters = new Int(p, "fuelLevelTankCapacity", 0);
         }
     }
 
@@ -536,9 +566,12 @@ public class Preferences {
     public final GpsBrickPrefs gps = new GpsBrickPrefs(this);
     public final BluetoothBrickPrefs bluetooth = new BluetoothBrickPrefs(this);
     public final GnssInfoBrickPrefs gnssInfo = new GnssInfoBrickPrefs(this);
-    // Car-specific temperature bricks (fed by the flavor's CarIntegration).
+    // Car-specific bricks (fed by the flavor's CarIntegration).
     public final TempBrickPrefs indoorTemp = new TempBrickPrefs(this, "indoorTemp");
     public final TempBrickPrefs outdoorTemp = new TempBrickPrefs(this, "outdoorTemp");
+    public final FuelLevelBrickPrefs fuelLevel = new FuelLevelBrickPrefs(this);
+    public final CarTextBrickPrefs fuelRange = new CarTextBrickPrefs(this, "fuelRange");
+    public final CarTextBrickPrefs batteryVoltage = new CarTextBrickPrefs(this, "batteryVoltage");
 
     /**
      * The single brick → settings registry. Every {@link BrickType} must be present; adding a
@@ -556,6 +589,9 @@ public class Preferences {
         brickPrefsByType.put(BrickType.GNSS_INFO, gnssInfo);
         brickPrefsByType.put(BrickType.INDOOR_TEMP, indoorTemp);
         brickPrefsByType.put(BrickType.OUTDOOR_TEMP, outdoorTemp);
+        brickPrefsByType.put(BrickType.FUEL_LEVEL, fuelLevel);
+        brickPrefsByType.put(BrickType.FUEL_RANGE, fuelRange);
+        brickPrefsByType.put(BrickType.BATTERY_VOLTAGE, batteryVoltage);
         if (brickPrefsByType.size() != BrickType.values().length) {
             // Fail at construction rather than on the one screen that happens to touch the new
             // brick — a missing entry is a compile-time-invisible omission.

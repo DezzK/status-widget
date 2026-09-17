@@ -201,6 +201,16 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
     }
 
+    /**
+     * Rebind the cards of car-fed bricks. Their blocks may describe what the car reports (the fuel
+     * block's tank-capacity hint), and that answer changes once the car integration settles.
+     */
+    public void notifyCarAvailabilityChanged() {
+        for (int i = 0; i < bricks.size(); i++) {
+            if (bricks.get(i).isCarSpecific()) notifyItemChanged(i);
+        }
+    }
+
     @Override
     public int getItemCount() {
         return bricks.size();

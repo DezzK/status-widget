@@ -19,7 +19,7 @@ package dezz.status.widget.car;
 
 import androidx.annotation.NonNull;
 
-import dezz.status.widget.BrickType;
+import java.util.Set;
 
 /**
  * Abstraction over a vendor car SDK feeding data to car-specific bricks.
@@ -29,30 +29,40 @@ import dezz.status.widget.BrickType;
  * never reference vendor classes. The contract:
  * <ul>
  *   <li>All callbacks are delivered on the main thread.</li>
- *   <li>{@link #isBrickSupported} is cheap and callable any time (settings UI uses it to decide
+ *   <li>{@link #isMetricSupported} is cheap and callable any time (settings UI uses it to decide
  *       which bricks to offer); it must return {@code false} on vehicles where the underlying
- *       SDK or the specific sensor is unavailable, and never throw.</li>
- *   <li>{@link #subscribe} replaces any previous listener for the same brick; implementations
- *       should push the latest known value immediately when one is available, so a freshly shown
- *       brick doesn't sit empty until the sensor's next change event.</li>
+ *       SDK or the specific signal is unavailable, and never throw.</li>
+ *   <li>{@link #setNeeds} declares the complete set of metrics a listener wants, replacing its
+ *       previous declaration. Implementations register vendor feeds for the union of all
+ *       declarations and should push the latest known value of a newly needed metric
+ *       immediately when one is available, so a freshly shown brick doesn't sit empty until the
+ *       signal's next change event.</li>
  *   <li>Vendor-side failures are contained: implementations log and stay silent instead of
  *       crashing the widget.</li>
  * </ul>
  */
 public interface CarIntegration {
 
-    /** Receives values for a subscribed brick. Called on the main thread. */
-    interface ValueListener {
-        void onValue(@NonNull BrickType type, float value);
+    /** Receives values for the metrics a listener declared. Called on the main thread. */
+    interface Listener {
+        void onCarValue(@NonNull CarMetric metric, float value);
     }
 
-    /** Whether this vehicle can feed the given brick right now. */
-    boolean isBrickSupported(@NonNull BrickType type);
+    /** Whether this vehicle can feed the given metric right now. */
+    boolean isMetricSupported(@NonNull CarMetric metric);
+
+    /** Whether this vehicle can feed every one of the given metrics right now. */
+    default boolean areMetricsSupported(@NonNull Set<CarMetric> metrics) {
+        for (CarMetric metric : metrics) {
+            if (!isMetricSupported(metric)) return false;
+        }
+        return true;
+    }
 
     /**
-     * Register a callback (main thread) invoked whenever the answer of {@link #isBrickSupported}
+     * Register a callback (main thread) invoked whenever the answer of {@link #isMetricSupported}
      * may have changed — typically when the vendor platform service finishes its asynchronous
-     * connect after boot, or when a sensor first delivers data. Registration is multicast: the
+     * connect after boot, or when a signal first delivers data. Registration is multicast: the
      * overlay service and the settings screen both need it and must not evict each other.
      * Implementations with static support (e.g. {@link NoCarIntegration}) may ignore it.
      */
@@ -61,12 +71,13 @@ public interface CarIntegration {
     /** Unregister a callback added by {@link #addAvailabilityListener}. */
     void removeAvailabilityListener(@NonNull Runnable listener);
 
-    /** Start delivering values for the brick. Replaces any existing subscription for it. */
-    void subscribe(@NonNull BrickType type, @NonNull ValueListener listener);
+    /**
+     * Declare everything a listener needs, registering and unregistering vendor feeds to match.
+     * Idempotent — a brick calls this on every settings pass with the answer its preferences give
+     * today. An empty set removes the listener entirely.
+     */
+    void setNeeds(@NonNull Listener listener, @NonNull Set<CarMetric> needs);
 
-    /** Stop delivering values for the brick. No-op when not subscribed. */
-    void unsubscribe(@NonNull BrickType type);
-
-    /** Release all subscriptions and vendor resources. The instance is not reusable afterwards. */
+    /** Release all listeners and vendor resources. The instance is not reusable afterwards. */
     void shutdown();
 }

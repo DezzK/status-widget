@@ -17,11 +17,16 @@
 
 package dezz.status.widget;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+
+import dezz.status.widget.car.CarMetric;
 
 /**
  * The set of building blocks the user can place into the widget. Order is preserved as a
@@ -39,7 +44,10 @@ public enum BrickType {
     BLUETOOTH(R.string.brick_title_bluetooth),
     INDOOR_TEMP(R.string.brick_title_indoor_temp),
     OUTDOOR_TEMP(R.string.brick_title_outdoor_temp),
-    GNSS_INFO(R.string.brick_title_gnss_info);
+    GNSS_INFO(R.string.brick_title_gnss_info),
+    FUEL_LEVEL(R.string.brick_title_fuel_level),
+    FUEL_RANGE(R.string.brick_title_fuel_range),
+    BATTERY_VOLTAGE(R.string.brick_title_battery_voltage);
 
     private static final BrickType[] VALUES = values();
 
@@ -62,11 +70,32 @@ public enum BrickType {
     }
 
     /**
-     * Car-specific bricks are fed by the flavor's {@link dezz.status.widget.car.CarIntegration}
-     * and are only offered in settings when the vehicle actually supports them.
+     * The car metrics this brick cannot render without. Car-specific bricks are fed by the
+     * flavor's {@link dezz.status.widget.car.CarIntegration} and are only offered in settings when
+     * the vehicle supports every metric listed here. Metrics a brick merely makes use of when
+     * present (a tank capacity for a reading in liters) do not belong in this set.
      */
+    @NonNull
+    public Set<CarMetric> requiredCarMetrics() {
+        switch (this) {
+            case INDOOR_TEMP:
+                return EnumSet.of(CarMetric.CABIN_TEMPERATURE_C);
+            case OUTDOOR_TEMP:
+                return EnumSet.of(CarMetric.AMBIENT_TEMPERATURE_C);
+            case FUEL_LEVEL:
+                return EnumSet.of(CarMetric.FUEL_PERCENT);
+            case FUEL_RANGE:
+                return EnumSet.of(CarMetric.FUEL_RANGE_KM);
+            case BATTERY_VOLTAGE:
+                return EnumSet.of(CarMetric.BATTERY_VOLTAGE_V);
+            default:
+                return EnumSet.noneOf(CarMetric.class);
+        }
+    }
+
+    /** Whether this brick is fed by the car at all. */
     public boolean isCarSpecific() {
-        return this == INDOOR_TEMP || this == OUTDOOR_TEMP;
+        return !requiredCarMetrics().isEmpty();
     }
 
     @Nullable

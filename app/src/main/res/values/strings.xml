@@ -114,6 +114,9 @@
     <string name="brick_title_indoor_temp">Cabin temperature</string>
     <string name="brick_title_outdoor_temp">Outside temperature</string>
     <string name="brick_title_gnss_info">Satellites and mode</string>
+    <string name="brick_title_fuel_level">Fuel level</string>
+    <string name="brick_title_fuel_range">Fuel range</string>
+    <string name="brick_title_battery_voltage">Battery voltage</string>
     <string name="show_bluetooth_device_count_badge">Show connected device count badge</string>
     <string name="brick_font_size">Font size</string>
     <string name="brick_size">Size</string>
@@ -149,6 +152,25 @@
     <string name="font_serif">Serif</string>
     <string name="font_monospace">Monospace</string>
     <string name="brick_status_alignment">Status bar alignment</string>
+    <string name="fuel_level_unit">Units</string>
+    <string-array name="fuel_level_units">
+        <item>Percent</item>
+        <item>Liters</item>
+    </string-array>
+    <string name="fuel_tank_capacity">Tank capacity</string>
+    <string name="fuel_tank_capacity_auto">Auto</string>
+    <string name="fuel_tank_capacity_value">%d L</string>
+    <string name="fuel_tank_capacity_hint">Auto takes the capacity the car reports. Set it by hand if liters look wrong.</string>
+    <string name="fuel_tank_capacity_unknown_hint">This car does not report its tank capacity. Set it here to see liters — until then the element shows percent.</string>
+    <string name="car_fuel_percent_format">%d%%</string>
+    <string name="car_fuel_percent_placeholder" formatted="false">--%</string>
+    <string name="car_fuel_liters_format">%d\u00A0L</string>
+    <string name="car_fuel_liters_placeholder">--\u00A0L</string>
+    <string name="car_range_format">%d\u00A0km</string>
+    <string name="car_range_placeholder">--\u00A0km</string>
+    <string name="car_voltage_format">%.1f\u00A0V</string>
+    <string name="car_voltage_placeholder">--\u00A0V</string>
+
     <string-array name="brick_status_alignments">
         <item>Start</item>
         <item>Center</item>

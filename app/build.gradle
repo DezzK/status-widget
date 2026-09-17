@@ -98,4 +98,7 @@ dependencies {
     // dex jar; bundled into the APK the same way the infoDash fork ships it. Main source set
     // must not import com.ecarx.* — only app/src/geely may.
     geelyImplementation files('libs/geely/ecarx-adaptapi.jar')
+
+    // Plain JVM tests for vendor decoding rules that otherwise could only be checked in a car.
+    testImplementation libs.junit
 }

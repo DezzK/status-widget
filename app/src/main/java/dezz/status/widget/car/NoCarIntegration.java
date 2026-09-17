@@ -18,28 +18,23 @@
 package dezz.status.widget.car;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
-import dezz.status.widget.BrickType;
+import java.util.Set;
 
 /**
- * Null object for builds (or vehicles) without any car SDK: no brick is supported, subscriptions
- * are ignored. A future flavor with no vendor integration can return this from its factory;
+ * Null object for builds (or vehicles) without any car SDK: no metric is supported, declared
+ * needs are ignored. A future flavor with no vendor integration can return this from its factory;
  * flavors whose SDK probing fails can also fall back to it.
  */
 public final class NoCarIntegration implements CarIntegration {
 
     @Override
-    public boolean isBrickSupported(@NonNull BrickType type) {
+    public boolean isMetricSupported(@NonNull CarMetric metric) {
         return false;
     }
 
     @Override
-    public void subscribe(@NonNull BrickType type, @NonNull ValueListener listener) {
-    }
-
-    @Override
-    public void unsubscribe(@NonNull BrickType type) {
+    public void setNeeds(@NonNull Listener listener, @NonNull Set<CarMetric> needs) {
     }
 
     @Override

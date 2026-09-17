@@ -15,10 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 package dezz.status.widget;
 
-import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -26,31 +24,24 @@ import java.util.EnumMap;
 
 import dezz.status.widget.car.CarMetric;
 
-/**
- * A temperature read from the vehicle. One class, one instance per sensor — the two differ only
- * in which {@link BrickType} they render and which view they write into.
- */
-final class TempRenderBrick extends CarTextRenderBrick {
+/** The 12 V system voltage — the starter battery while parked, the alternator while running. */
+final class BatteryVoltageRenderBrick extends CarTextRenderBrick {
 
-    TempRenderBrick(@NonNull WidgetHost host, @NonNull BrickType type,
-                    @NonNull Preferences.TempBrickPrefs prefs, @IdRes int viewId) {
-        super(host, type, prefs, viewId);
+    BatteryVoltageRenderBrick(@NonNull WidgetHost host) {
+        super(host, BrickType.BATTERY_VOLTAGE, host.prefs().batteryVoltage, R.id.batteryVoltageText);
     }
 
     @NonNull
     @Override
     protected String placeholder() {
-        return "--°";
+        return host.context().getString(R.string.car_voltage_placeholder);
     }
 
     @Nullable
     @Override
     protected String format(@NonNull EnumMap<CarMetric, Float> latest) {
-        for (CarMetric metric : type.requiredCarMetrics()) {
-            Float celsius = latest.get(metric);
-            // Integer rounding via Math.round avoids "%.0f"-style "-0°" for readings in (-0.5, 0).
-            if (celsius != null) return Math.round(celsius) + "°";
-        }
-        return null;
+        Float volts = latest.get(CarMetric.BATTERY_VOLTAGE_V);
+        // getString formats with the current locale, so the decimal separator follows it.
+        return volts != null ? host.context().getString(R.string.car_voltage_format, volts) : null;
     }
 }

@@ -228,6 +228,39 @@
         android:textSize="40sp"
         tools:text="8°" />
 
+    <dezz.status.widget.OutlineTextView
+        android:id="@+id/fuelLevelText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:fontFamily="@font/roboto_condensed_medium"
+        android:includeFontPadding="false"
+        android:textColor="@color/text_primary"
+        android:textSize="40sp"
+        tools:text="45%" />
+
+    <dezz.status.widget.OutlineTextView
+        android:id="@+id/fuelRangeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:fontFamily="@font/roboto_condensed_medium"
+        android:includeFontPadding="false"
+        android:textColor="@color/text_primary"
+        android:textSize="40sp"
+        tools:text="380 km" />
+
+    <dezz.status.widget.OutlineTextView
+        android:id="@+id/batteryVoltageText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:fontFamily="@font/roboto_condensed_medium"
+        android:includeFontPadding="false"
+        android:textColor="@color/text_primary"
+        android:textSize="40sp"
+        tools:text="13.8 V" />
+
     <!-- GNSS readout. Only the container is declared here: its children are one [icon][value]
          cell per enabled field, built in code because the field list is a list, not a fixed
          shape. The row/column counts are set at runtime from the brick's "rows" preference —

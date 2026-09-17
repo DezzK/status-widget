@@ -227,6 +227,9 @@ public class WidgetService extends Service implements WidgetHost {
         renderBricks.put(BrickType.OUTDOOR_TEMP, new TempRenderBrick(this, BrickType.OUTDOOR_TEMP,
                 prefs.outdoorTemp, R.id.outdoorTempText));
         renderBricks.put(BrickType.GNSS_INFO, new GnssInfoRenderBrick(this));
+        renderBricks.put(BrickType.FUEL_LEVEL, new FuelLevelRenderBrick(this));
+        renderBricks.put(BrickType.FUEL_RANGE, new FuelRangeRenderBrick(this));
+        renderBricks.put(BrickType.BATTERY_VOLTAGE, new BatteryVoltageRenderBrick(this));
 
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, createNotification());
@@ -1412,8 +1415,8 @@ public class WidgetService extends Service implements WidgetHost {
         }
 
         // Keep the process-wide car integration alive — the settings UI may still query
-        // isBrickSupported after the overlay service stops. The sensor subscriptions themselves
-        // are dropped by the temperature bricks in their own onDestroy.
+        // isMetricSupported after the overlay service stops. The vendor feeds themselves are
+        // dropped by the car bricks withdrawing their needs in their own onDestroy.
         CarIntegrations.get(this).removeAvailabilityListener(carAvailabilityListener);
     }
 

@@ -89,7 +89,9 @@ public class MainActivity extends AppCompatActivity {
 
     /** Rebuilds the "add brick" chips when the car integration's availability answer changes. */
     private final Runnable carAvailabilityListener = () -> {
-        if (binding != null) refreshAddBrickChips();
+        if (binding == null) return;
+        refreshAddBrickChips();
+        this.brickAdapter.notifyCarAvailabilityChanged();
     };
 
     private final ActivityResultLauncher<String[]> importLauncher = registerForActivityResult(
@@ -520,7 +522,7 @@ public class MainActivity extends AppCompatActivity {
             if (current.contains(type)) continue;
             // Don't offer car-specific bricks this vehicle can't feed — an added brick would
             // just sit as a frozen placeholder.
-            if (type.isCarSpecific() && !car.isBrickSupported(type)) continue;
+            if (type.isCarSpecific() && !car.areMetricsSupported(type.requiredCarMetrics())) continue;
             anyMissing = true;
             Chip chip = new Chip(this);
             chip.setText(type.titleRes());
