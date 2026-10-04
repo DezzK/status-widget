@@ -201,8 +201,8 @@ abstract class TableRenderBrick extends RenderBrick {
         if (cells.isEmpty()) return;
 
         int fontSize = prefs.fontSize.get();
-        int outlineWidth = prefs.outlineWidth.get();
-        int outlineAlpha = prefs.outlineAlpha.get();
+        int outlineWidth = prefs.look.outlineWidth.get();
+        int outlineAlpha = prefs.look.outlineAlpha.get();
         int outline = outlineColor(host.themed(), outlineAlpha);
         Typeface typeface = Fonts.resolve(host.context(), prefs.fontFamily.get(),
                 prefs.fontBold.get(), prefs.fontItalic.get());
@@ -251,9 +251,9 @@ abstract class TableRenderBrick extends RenderBrick {
         }
 
         placeCells();
-        applyHorizontalMargins(grid, prefs.marginStart.get(), prefs.marginEnd.get());
-        grid.setTranslationY(prefs.adjustY.get());
-        grid.setAlpha(prefs.contentAlpha.get() / 255f);
+        applyHorizontalMargins(grid, prefs.look.marginStart.get(), prefs.look.marginEnd.get());
+        grid.setTranslationY(prefs.look.adjustY.get());
+        grid.setAlpha(prefs.look.contentAlpha.get() / 255f);
     }
 
     /**

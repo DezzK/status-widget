@@ -28,13 +28,15 @@ import dezz.status.widget.car.CarMetric;
 
 /**
  * A temperature read from the vehicle. One class, one instance per sensor — the two differ only
- * in which {@link BrickType} they render and which view they write into.
+ * in which {@link BrickType} they render, which view they write into and which icon they show.
+ * A temperature has no good or bad to it, so its icon keeps the neutral color.
  */
 final class TempRenderBrick extends CarTextRenderBrick {
 
     TempRenderBrick(@NonNull WidgetHost host, @NonNull BrickType type,
-                    @NonNull Preferences.TempBrickPrefs prefs, @IdRes int viewId) {
-        super(host, type, prefs, viewId);
+                    @NonNull Preferences.TempBrickPrefs prefs, @IdRes int viewId,
+                    @NonNull int... iconDrawables) {
+        super(host, type, prefs, viewId, iconDrawables);
     }
 
     @NonNull

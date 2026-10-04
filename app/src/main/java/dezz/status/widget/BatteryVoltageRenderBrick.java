@@ -27,8 +27,36 @@ import dezz.status.widget.car.CarMetric;
 /** The 12 V system voltage — the starter battery while parked, the alternator while running. */
 final class BatteryVoltageRenderBrick extends CarTextRenderBrick {
 
+    /**
+     * A healthy 12 V system reads about 12.4–12.8 V parked and up to about 14.7 V charging. Below
+     * the first bound the battery is weak; below the second it may not start the engine, and above
+     * the third the alternator is overcharging it.
+     */
+    private static final float WARNING_LOW_V = 12.4f;
+    private static final float CRITICAL_LOW_V = 11.8f;
+    private static final float CRITICAL_HIGH_V = 15f;
+
     BatteryVoltageRenderBrick(@NonNull WidgetHost host) {
-        super(host, BrickType.BATTERY_VOLTAGE, host.prefs().batteryVoltage, R.id.batteryVoltageText);
+        super(host, BrickType.BATTERY_VOLTAGE, host.prefs().batteryVoltage,
+                R.id.batteryVoltageBrick,
+                R.drawable.ic_reading_battery,
+                R.drawable.ic_reading_filled_battery,
+                R.drawable.ic_reading_bars_battery);
+    }
+
+    @NonNull
+    @Override
+    protected ReadingState readingState(@NonNull EnumMap<CarMetric, Float> latest) {
+        Float volts = latest.get(CarMetric.BATTERY_VOLTAGE_V);
+        return volts != null ? stateOf(volts) : ReadingState.NO_DATA;
+    }
+
+    /** How a system voltage stands. */
+    @NonNull
+    static ReadingState stateOf(float volts) {
+        if (volts < CRITICAL_LOW_V || volts > CRITICAL_HIGH_V) return ReadingState.CRITICAL;
+        if (volts < WARNING_LOW_V) return ReadingState.WARNING;
+        return ReadingState.OK;
     }
 
     @NonNull

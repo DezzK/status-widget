@@ -124,10 +124,65 @@ public class Preferences {
     }
 
     /**
-     * Everything a brick has regardless of what it draws: geometry, outline, opacity, per-app
-     * hiding and status-bar placement. Subclasses add only what their kind of brick can actually
-     * use — {@link TextBrickPrefs} the font, {@link IconBrickPrefs} the icon size — so a new brick
-     * never re-declares the shared set.
+     * How one drawn element looks and sits: its size, vertical offset, outline, opacity and
+     * horizontal margins. A brick has one for itself ({@link BrickPrefs#look}); a reading brick's
+     * optional icon has a second one ({@link InlineIconPrefs#look}) — the same settings, shown by
+     * the same controls, stored under keys of its own.
+     *
+     * <p>Keys are {@code prefix + PascalSuffix}, with the suffixes {@link BrickPrefs} has always
+     * written — moving the brick's own fields here kept every stored key, and presets and exported
+     * settings carry those keys verbatim.
+     */
+    public static final class LookPrefs {
+        /** The element's "how big": the font size of text, the edge length of an icon. */
+        public final Int size;
+        /** Label and content description for {@link #size}. */
+        @StringRes
+        public final int sizeLabelRes;
+        public final int sizeMin;
+        public final int sizeMax;
+        public final Int adjustY;
+        public final Int outlineAlpha;
+        public final Int outlineWidth;
+        /** Element opacity 0..255 — applied to the View via {@code setAlpha(value/255f)}. */
+        public final Int contentAlpha;
+        public final Int marginStart;
+        public final Int marginEnd;
+
+        private LookPrefs(Preferences p, String prefix, String sizeKeySuffix, int defaultSize,
+                          @StringRes int sizeLabelRes, int sizeMin, int sizeMax,
+                          int defaultMarginStart, int defaultMarginEnd) {
+            this.sizeLabelRes = sizeLabelRes;
+            this.sizeMin = sizeMin;
+            this.sizeMax = sizeMax;
+            size = new Int(p, prefix + sizeKeySuffix, defaultSize);
+            outlineAlpha = new Int(p, prefix + "OutlineAlpha", 0xAA);
+            outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
+            marginStart = new Int(p, prefix + "MarginStart", defaultMarginStart);
+            marginEnd = new Int(p, prefix + "MarginEnd", defaultMarginEnd);
+            adjustY = new Int(p, prefix + "AdjustY", 0);
+            contentAlpha = new Int(p, prefix + "ContentAlpha", 255);
+        }
+
+        /** The look of a run of text: {@link #size} is the font size. */
+        static LookPrefs text(Preferences p, String prefix, int defaultFontSize) {
+            return new LookPrefs(p, prefix, "FontSize", defaultFontSize,
+                    R.string.brick_font_size, 10, 500, 0, 0);
+        }
+
+        /** The look of an icon: {@link #size} is its edge length. */
+        static LookPrefs icon(Preferences p, String prefix, int defaultSize,
+                              int defaultMarginStart, int defaultMarginEnd) {
+            return new LookPrefs(p, prefix, "Size", defaultSize,
+                    R.string.brick_size, 10, 600, defaultMarginStart, defaultMarginEnd);
+        }
+    }
+
+    /**
+     * Everything a brick has regardless of what it draws: its look (size, offset, outline,
+     * opacity, margins), per-app hiding and status-bar placement. Subclasses add only what their
+     * kind of brick can actually use — {@link TextBrickPrefs} the font — so a new brick never
+     * re-declares the shared set.
      *
      * <p>Every key is {@code prefix + PascalSuffix}, and the bare prefix doubles as the wipe
      * pattern in {@link Preferences#resetBrick(BrickType)}. So a prefix must not be a textual
@@ -140,21 +195,11 @@ public class Preferences {
     public static abstract class BrickPrefs {
         public final String prefix;
         /**
-         * The brick's one "how big" pref — font size for text, icon size for icons. The key
-         * suffix and the defaults differ per kind, so they come in through the constructor
-         * rather than through an override.
+         * The brick's own look. Its size is the font size for text and the edge length for an
+         * icon, which is why the kind of brick picks the look's flavor ({@link LookPrefs#text},
+         * {@link LookPrefs#icon}) and hands it in.
          */
-        public final Int size;
-        /** Label and content description for {@link #size}. */
-        @StringRes
-        public final int sizeLabelRes;
-        public final int sizeMin;
-        public final int sizeMax;
-        public final Int outlineAlpha;
-        public final Int outlineWidth;
-        public final Int marginStart;
-        public final Int marginEnd;
-        public final Int adjustY;
+        public final LookPrefs look;
         /** Apps where the brick should be hidden when its own list is in effect. */
         public final StringSet hideInPackages;
         /**
@@ -169,26 +214,13 @@ public class Preferences {
          * collapsing siblings. Maps to {@code View.INVISIBLE} vs {@code View.GONE}.
          */
         public final Bool hideKeepsSpace;
-        /** Whole-element opacity 0..255 — applied to the View via {@code setAlpha(value/255f)}. */
-        public final Int contentAlpha;
-
-        protected BrickPrefs(Preferences p, String prefix, String sizeKeySuffix, int defaultSize,
-                             @StringRes int sizeLabelRes, int sizeMin, int sizeMax) {
+        protected BrickPrefs(Preferences p, String prefix, LookPrefs look) {
             this.prefix = prefix;
-            this.sizeLabelRes = sizeLabelRes;
-            this.sizeMin = sizeMin;
-            this.sizeMax = sizeMax;
-            size = new Int(p, prefix + sizeKeySuffix, defaultSize);
-            outlineAlpha = new Int(p, prefix + "OutlineAlpha", 0xAA);
-            outlineWidth = new Int(p, prefix + "OutlineWidth", 2);
-            marginStart = new Int(p, prefix + "MarginStart", 0);
-            marginEnd = new Int(p, prefix + "MarginEnd", 0);
-            adjustY = new Int(p, prefix + "AdjustY", 0);
+            this.look = look;
             hideInPackages = new StringSet(p, prefix + "HideInPackages");
             hideSource = new Str(p, prefix + "HideSource", "");
             statusAlignment = new Int(p, prefix + "StatusAlignment", 0);
             hideKeepsSpace = new Bool(p, prefix + "HideKeepsSpace", false);
-            contentAlpha = new Int(p, prefix + "ContentAlpha", 255);
         }
 
         /**
@@ -211,7 +243,7 @@ public class Preferences {
 
     /** A brick that draws text. Adds the font on top of everything in {@link BrickPrefs}. */
     public static class TextBrickPrefs extends BrickPrefs {
-        /** Same object as {@link BrickPrefs#size} — for text bricks the size IS the font size. */
+        /** Same object as the look's size — for text bricks the size IS the font size. */
         public final Int fontSize;
         /** {@link Fonts.Family#key} of the chosen font family. */
         public final Str fontFamily;
@@ -219,8 +251,8 @@ public class Preferences {
         public final Bool fontItalic;
 
         public TextBrickPrefs(Preferences p, String prefix, int defaultFontSize) {
-            super(p, prefix, "FontSize", defaultFontSize, R.string.brick_font_size, 10, 500);
-            fontSize = size;
+            super(p, prefix, LookPrefs.text(p, prefix, defaultFontSize));
+            fontSize = look.size;
             fontFamily = new Str(p, prefix + "FontFamily", Fonts.DEFAULT_KEY);
             fontBold = new Bool(p, prefix + "FontBold", false);
             fontItalic = new Bool(p, prefix + "FontItalic", false);
@@ -387,14 +419,64 @@ public class Preferences {
     }
 
     /**
-     * A one-line reading fed by the car. Intentionally empty: it exists so a pref every car
-     * reading wants — decimals, a placeholder style — lands here instead of leaking onto every
-     * text brick (adding it to {@link TextBrickPrefs} would mint timeUnit / dateUnit / mediaUnit
-     * keys for bricks that have no use for them).
+     * An optional icon drawn in front of a reading: whether it is shown, and its own look —
+     * the full set an icon brick has, independent of the reading's text. Stored under the reading
+     * brick's prefix, so resetting the brick resets its icon too.
+     */
+    public static final class InlineIconPrefs {
+        /**
+         * Default space before the icon, px. The bricks of a row sit almost edge to edge, so
+         * without it the icon would stand as close to the previous brick's number as to its own.
+         */
+        private static final int DEFAULT_SPACE_BEFORE = 8;
+        /**
+         * Default space between the icon and the number it labels, px — only where the icon's
+         * margin slider starts. The GNSS table has no such slider and derives its gap from the
+         * font instead ({@code TableRenderBrick.ICON_GAP_RATIO}).
+         */
+        private static final int DEFAULT_GAP = 4;
+
+        public final Bool show;
+        public final LookPrefs look;
+
+        InlineIconPrefs(Preferences p, String brickPrefix, int defaultSize) {
+            show = new Bool(p, brickPrefix + "ShowIcon", false);
+            look = LookPrefs.icon(p, brickPrefix + "Icon", defaultSize, DEFAULT_SPACE_BEFORE,
+                    DEFAULT_GAP);
+        }
+    }
+
+    /**
+     * A one-line reading fed by the car, with an optional icon in front of it. Also the home for
+     * prefs every car reading wants, so they do not leak onto every text brick (adding one to
+     * {@link TextBrickPrefs} would mint timeUnit / dateUnit / mediaUnit keys for bricks that have
+     * no use for them).
      */
     public static class CarTextBrickPrefs extends TextBrickPrefs {
+        private static final int DEFAULT_FONT_SIZE = 40;
+        /**
+         * A little over {@link #DEFAULT_FONT_SIZE}: the icon's box also holds the room for its
+         * halo, and at this size the glyph inside comes out as tall as the digits beside it.
+         */
+        private static final int DEFAULT_ICON_SIZE = 44;
+
+        public final InlineIconPrefs icon;
+
         public CarTextBrickPrefs(Preferences p, String prefix) {
-            super(p, prefix, 40);
+            super(p, prefix, DEFAULT_FONT_SIZE);
+            icon = new InlineIconPrefs(p, prefix, DEFAULT_ICON_SIZE);
+        }
+
+        /**
+         * {@link BrickControl#BLOCK_ICON} is added here and NOWHERE else — the settings screen
+         * casts to this class when it sees the flag, and that cast is only safe while this stays
+         * the single origin.
+         */
+        @Override
+        public EnumSet<BrickControl> controls() {
+            EnumSet<BrickControl> set = super.controls();
+            set.add(BrickControl.BLOCK_ICON);
+            return set;
         }
     }
 
@@ -431,11 +513,11 @@ public class Preferences {
 
     /**
      * A brick that draws an icon. Adds nothing of its own — an icon brick is exactly the base set,
-     * with {@link BrickPrefs#size} meaning the icon's edge length.
+     * with its look's {@link LookPrefs#size} meaning the icon's edge length.
      */
     public static class IconBrickPrefs extends BrickPrefs {
         public IconBrickPrefs(Preferences p, String prefix) {
-            super(p, prefix, "Size", 70, R.string.brick_size, 10, 600);
+            super(p, prefix, LookPrefs.icon(p, prefix, 70, 0, 0));
         }
     }
 

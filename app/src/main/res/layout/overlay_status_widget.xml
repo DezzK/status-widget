@@ -181,8 +181,7 @@
         android:id="@+id/wifiStatusIcon"
         android:layout_width="100sp"
         android:layout_height="100sp"
-        android:layout_gravity="center_vertical"
-        android:paddingHorizontal="4sp"
+        style="@style/OverlayIcon"
         android:src="@drawable/ic_status_wifi_off"
         tools:ignore="ContentDescription" />
 
@@ -190,8 +189,7 @@
         android:id="@+id/gnssStatusIcon"
         android:layout_width="100sp"
         android:layout_height="100sp"
-        android:layout_gravity="center_vertical"
-        android:paddingHorizontal="4sp"
+        style="@style/OverlayIcon"
         android:src="@drawable/ic_status_gps_off"
         tools:ignore="ContentDescription" />
 
@@ -199,67 +197,32 @@
         android:id="@+id/bluetoothStatusIcon"
         android:layout_width="100sp"
         android:layout_height="100sp"
-        android:layout_gravity="center_vertical"
-        android:paddingHorizontal="4sp"
+        style="@style/OverlayIcon"
         android:src="@drawable/ic_status_bt_off"
         tools:ignore="ContentDescription" />
 
-    <!-- Car-specific bricks (fed by the flavor's CarIntegration). Direct children of the
-         container like every other brick so status-bar mode can re-parent them. -->
-    <dezz.status.widget.OutlineTextView
-        android:id="@+id/indoorTempText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:fontFamily="@font/roboto_condensed_medium"
-        android:includeFontPadding="false"
-        android:textColor="@color/text_primary"
-        android:textSize="40sp"
-        tools:text="21°" />
+    <!-- Car-specific bricks (fed by the flavor's CarIntegration): a reading with an optional icon
+         in front of it, one include each. Direct children of the container like every other
+         brick so status-bar mode can re-parent them. -->
+    <include
+        android:id="@+id/indoorTempBrick"
+        layout="@layout/overlay_reading_brick" />
 
-    <dezz.status.widget.OutlineTextView
-        android:id="@+id/outdoorTempText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:fontFamily="@font/roboto_condensed_medium"
-        android:includeFontPadding="false"
-        android:textColor="@color/text_primary"
-        android:textSize="40sp"
-        tools:text="8°" />
+    <include
+        android:id="@+id/outdoorTempBrick"
+        layout="@layout/overlay_reading_brick" />
 
-    <dezz.status.widget.OutlineTextView
-        android:id="@+id/fuelLevelText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:fontFamily="@font/roboto_condensed_medium"
-        android:includeFontPadding="false"
-        android:textColor="@color/text_primary"
-        android:textSize="40sp"
-        tools:text="45%" />
+    <include
+        android:id="@+id/fuelLevelBrick"
+        layout="@layout/overlay_reading_brick" />
 
-    <dezz.status.widget.OutlineTextView
-        android:id="@+id/fuelRangeText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:fontFamily="@font/roboto_condensed_medium"
-        android:includeFontPadding="false"
-        android:textColor="@color/text_primary"
-        android:textSize="40sp"
-        tools:text="380 km" />
+    <include
+        android:id="@+id/fuelRangeBrick"
+        layout="@layout/overlay_reading_brick" />
 
-    <dezz.status.widget.OutlineTextView
-        android:id="@+id/batteryVoltageText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:fontFamily="@font/roboto_condensed_medium"
-        android:includeFontPadding="false"
-        android:textColor="@color/text_primary"
-        android:textSize="40sp"
-        tools:text="13.8 V" />
+    <include
+        android:id="@+id/batteryVoltageBrick"
+        layout="@layout/overlay_reading_brick" />
 
     <!-- GNSS readout. Only the container is declared here: its children are one [icon][value]
          cell per enabled field, built in code because the field list is a list, not a fixed

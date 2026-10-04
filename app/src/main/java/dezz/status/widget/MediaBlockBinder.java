@@ -179,9 +179,9 @@ final class MediaBlockBinder extends BrickBlockBinder {
         // fontFamily, fontBold/Italic) so existing presets keep working unchanged.
         ctx.bindSwitch(marqueeEnabled, p.marqueeEnabled, null);
         ctx.bindIntSlider(titleFontSizeSlider, p.fontSize, ctx.sizeFormatter());
-        ctx.bindIntSlider(titleOutlineAlphaSlider, p.outlineAlpha, ctx.plainFormatter());
-        ctx.bindIntSlider(titleOutlineWidthSlider, p.outlineWidth, ctx.sizeFormatter());
-        ctx.bindIntSlider(titleContentAlphaSlider, p.contentAlpha, ctx.plainFormatter());
+        ctx.bindIntSlider(titleOutlineAlphaSlider, p.look.outlineAlpha, ctx.plainFormatter());
+        ctx.bindIntSlider(titleOutlineWidthSlider, p.look.outlineWidth, ctx.sizeFormatter());
+        ctx.bindIntSlider(titleContentAlphaSlider, p.look.contentAlpha, ctx.plainFormatter());
         ViewBinder.linkPairDisableOnZero(titleOutlineAlphaSlider, titleOutlineWidthSlider);
         ctx.bindFontFamilyDropdown(titleFontFamilyDropdown, p.fontFamily);
         ctx.bindFontStyleToggles(titleFontStyleGroup, titleFontBold, titleFontItalic,

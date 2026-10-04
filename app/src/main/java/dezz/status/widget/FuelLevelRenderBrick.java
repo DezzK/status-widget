@@ -34,11 +34,34 @@ import dezz.status.widget.car.CarMetric;
  */
 final class FuelLevelRenderBrick extends CarTextRenderBrick {
 
+    /** At or below this share of the tank the icon warns, and at or below the second it alarms. */
+    private static final float WARNING_PERCENT = 15f;
+    private static final float CRITICAL_PERCENT = 7f;
+
     private final Preferences.FuelLevelBrickPrefs prefs;
 
     FuelLevelRenderBrick(@NonNull WidgetHost host) {
-        super(host, BrickType.FUEL_LEVEL, host.prefs().fuelLevel, R.id.fuelLevelText);
+        super(host, BrickType.FUEL_LEVEL, host.prefs().fuelLevel, R.id.fuelLevelBrick,
+                R.drawable.ic_reading_fuel,
+                R.drawable.ic_reading_filled_fuel,
+                R.drawable.ic_reading_bars_fuel);
         this.prefs = host.prefs().fuelLevel;
+    }
+
+    /** Judged by the share of the tank whatever the unit shown: a tank size does not change it. */
+    @NonNull
+    @Override
+    protected ReadingState readingState(@NonNull EnumMap<CarMetric, Float> latest) {
+        Float percent = latest.get(CarMetric.FUEL_PERCENT);
+        return percent != null ? stateOf(percent) : ReadingState.NO_DATA;
+    }
+
+    /** How a share of the tank, in percent, stands. */
+    @NonNull
+    static ReadingState stateOf(float percent) {
+        if (percent <= CRITICAL_PERCENT) return ReadingState.CRITICAL;
+        if (percent <= WARNING_PERCENT) return ReadingState.WARNING;
+        return ReadingState.OK;
     }
 
     @NonNull

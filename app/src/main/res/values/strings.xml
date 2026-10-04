@@ -152,6 +152,7 @@
     <string name="font_serif">Serif</string>
     <string name="font_monospace">Monospace</string>
     <string name="brick_status_alignment">Status bar alignment</string>
+    <string name="brick_icon">Icon</string>
     <string name="fuel_level_unit">Units</string>
     <string-array name="fuel_level_units">
         <item>Percent</item>

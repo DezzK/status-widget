@@ -146,6 +146,7 @@
     <string name="font_serif">С засечками</string>
     <string name="font_monospace">Моноширинный</string>
     <string name="brick_status_alignment">Выравнивание в статусной строке</string>
+    <string name="brick_icon">Иконка</string>
     <string name="fuel_level_unit">Единицы</string>
     <string-array name="fuel_level_units">
         <item>Проценты</item>

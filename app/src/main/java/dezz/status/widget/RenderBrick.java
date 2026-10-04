@@ -119,7 +119,7 @@ abstract class RenderBrick {
 
     /** Target opacity when visible, 0..1. Overridable: the media brick's container is not it. */
     float contentAlpha() {
-        return prefs().brickPrefs(type).contentAlpha.get() / 255f;
+        return prefs().brickPrefs(type).look.contentAlpha.get() / 255f;
     }
 
     // ── phase: height floor ──────────────────────────────────────────────────

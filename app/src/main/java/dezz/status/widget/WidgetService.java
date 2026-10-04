@@ -223,9 +223,15 @@ public class WidgetService extends Service implements WidgetHost {
         renderBricks.put(BrickType.GPS, new GpsRenderBrick(this));
         renderBricks.put(BrickType.BLUETOOTH, new BluetoothRenderBrick(this));
         renderBricks.put(BrickType.INDOOR_TEMP, new TempRenderBrick(this, BrickType.INDOOR_TEMP,
-                prefs.indoorTemp, R.id.indoorTempText));
+                prefs.indoorTemp, R.id.indoorTempBrick,
+                R.drawable.ic_reading_cabin_temp,
+                R.drawable.ic_reading_filled_cabin_temp,
+                R.drawable.ic_reading_bars_cabin_temp));
         renderBricks.put(BrickType.OUTDOOR_TEMP, new TempRenderBrick(this, BrickType.OUTDOOR_TEMP,
-                prefs.outdoorTemp, R.id.outdoorTempText));
+                prefs.outdoorTemp, R.id.outdoorTempBrick,
+                R.drawable.ic_reading_outside_temp,
+                R.drawable.ic_reading_filled_outside_temp,
+                R.drawable.ic_reading_bars_outside_temp));
         renderBricks.put(BrickType.GNSS_INFO, new GnssInfoRenderBrick(this));
         renderBricks.put(BrickType.FUEL_LEVEL, new FuelLevelRenderBrick(this));
         renderBricks.put(BrickType.FUEL_RANGE, new FuelRangeRenderBrick(this));

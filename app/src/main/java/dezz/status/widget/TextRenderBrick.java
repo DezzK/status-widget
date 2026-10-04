@@ -39,7 +39,7 @@ abstract class TextRenderBrick extends RenderBrick {
 
     private final Preferences.TextBrickPrefs prefs;
     @IdRes
-    private final int viewId;
+    protected final int viewId;
     protected OutlineTextView text;
 
     protected TextRenderBrick(@NonNull WidgetHost host, @NonNull BrickType type,
@@ -71,15 +71,17 @@ abstract class TextRenderBrick extends RenderBrick {
                     ((Preferences.AlignedTextBrickPrefs) prefs).alignment.get()));
         }
         text.setTextColor(ContextCompat.getColor(host.themed(), R.color.text_primary));
-        text.setOutlineColor(outlineColor(host.themed(), prefs.outlineAlpha.get()));
-        text.setOutlineWidth(prefs.outlineWidth.get());
+        text.setOutlineColor(outlineColor(host.themed(), prefs.look.outlineAlpha.get()));
+        text.setOutlineWidth(prefs.look.outlineWidth.get());
         Typeface typeface = Fonts.resolve(host.context(), prefs.fontFamily.get(),
                 prefs.fontBold.get(), prefs.fontItalic.get());
         text.setTypeface(typeface);
         text.setTextSize(TypedValue.COMPLEX_UNIT_PX, prefs.fontSize.get());
-        text.setTranslationY(prefs.adjustY.get());
-        text.setAlpha(prefs.contentAlpha.get() / 255f);
-        applyHorizontalMargins(text, prefs.marginStart.get(), prefs.marginEnd.get());
+        text.setTranslationY(prefs.look.adjustY.get());
+        text.setAlpha(prefs.look.contentAlpha.get() / 255f);
+        // On the brick's root, not the text: for most text bricks the two are one view, but a
+        // reading with an icon in front is a container, and its margins are the brick's.
+        applyHorizontalMargins(view(), prefs.look.marginStart.get(), prefs.look.marginEnd.get());
     }
 
     @Override

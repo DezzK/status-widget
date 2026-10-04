@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright © 2025-2026 Dezz (https://github.com/DezzK)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+<!-- Outside temperature, bars: a thin thermometer with a scale beside a thin sun. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.6"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:antialias="true"
+        android:pathData="M6.25,14.76 V4.75 A1.75,1.75 0 0 1 9.75,4.75 V14.76 A3.25,3.25 0 1 1 6.25,14.76 Z" />
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.4"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:antialias="true"
+        android:pathData="M2.8,6.5 H4.4 M2.8,9.25 H4.4 M2.8,12 H4.4" />
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.6"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:antialias="true"
+        android:pathData="M15.3,7.4 A2.3,2.3 0 1 1 19.9,7.4 A2.3,2.3 0 1 1 15.3,7.4 Z" />
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.4"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:antialias="true"
+        android:pathData="M21.60,7.40 L22.90,7.40 M20.43,10.23 L21.35,11.15 M17.60,11.40 L17.60,12.70 M14.77,10.23 L13.85,11.15 M13.60,7.40 L12.30,7.40 M14.77,4.57 L13.85,3.65 M17.60,3.40 L17.60,2.10 M20.43,4.57 L21.35,3.65" />
+</vector>

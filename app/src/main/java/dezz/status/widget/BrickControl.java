@@ -55,6 +55,13 @@ public enum BrickControl {
      */
     BLOCK_FONT,
     /**
+     * {@code brickIconBlock} — the optional icon of a reading brick: its on/off switch and its
+     * own full look (size, offset, outline, opacity, margins), drawn by the same controls as the
+     * brick's own look. Added by {@link Preferences.CarTextBrickPrefs} and NOWHERE else: the
+     * binding site casts to that class — the same single-origin rule as {@link #BLOCK_FONT}.
+     */
+    BLOCK_ICON,
+    /**
      * {@code brickTableRow} — row count + cell spacing, for a brick whose content is a table of
      * cells rather than one run of text. Added by {@link Preferences.TableBrickPrefs} and NOWHERE
      * else: the binding site casts to that class, and the cast is only safe while this stays the

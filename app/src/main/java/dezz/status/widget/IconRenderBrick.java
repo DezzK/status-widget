@@ -18,24 +18,22 @@
 
 package dezz.status.widget;
 
-import android.content.Context;
-import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
 import android.view.View;
-import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-import androidx.core.widget.ImageViewCompat;
+import androidx.core.math.MathUtils;
 
 import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
 
 /**
- * A brick that draws one status icon. Everything the three of them share lives here: the square
- * layout params, the design/style/outline pass, and the two badge channels. A subclass supplies
- * only what genuinely differs — its drawables, its state colours, which state it is in, and what
- * (if anything) it wants badged.
+ * A brick that draws one status icon. Everything the three of them share lives here: the icon
+ * itself ({@link IconPart} — the look and the design/style/outline paint, shared with the icon in
+ * front of a reading) and the two badge channels. A subclass supplies only what genuinely
+ * differs — its drawables, its state colors, which state it is in, and what (if anything) it
+ * wants badged.
  *
  * <p>This replaces the {@code ICON_TYPE_WIFI/GNSS/BT} constants that used to index three shared
  * drawable tables and three colour tables by hand: a second per-type enumeration running parallel
@@ -43,16 +41,14 @@ import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
  */
 abstract class IconRenderBrick extends RenderBrick {
 
-    /** Icon style indices — must match the {@code icon_styles} array in strings.xml. */
-    private static final int STYLE_COLOR = 1;
-
     private final Preferences.IconBrickPrefs prefs;
-    private OutlineImageView icon;
+    private final IconPart icon;
 
     protected IconRenderBrick(@NonNull WidgetHost host, @NonNull BrickType type,
                               @NonNull Preferences.IconBrickPrefs prefs) {
         super(host, type);
         this.prefs = prefs;
+        this.icon = new IconPart(host);
     }
 
     /** The icon view inside a freshly inflated binding. One line per subclass, so no switch. */
@@ -117,31 +113,23 @@ abstract class IconRenderBrick extends RenderBrick {
 
     @Override
     void bind(@NonNull OverlayStatusWidgetBinding binding) {
-        icon = iconOf(binding);
+        icon.bind(iconOf(binding));
     }
 
     @NonNull
     @Override
     View view() {
-        return icon;
+        return icon.view();
     }
 
     @Override
     void applySettings() {
-        if (icon == null) return;
-        int size = prefs.size.get();
-        ViewGroup.LayoutParams lp = icon.getLayoutParams();
-        lp.width = size;
-        lp.height = size;
-        icon.setLayoutParams(lp);
-        applyHorizontalMargins(icon, prefs.marginStart.get(), prefs.marginEnd.get());
-        icon.setTranslationY(prefs.adjustY.get());
-        icon.setAlpha(prefs.contentAlpha.get() / 255f);
+        icon.applyLook(prefs.look);
     }
 
     @Override
     int minHeight() {
-        return prefs.size.get();
+        return prefs.look.size.get();
     }
 
     /**
@@ -150,43 +138,20 @@ abstract class IconRenderBrick extends RenderBrick {
      */
     @Override
     void refreshContent() {
-        if (icon == null) return;
-        int[][] designs = designs();
-        int designIdx = clamp(prefs().iconDesign.get(), 0, designs.length - 1);
-        int[] design = designs[designIdx];
-        int stateIdx = clamp(stateOrdinal(), 0, design.length - 1);
-        icon.setImageResource(design[stateIdx]);
-        icon.setDrawIcon(true);
-
-        Context ctx = host.themed();
-        boolean coloured = clamp(prefs().iconStyle.get(), 0, 1) == STYLE_COLOR;
-        int stateColor = ContextCompat.getColor(ctx, stateColors()[stateIdx]);
-        int tint = coloured ? stateColor : ContextCompat.getColor(ctx, R.color.text_primary);
-        // Skip the no-op tint set: applyImageTint invalidates the drawable unconditionally, and
-        // this runs on every periodic status broadcast.
-        ColorStateList currentTint = ImageViewCompat.getImageTintList(icon);
-        if (currentTint == null || currentTint.getDefaultColor() != tint) {
-            ImageViewCompat.setImageTintList(icon, ColorStateList.valueOf(tint));
-        }
-
-        int outlineAlpha = prefs.outlineAlpha.get();
-        if (outlineAlpha > 0) {
-            icon.setOutlineColor((ContextCompat.getColor(ctx, R.color.text_outline) & 0x00FFFFFF)
-                    | (outlineAlpha << 24));
-            icon.setOutlineWidth(prefs.outlineWidth.get());
-        } else {
-            icon.setOutlineWidth(0);
-        }
+        OutlineImageView view = icon.view();
+        if (view == null) return;
+        int stateIdx = MathUtils.clamp(stateOrdinal(), 0, stateColors().length - 1);
+        int styleColor = icon.paint(icon.drawableFor(designs(), stateIdx), stateColors()[stateIdx],
+                prefs.look);
 
         // Both badge channels are written on every repaint, each with its own clear value — they
         // are independent, and leaving one alone would strand a badge from a previous state.
-        icon.setBadgeDrawable(badgeDrawable(stateIdx));
-        TextBadge badge = textBadge(stateIdx, coloured ? stateColor
-                : ContextCompat.getColor(ctx, R.color.text_primary));
+        view.setBadgeDrawable(badgeDrawable(stateIdx));
+        TextBadge badge = textBadge(stateIdx, styleColor);
         if (badge != null) {
-            icon.setBadgeText(badge.text, badge.background, badge.foreground, badge.ring);
+            view.setBadgeText(badge.text, badge.background, badge.foreground, badge.ring);
         } else {
-            icon.setBadgeText(null, 0, 0, 0);
+            view.setBadgeText(null, 0, 0, 0);
         }
     }
 
@@ -195,12 +160,8 @@ abstract class IconRenderBrick extends RenderBrick {
         return ContextCompat.getColor(host.themed(), R.color.text_outline) | 0xFF000000;
     }
 
-    protected static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
-    }
-
     /** True once {@link #bind} has run — callbacks can land before the overlay exists. */
     protected final boolean hasView() {
-        return icon != null;
+        return icon.view() != null;
     }
 }

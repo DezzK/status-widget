@@ -24,6 +24,15 @@
     </style>
 
     <!--
+        An icon in the overlay row: centered on the row, with horizontal room for the outline
+        halo, which OutlineImageView dilates inside the view's own bounds.
+    -->
+    <style name="OverlayIcon">
+        <item name="android:layout_gravity">center_vertical</item>
+        <item name="android:paddingHorizontal">4sp</item>
+    </style>
+
+    <!--
         Permanent value badge displayed next to each slider's title. Tappable — opens a numeric
         input dialog for exact values. Coloured to match colorPrimary so the user reads it as
         interactive.

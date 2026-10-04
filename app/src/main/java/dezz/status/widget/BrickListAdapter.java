@@ -265,24 +265,15 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         private final ImageView brickExpand;
         private final LinearLayout brickHeader;
         private final LinearLayout brickPanel;
-        // Generic rows.
-        private final LinearLayout brickSizeAdjustRow;
-        private final LinearLayout brickSizeColumn;
-        private final LinearLayout brickAdjustYColumn;
-        private final TextView brickSizeLabel;
-        private final Slider brickSizeSlider;
-        private final Slider brickAdjustYSlider;
+        // Generic rows: the brick's own look, then the table row.
+        private final LookControls brickLook;
         private final LinearLayout brickTableRow;
         private final Slider brickTableRowsSlider;
         private final Slider brickTableCellGapSlider;
-        private final LinearLayout brickOutlineRow;
-        private final Slider brickOutlineAlphaSlider;
-        private final Slider brickOutlineWidthSlider;
-        private final LinearLayout brickContentAlphaRow;
-        private final Slider brickContentAlphaSlider;
-        private final LinearLayout brickMarginRow;
-        private final Slider brickMarginStartSlider;
-        private final Slider brickMarginEndSlider;
+        // A reading's optional icon: its switch and its own look.
+        private final LinearLayout brickIconBlock;
+        private final MaterialSwitch brickIconSwitch;
+        private final LookControls brickIconLook;
         // Font block.
         private final LinearLayout brickFontBlock;
         private final MaterialAutoCompleteTextView brickFontFamilyDropdown;
@@ -324,23 +315,13 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
             brickExpand = itemView.findViewById(R.id.brickExpand);
             brickHeader = itemView.findViewById(R.id.brickHeader);
             brickPanel = itemView.findViewById(R.id.brickPanel);
-            brickSizeAdjustRow = itemView.findViewById(R.id.brickSizeAdjustRow);
-            brickSizeColumn = itemView.findViewById(R.id.brickSizeColumn);
-            brickAdjustYColumn = itemView.findViewById(R.id.brickAdjustYColumn);
-            brickSizeLabel = itemView.findViewById(R.id.brickSizeLabel);
-            brickSizeSlider = itemView.findViewById(R.id.brickSizeSlider);
-            brickAdjustYSlider = itemView.findViewById(R.id.brickAdjustYSlider);
+            brickLook = new LookControls(binderCtx, itemView.findViewById(R.id.brickLook));
             brickTableRow = itemView.findViewById(R.id.brickTableRow);
             brickTableRowsSlider = itemView.findViewById(R.id.brickTableRowsSlider);
             brickTableCellGapSlider = itemView.findViewById(R.id.brickTableCellGapSlider);
-            brickOutlineRow = itemView.findViewById(R.id.brickOutlineRow);
-            brickOutlineAlphaSlider = itemView.findViewById(R.id.brickOutlineAlphaSlider);
-            brickOutlineWidthSlider = itemView.findViewById(R.id.brickOutlineWidthSlider);
-            brickContentAlphaRow = itemView.findViewById(R.id.brickContentAlphaRow);
-            brickContentAlphaSlider = itemView.findViewById(R.id.brickContentAlphaSlider);
-            brickMarginRow = itemView.findViewById(R.id.brickMarginRow);
-            brickMarginStartSlider = itemView.findViewById(R.id.brickMarginStartSlider);
-            brickMarginEndSlider = itemView.findViewById(R.id.brickMarginEndSlider);
+            brickIconBlock = itemView.findViewById(R.id.brickIconBlock);
+            brickIconSwitch = itemView.findViewById(R.id.brickIconSwitch);
+            brickIconLook = new LookControls(binderCtx, itemView.findViewById(R.id.brickIconLook));
             brickFontBlock = itemView.findViewById(R.id.brickFontBlock);
             brickFontFamilyDropdown = itemView.findViewById(R.id.brickFontFamilyDropdown);
             brickFontStyleGroup = itemView.findViewById(R.id.brickFontStyleGroup);
@@ -375,17 +356,12 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
          * {@code prefs.widgetMode} and so is driven from {@link #bindViews()}.
          */
         private void applyControlVisibility() {
-            brickSizeAdjustRow.setVisibility(
-                    controls.contains(BrickControl.COL_SIZE)
-                            || controls.contains(BrickControl.COL_ADJUST_Y)
-                            ? View.VISIBLE : View.GONE);
-            brickSizeColumn.setVisibility(visibilityOf(BrickControl.COL_SIZE));
-            brickAdjustYColumn.setVisibility(visibilityOf(BrickControl.COL_ADJUST_Y));
+            brickLook.showRows(controls);
             brickTableRow.setVisibility(visibilityOf(BrickControl.ROW_TABLE));
-            brickOutlineRow.setVisibility(visibilityOf(BrickControl.ROW_OUTLINE));
-            brickContentAlphaRow.setVisibility(visibilityOf(BrickControl.ROW_CONTENT_ALPHA));
-            brickMarginRow.setVisibility(visibilityOf(BrickControl.ROW_MARGIN));
             brickFontBlock.setVisibility(visibilityOf(BrickControl.BLOCK_FONT));
+            brickIconBlock.setVisibility(visibilityOf(BrickControl.BLOCK_ICON));
+            // An icon brick's look, in full — the icon has nothing of its own to leave out.
+            brickIconLook.showRows(LookControls.ALL);
         }
 
         private int visibilityOf(BrickControl control) {
@@ -423,54 +399,23 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
         }
 
         private void clearListeners() {
-            brickSizeSlider.clearOnChangeListeners();
-            brickAdjustYSlider.clearOnChangeListeners();
+            brickLook.clearListeners();
+            brickIconLook.clearListeners();
+            brickIconSwitch.setOnCheckedChangeListener(null);
             brickTableRowsSlider.clearOnChangeListeners();
             brickTableCellGapSlider.clearOnChangeListeners();
-            brickOutlineAlphaSlider.clearOnChangeListeners();
-            brickOutlineWidthSlider.clearOnChangeListeners();
-            brickContentAlphaSlider.clearOnChangeListeners();
-            brickMarginStartSlider.clearOnChangeListeners();
-            brickMarginEndSlider.clearOnChangeListeners();
             brickHideKeepsSpaceOwnSwitch.setOnCheckedChangeListener(null);
             brickHideKeepsSpaceInheritedSwitch.setOnCheckedChangeListener(null);
         }
 
         private void bindViews() {
-            if (controls.contains(BrickControl.COL_SIZE)) {
-                brickSizeLabel.setText(p.sizeLabelRes);
-                brickSizeSlider.setContentDescription(activity.getString(p.sizeLabelRes));
-                brickSizeSlider.setValueFrom(p.sizeMin);
-                brickSizeSlider.setValueTo(p.sizeMax);
-                binderCtx.bindIntSlider(brickSizeSlider, p.size, binderCtx.sizeFormatter());
-            }
-            if (controls.contains(BrickControl.COL_ADJUST_Y)) {
-                binderCtx.bindIntSlider(brickAdjustYSlider, p.adjustY, binderCtx.offsetFormatter());
-            }
+            brickLook.bind(p.look);
             if (controls.contains(BrickControl.ROW_TABLE)) {
                 // Safe cast: ROW_TABLE has exactly one origin, TableBrickPrefs.controls().
                 Preferences.TableBrickPrefs tp = (Preferences.TableBrickPrefs) p;
                 binderCtx.bindIntSlider(brickTableRowsSlider, tp.rows,
                         binderCtx.plainFormatter());
                 binderCtx.bindIntSlider(brickTableCellGapSlider, tp.cellGap,
-                        binderCtx.sizeFormatter());
-            }
-            if (controls.contains(BrickControl.ROW_OUTLINE)) {
-                binderCtx.bindIntSlider(brickOutlineAlphaSlider, p.outlineAlpha,
-                        binderCtx.plainFormatter());
-                binderCtx.bindIntSlider(brickOutlineWidthSlider, p.outlineWidth,
-                        binderCtx.sizeFormatter());
-                // After both values are seeded — the linker reads them to decide enabled state.
-                ViewBinder.linkPairDisableOnZero(brickOutlineAlphaSlider, brickOutlineWidthSlider);
-            }
-            if (controls.contains(BrickControl.ROW_CONTENT_ALPHA)) {
-                binderCtx.bindIntSlider(brickContentAlphaSlider, p.contentAlpha,
-                        binderCtx.plainFormatter());
-            }
-            if (controls.contains(BrickControl.ROW_MARGIN)) {
-                binderCtx.bindIntSlider(brickMarginStartSlider, p.marginStart,
-                        binderCtx.sizeFormatter());
-                binderCtx.bindIntSlider(brickMarginEndSlider, p.marginEnd,
                         binderCtx.sizeFormatter());
             }
             if (controls.contains(BrickControl.BLOCK_FONT)) {
@@ -482,6 +427,15 @@ public class BrickListAdapter extends RecyclerView.Adapter<BrickListAdapter.Bric
                 binderCtx.bindFontFamilyDropdown(brickFontFamilyDropdown, textPrefs.fontFamily);
                 binderCtx.bindFontStyleToggles(brickFontStyleGroup, brickFontBold, brickFontItalic,
                         textPrefs.fontBold, textPrefs.fontItalic);
+            }
+            if (controls.contains(BrickControl.BLOCK_ICON)) {
+                // Safe while BLOCK_ICON is added by CarTextBrickPrefs.controls() and nowhere else
+                // — see the note on the constant.
+                Preferences.InlineIconPrefs icon = ((Preferences.CarTextBrickPrefs) p).icon;
+                Runnable showLook = () -> brickIconLook.setVisible(icon.show.get());
+                binderCtx.bindSwitch(brickIconSwitch, icon.show, showLook);
+                brickIconLook.bind(icon.look);
+                showLook.run();
             }
             if (controls.contains(BrickControl.SHARED_STATUS_ALIGNMENT)) {
                 binderCtx.bindStatusAlignmentDropdown(p.statusAlignment,

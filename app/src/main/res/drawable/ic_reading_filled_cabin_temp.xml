@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright © 2025-2026 Dezz (https://github.com/DezzK)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+<!-- Cabin temperature, solid: a solid thermometer beside a solid car seat, the headrest
+     marked by a notch so it does not read as a dot over the backrest. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:antialias="true"
+        android:pathData="M5.75,14.50 V5.25 A2.25,2.25 0 0 1 10.25,5.25 V14.50 A3.75,3.75 0 1 1 5.75,14.50 Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:antialias="true"
+        android:pathData="M14.58,3.36 L15.72,3.14 Q17.00,2.90 17.17,4.19 L17.30,5.21 Q17.40,6.00 16.74,6.45 L16.21,6.82 Q15.80,7.10 15.94,7.58 L17.71,13.73 Q17.90,14.40 18.60,14.40 L20.10,14.40 Q21.80,14.40 21.80,16.10 L21.80,16.90 Q21.80,18.60 20.10,18.60 L17.20,18.60 Q15.00,18.60 14.75,16.41 L13.45,4.89 Q13.30,3.60 14.58,3.36 Z" />
+</vector>

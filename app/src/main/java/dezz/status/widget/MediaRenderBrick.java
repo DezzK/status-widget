@@ -238,12 +238,12 @@ final class MediaRenderBrick extends RenderBrick {
         // Title line: existing media.* font + opacity + outline (TextBrickPrefs inherited).
         Typeface titleTypeface = Fonts.resolve(host.context(), p.fontFamily.get(),
                 p.fontBold.get(), p.fontItalic.get());
-        titleText.setOutlineColor(outlineColor(host.themed(), p.outlineAlpha.get()));
-        titleText.setOutlineWidth(p.outlineWidth.get());
+        titleText.setOutlineColor(outlineColor(host.themed(), p.look.outlineAlpha.get()));
+        titleText.setOutlineWidth(p.look.outlineWidth.get());
         titleText.setTextColor(textColor);
         titleText.setTypeface(titleTypeface);
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, p.fontSize.get());
-        titleText.setAlpha(p.contentAlpha.get() / 255f);
+        titleText.setAlpha(p.look.contentAlpha.get() / 255f);
 
         // Source line is always static + ellipsized; only the title scrolls. Source is short
         // and a constant moving marquee on it would be more distracting than helpful.
@@ -261,8 +261,8 @@ final class MediaRenderBrick extends RenderBrick {
         durationText.setOutlineWidth(p.durationOutlineWidth.get());
         durationText.setAlpha(p.durationContentAlpha.get() / 255f);
 
-        applyHorizontalMargins(container, p.marginStart.get(), p.marginEnd.get());
-        container.setTranslationY(p.adjustY.get());
+        applyHorizontalMargins(container, p.look.marginStart.get(), p.look.marginEnd.get());
+        container.setTranslationY(p.look.adjustY.get());
         // Container alpha back to full — per-line alpha is set above so the two values don't
         // multiply through the parent.
         container.setAlpha(1f);
@@ -299,11 +299,11 @@ final class MediaRenderBrick extends RenderBrick {
 
         int fontSize = onSourceRow ? p.sourceFontSize.get() : p.fontSize.get();
         int outlineAlpha = onSourceRow
-                ? p.sourceOutlineAlpha.get() : p.outlineAlpha.get();
+                ? p.sourceOutlineAlpha.get() : p.look.outlineAlpha.get();
         int outlineWidth = onSourceRow
-                ? p.sourceOutlineWidth.get() : p.outlineWidth.get();
+                ? p.sourceOutlineWidth.get() : p.look.outlineWidth.get();
         int contentAlpha = onSourceRow
-                ? p.sourceContentAlpha.get() : p.contentAlpha.get();
+                ? p.sourceContentAlpha.get() : p.look.contentAlpha.get();
         stateIcon.setTextSizePx(fontSize);
         stateIcon.setIconColor(textColor);
         stateIcon.setOutlineColor(outlineColor(host.themed(), outlineAlpha));
@@ -385,7 +385,7 @@ final class MediaRenderBrick extends RenderBrick {
             // With the source line off the indicator is re-parented onto the title row.
             if (p.showPlaybackState.get()) {
                 titleRow = Math.max(titleRow, MediaStateIconView.heightFor(
-                        p.fontSize.get(), p.outlineWidth.get()));
+                        p.fontSize.get(), p.look.outlineWidth.get()));
             }
             height = titleRow;
         }
