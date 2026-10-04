@@ -75,7 +75,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 final class GeelyCarIntegration implements CarIntegration {
 
-    private static final String TAG = "GeelyCarIntegration";
+    /** The one log tag of the car integration, its helpers included: one logcat filter shows all. */
+    static final String TAG = "GeelyCarIntegration";
 
     /** How often and for how long to re-check sensor support while the platform service boots.
      *  Generous window: some head units bring the eCarX platform service up minutes after our
@@ -154,13 +155,22 @@ final class GeelyCarIntegration implements CarIntegration {
     @Nullable
     private ISensor sensors;
     /**
-     * The 12 V reader; owns its own car service binding and signal subscription. Created on the
-     * first 12 V read rather than with this object, so that a vendor class it links against can
-     * only ever cost the 12 V brick — this object failing to build costs every car brick.
+     * The 12 V reader; owns its signal subscription. Created on the first 12 V read rather than
+     * with this object, so that a vendor class it links against can only ever cost the 12 V
+     * brick — this object failing to build costs every car brick.
      */
     @Nullable
     private EcarxBatteryVoltage batteryVoltage;
     private boolean batteryVoltageUnavailable;
+    /**
+     * Vendor VHAL properties: the one car service binding, shared by the 12 V reader and the
+     * metrics with a VHAL fallback. Created on first use, for the same reason as the 12 V reader.
+     */
+    @Nullable
+    private VhalProperties vhal;
+    private boolean vhalUnavailable;
+    /** How each metric's last VHAL read went; a line is logged when it changes. Main thread. */
+    private final Map<CarMetric, String> vhalOutcomes = new EnumMap<>(CarMetric.class);
     /**
      * The car info manager the probe obtained. Kept because a probe that runs before the platform
      * service connects gets a manager not yet wired to it — every read answers 0 — and the SDK
@@ -221,6 +231,7 @@ final class GeelyCarIntegration implements CarIntegration {
         float tracedPushed = Float.NaN;
         float tracedDirect = Float.NaN;
         float tracedFuelTable = Float.NaN;
+        float tracedVhal = Float.NaN;
     }
 
     /** The value each running feed last delivered to its listeners. Main thread only. */
@@ -466,7 +477,8 @@ final class GeelyCarIntegration implements CarIntegration {
      * The metric's current value in its {@link CarMetric} unit, or NaN when no source holds a
      * plausible one. SENSOR sources are tried in priority order. Callable from the probe thread
      * with the sensor manager it is probing, and from the main thread once READY — where the 12 V
-     * voltage is read by {@link #readBatteryVoltage} instead, which binds services of its own.
+     * voltage is read by {@link #readBatteryVoltage} instead, and a VHAL fallback joins in: both
+     * need the car service binding, which the probe does not wait for.
      */
     private float readLatest(@NonNull CarMetric metric, @NonNull EcarxMetricSpec spec,
                              @Nullable ISensor s) {
@@ -514,13 +526,49 @@ final class GeelyCarIntegration implements CarIntegration {
         if (spec.transport == EcarxMetricSpec.Transport.SIGNAL) {
             return readBatteryVoltage();
         }
-        return readLatest(metric, spec, sensors);
+        float value = readLatest(metric, spec, sensors);
+        if (Float.isNaN(value) && spec.hasVhalProperty()) {
+            value = readVhal(metric, spec);
+        }
+        return value;
+    }
+
+    /**
+     * A metric's VHAL property, decoded. Each change in how the read goes — the car service still
+     * binding or refusing, the property empty, a value refused or accepted — is logged once with
+     * the raw bytes: on a car where the brick never appears, that line is the explanation.
+     */
+    private float readVhal(@NonNull CarMetric metric, @NonNull EcarxMetricSpec spec) {
+        VhalProperties properties = vhal();
+        if (properties == null || spec.vhalDecoder == null) return Float.NaN;
+        VhalProperties.Read read = properties.read(spec.vhalProperty);
+        float value = read.problem == null ? spec.vhalDecoder.decode(read.bytes) : Float.NaN;
+        String outcome = read.outcome(value);
+        if (!outcome.equals(vhalOutcomes.put(metric, outcome))) {
+            Log.i(TAG, metric + " via VHAL 0x" + Integer.toHexString(spec.vhalProperty) + ": "
+                    + read.detail + (read.problem == null ? " -> " + value : ""));
+        }
+        return value;
+    }
+
+    @Nullable
+    private VhalProperties vhal() {
+        if (vhal == null && !vhalUnavailable) {
+            try {
+                vhal = new VhalProperties(appContext);
+            } catch (Throwable t) {
+                // A linkage error from vendor classes will not heal within this process.
+                Log.w(TAG, "VHAL properties unavailable", t);
+                vhalUnavailable = true;
+            }
+        }
+        return vhal;
     }
 
     private float readBatteryVoltage() {
         if (batteryVoltageUnavailable) return Float.NaN;
         try {
-            if (batteryVoltage == null) batteryVoltage = new EcarxBatteryVoltage(appContext);
+            if (batteryVoltage == null) batteryVoltage = new EcarxBatteryVoltage(vhal());
             return batteryVoltage.read(sensors);
         } catch (Throwable t) {
             // A linkage error from vendor classes will not heal within this process.
@@ -913,10 +961,11 @@ final class GeelyCarIntegration implements CarIntegration {
 
     /**
      * Log what a fuel feed's pushes and its direct read say — and for the fuel level, also the
-     * second fuel signal (the DIM fuel-table level) — when any of them moved since the last line.
-     * Checked at most every {@link #FEED_TRACE_INTERVAL_MS}. The push drifting away from the
-     * direct read is a stuck push feed; push and direct standing still while the fuel table moves
-     * is a stuck percentage signal, which a switch to the fuel table would cure.
+     * second fuel signal (the DIM fuel-table level) and the VHAL gauge — when any of them moved
+     * since the last line. Checked at most every {@link #FEED_TRACE_INTERVAL_MS}. The push
+     * drifting away from the direct read is a stuck push feed; push and direct standing still
+     * while the fuel table moves is a stuck percentage signal, which a switch to the fuel table
+     * would cure; the VHAL gauge disagreeing with the sensor says which source to trust first.
      */
     private void traceFeed(@NonNull CarMetric metric, @NonNull PushedFeed pushed, float direct) {
         if (!TRACED_FEEDS.contains(metric)) return;
@@ -925,14 +974,19 @@ final class GeelyCarIntegration implements CarIntegration {
         pushed.tracedAt = now;
         float pushedValue = pushed.value;
         float fuelTable = metric == CarMetric.FUEL_PERCENT ? fuelTableLiters() : Float.NaN;
+        EcarxMetricSpec spec = EcarxMetricSpec.of(metric);
+        boolean hasVhal = spec != null && spec.hasVhalProperty();
+        float vhalValue = hasVhal ? readVhal(metric, spec) : Float.NaN;
         if (Float.compare(pushedValue, pushed.tracedPushed) == 0
                 && Float.compare(direct, pushed.tracedDirect) == 0
-                && Float.compare(fuelTable, pushed.tracedFuelTable) == 0) {
+                && Float.compare(fuelTable, pushed.tracedFuelTable) == 0
+                && Float.compare(vhalValue, pushed.tracedVhal) == 0) {
             return;
         }
         pushed.tracedPushed = pushedValue;
         pushed.tracedDirect = direct;
         pushed.tracedFuelTable = fuelTable;
+        pushed.tracedVhal = vhalValue;
         StringBuilder line = new StringBuilder("feed ").append(metric)
                 .append(": pushed ").append(pushedValue);
         long changedAt = pushed.changedAt;
@@ -942,6 +996,9 @@ final class GeelyCarIntegration implements CarIntegration {
         line.append(", direct ").append(direct);
         if (metric == CarMetric.FUEL_PERCENT) {
             line.append(", fuel table ").append(fuelTable).append(" L");
+        }
+        if (hasVhal) {
+            line.append(", vhal ").append(vhalValue);
         }
         Log.i(TAG, line.toString());
     }
@@ -986,6 +1043,13 @@ final class GeelyCarIntegration implements CarIntegration {
                 batteryVoltage.release();
             } catch (Throwable t) {
                 Log.w(TAG, "12 V reader release failed", t);
+            }
+        }
+        if (vhal != null) {
+            try {
+                vhal.release();
+            } catch (Throwable t) {
+                Log.w(TAG, "VHAL release failed", t);
             }
         }
         availabilityListeners.clear();

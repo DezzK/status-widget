@@ -17,13 +17,6 @@
 
 package dezz.status.widget.car;
 
-import android.car.hardware.CarPropertyValue;
-import android.car.hardware.property.CarPropertyManager;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.ServiceConnection;
-import android.os.IBinder;
-import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.MainThread;
@@ -43,9 +36,10 @@ import ecarx.car.hardware.signal.SignalFilter;
  * The 12 V system voltage on eCarX head units, from whichever of two sources answers first:
  * <ol>
  *   <li><b>VHAL vendor property {@code VPOWERINFO_BATTERY_VOL} (0x287000E4)</b>, read through
- *       Android's car service. It is the head unit's own measurement of its supply, so it needs
- *       nothing from the CAN bus; a Tugella VHAL dump lists it as readable, and it is what the
- *       DriveHome project reads on Geely, Livan, Belgee and Knewstar units.</li>
+ *       {@link VhalProperties} — the car service binding the fuel level shares. It is the head
+ *       unit's own measurement of its supply, so it needs nothing from the CAN bus; a Tugella
+ *       VHAL dump lists it as readable, and it is what the DriveHome project reads on Geely,
+ *       Livan, Belgee and Knewstar units.</li>
  *   <li><b>CAN signal {@code VehBattUSysU} (30731)</b> with its quality flag, through eCarX's
  *       {@code car_signal} service. Nothing in the SDK reads or subscribes to it, so it is
  *       read directly, and also subscribed here explicitly: a service that only holds values of
@@ -63,86 +57,20 @@ import ecarx.car.hardware.signal.SignalFilter;
  */
 final class EcarxBatteryVoltage {
 
-    private static final String TAG = "GeelyCarIntegration";
+    private static final String TAG = GeelyCarIntegration.TAG;
 
     /** VPOWERINFO_BATTERY_VOL: vendor group, byte[], global area. */
     static final int VHAL_BATTERY_VOLTAGE = 0x287000E4;
-    private static final int VHAL_GLOBAL_AREA = 0;
 
     private static final int SIGNAL_VALUE = CarSignalManager.SignalId_VehBattUSysU;
     private static final int SIGNAL_QUALITY = CarSignalManager.SignalId_VehBattUSysUQf;
 
-    /**
-     * Pause before retrying a car-service step that failed: asking a connected service for its
-     * property manager, or a bind — which waits four times longer after each further failure.
-     */
-    private static final long CAR_SERVICE_RETRY_MS = 30_000L;
-    /** Binds attempted before the car service is written off for this process. */
-    private static final int MAX_FAILED_BINDS = 4;
-
     /** Marks a signal no event has delivered yet. */
     private static final int NO_EVENT = Integer.MIN_VALUE;
 
-    private final Context appContext;
-
-    // ── VHAL through Android's car service ───────────────────────────────────
-
-    /**
-     * The current binding attempt. Callbacks from any other (older) attempt are ignored: the
-     * car-lib keeps an abandoned {@code Car}'s connection alive and may still call it.
-     */
+    /** The VHAL source; null when this process cannot read vendor properties at all. */
     @Nullable
-    private Binding binding;
-    @Nullable
-    private CarPropertyManager propertyManager;
-    private int failedBinds;
-    /** Elapsed-realtime before which no new bind is attempted. */
-    private long bindRetryAt;
-    /** Elapsed-realtime before which a missing property manager is not asked for again. */
-    private long managerRetryAt;
-    @NonNull
-    private String carServiceState = "not bound yet";
-
-    /** One {@code Car} and the connection callbacks that belong to it. */
-    private final class Binding implements ServiceConnection {
-        @Nullable
-        android.car.Car car;
-        boolean everConnected;
-        /** The service died after connecting; the car-lib will reconnect this Car by itself. */
-        boolean lost;
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            if (binding != this || car == null) return;
-            if (lost) {
-                // The car-lib reconnected after a service death but kept the managers bound to the
-                // dead process, and its own disconnect() skipped the unbind back then. Now that
-                // it counts as connected again, disconnect() really tears down and unbinds; start
-                // over with a fresh Car.
-                binding = null;
-                disconnectQuietly(car);
-                carServiceState = "service restarted, rebinding";
-                ensureCarService();
-                return;
-            }
-            everConnected = true;
-            failedBinds = 0;
-            acquirePropertyManager(car);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            if (binding != this) return;
-            propertyManager = null;
-            if (everConnected) {
-                lost = true;
-                carServiceState = "service lost, waiting for it";
-                return;
-            }
-            // Never connected: the car-lib gave up after its own bind retries. Nothing is bound.
-            noteBindFailed("bind failed");
-        }
-    }
+    private final VhalProperties vhal;
 
     // ── CAN signal through eCarX's car_signal service ────────────────────────
 
@@ -205,8 +133,8 @@ final class EcarxBatteryVoltage {
     @Nullable
     private String lastOutcome;
 
-    EcarxBatteryVoltage(@NonNull Context appContext) {
-        this.appContext = appContext;
+    EcarxBatteryVoltage(@Nullable VhalProperties vhal) {
+        this.vhal = vhal;
     }
 
     /** The current voltage in volts, or NaN when neither source has a plausible one. */
@@ -233,112 +161,32 @@ final class EcarxBatteryVoltage {
         return readSignalValue(sensors, null, null);
     }
 
-    /** Drop the subscription and the car service binding. The instance may be used again. */
+    /**
+     * Drop the signal subscription. The instance may be used again. The VHAL binding is not this
+     * object's to drop: other readings share it.
+     */
     @MainThread
     void release() {
         CarSignalManager manager = subscribedManager;
         subscribedManager = null;
         rejectedManager = null;
         if (manager != null) unregisterQuietly(manager);
-        Binding current = binding;
-        binding = null;
-        propertyManager = null;
-        failedBinds = 0;
-        bindRetryAt = 0;
-        carServiceState = "released";
-        if (current != null && current.car != null) disconnectQuietly(current.car);
     }
 
     // ── VHAL ─────────────────────────────────────────────────────────────────
 
     private float readVhal(@NonNull Report report) {
-        CarPropertyManager manager = propertyManager;
-        if (manager == null) {
-            Binding current = binding;
-            if (current == null) {
-                ensureCarService();
-            } else if (current.everConnected && !current.lost && current.car != null
-                    && SystemClock.elapsedRealtime() >= managerRetryAt) {
-                acquirePropertyManager(current.car);
-            }
-            manager = propertyManager;
-        }
-        if (manager == null) {
-            // The kind stays the same across one failure mode, however often it is re-read, so a
-            // car service that keeps failing does not log a line per poll.
-            String kind = failedBinds > 0 ? "bind failed" : carServiceState;
-            report.add("vhal", kind, "vhal " + carServiceState);
+        if (vhal == null) {
+            report.add("vhal", "unavailable", "vhal unavailable");
             return Float.NaN;
         }
-        try {
-            CarPropertyValue<byte[]> value =
-                    manager.getProperty(byte[].class, VHAL_BATTERY_VOLTAGE, VHAL_GLOBAL_AREA);
-            byte[] bytes = value != null ? value.getValue() : null;
-            float volts = EcarxReadings.batteryVoltage(EcarxReadings.littleEndian(bytes),
-                    EcarxReadings.SIGNAL_ABSENT);
-            report.add("vhal", verdict(volts, bytes == null),
-                    "vhal [" + hex(bytes) + "] status="
-                            + (value != null ? value.getStatus() : "null") + " -> " + volts);
-            return volts;
-        } catch (Throwable t) {
-            report.add("vhal", "threw " + t.getClass().getSimpleName(), "vhal threw " + t);
-            return Float.NaN;
-        }
-    }
-
-    /** Start one bind to Android's car service unless one is running or a retry is not due. */
-    private void ensureCarService() {
-        if (binding != null) return;
-        if (SystemClock.elapsedRealtime() < bindRetryAt) return;
-        Binding attempt = new Binding();
-        try {
-            attempt.car = android.car.Car.createCar(appContext, attempt);
-            if (attempt.car == null) {
-                // Returned when the device does not declare the automotive feature: no car
-                // service will ever be there.
-                carServiceState = "no car service (createCar returned null)";
-                bindRetryAt = Long.MAX_VALUE;
-                return;
-            }
-            binding = attempt;
-            carServiceState = "binding";
-            attempt.car.connect();
-        } catch (Throwable t) {
-            noteBindFailed("bind threw " + t);
-        }
-    }
-
-    /** Count a failed bind and schedule the next one, or give up after {@link #MAX_FAILED_BINDS}. */
-    private void noteBindFailed(@NonNull String what) {
-        binding = null;
-        failedBinds++;
-        boolean givingUp = failedBinds >= MAX_FAILED_BINDS;
-        bindRetryAt = givingUp ? Long.MAX_VALUE
-                : SystemClock.elapsedRealtime() + (CAR_SERVICE_RETRY_MS << (2 * (failedBinds - 1)));
-        carServiceState = what + " (" + failedBinds + (givingUp ? ", giving up)" : ", retrying)");
-    }
-
-    private void acquirePropertyManager(@NonNull android.car.Car car) {
-        try {
-            // The Android 9 property manager lists the properties this app may read as it is
-            // built; a missing permission can surface right here.
-            propertyManager = (CarPropertyManager) car.getCarManager(android.car.Car.PROPERTY_SERVICE);
-            carServiceState = propertyManager != null ? "connected" : "no property manager";
-        } catch (Throwable t) {
-            propertyManager = null;
-            carServiceState = "no property manager: " + t;
-        }
-        if (propertyManager == null) {
-            managerRetryAt = SystemClock.elapsedRealtime() + CAR_SERVICE_RETRY_MS;
-        }
-    }
-
-    private static void disconnectQuietly(@NonNull android.car.Car car) {
-        try {
-            car.disconnect();
-        } catch (Throwable t) {
-            Log.w(TAG, "12 V: car service disconnect failed", t);
-        }
+        VhalProperties.Read read = vhal.read(VHAL_BATTERY_VOLTAGE);
+        float volts = read.problem != null ? Float.NaN
+                : EcarxReadings.batteryVoltage(EcarxReadings.littleEndian(read.bytes),
+                        EcarxReadings.SIGNAL_ABSENT);
+        report.add("vhal", read.outcome(volts),
+                "vhal " + read.detail + (read.problem == null ? " -> " + volts : ""));
+        return volts;
     }
 
     // ── CAN signal ───────────────────────────────────────────────────────────
@@ -410,7 +258,8 @@ final class EcarxBatteryVoltage {
         if (report != null) {
             String error = owner != null ? owner.signalError : null;
             report.add("signal",
-                    from + " " + verdict(volts, raw <= 0) + (error != null ? " +error" : ""),
+                    from + " " + EcarxReadings.verdict(volts, raw <= 0)
+                            + (error != null ? " +error" : ""),
                     "signal " + from + " raw=" + raw + " qf=" + quality + " -> " + volts
                             + (subscribed ? ", subscribed" : "")
                             + (error != null ? ", last " + error : ""));
@@ -479,13 +328,6 @@ final class EcarxBatteryVoltage {
 
     // ── diagnosis helpers ────────────────────────────────────────────────────
 
-    /** How a decoded read went, as an outcome kind: nothing there, a value refused, or a voltage. */
-    @NonNull
-    private static String verdict(float volts, boolean nothingRead) {
-        if (!Float.isNaN(volts)) return "ok";
-        return nothingRead ? "empty" : "rejected";
-    }
-
     /** Collects a stable outcome key (what changed?) and a detailed line (what exactly?). */
     private static final class Report {
         final StringBuilder outcome = new StringBuilder();
@@ -517,16 +359,5 @@ final class EcarxBatteryVoltage {
     private static String loaderName(@NonNull Class<?> type) {
         ClassLoader loader = type.getClassLoader();
         return loader == null ? "boot" : loader.getClass().getSimpleName();
-    }
-
-    @NonNull
-    private static String hex(@Nullable byte[] bytes) {
-        if (bytes == null) return "null";
-        StringBuilder sb = new StringBuilder(bytes.length * 3);
-        for (byte b : bytes) {
-            if (sb.length() > 0) sb.append(' ');
-            sb.append(String.format("%02X", b & 0xFF));
-        }
-        return sb.toString();
     }
 }

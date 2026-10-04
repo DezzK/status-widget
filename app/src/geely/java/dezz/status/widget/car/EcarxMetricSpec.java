@@ -35,8 +35,8 @@ final class EcarxMetricSpec {
     enum Transport {
         /**
          * {@code ISensor} sensor types, most preferred first. Pushes are taken from the first
-         * type; periodic direct reads try the types in order, which is where a fallback type
-         * gets its turn.
+         * type; periodic direct reads try the types in order, and then the spec's VHAL property
+         * if it has one — which is where a fallback source gets its turn.
          */
         SENSOR,
         /**
@@ -51,6 +51,16 @@ final class EcarxMetricSpec {
     interface FloatDecoder {
         float decode(float raw);
     }
+
+    interface BytesDecoder {
+        float decode(@Nullable byte[] bytes);
+    }
+
+    /** {@link #vhalProperty} of a spec without one. VHAL property id 0 is INVALID. */
+    static final int NO_VHAL_PROPERTY = 0;
+
+    /** REMAINING_OIL: vendor group, byte[], global area — the fuel gauge, in percent. */
+    static final int VHAL_REMAINING_OIL = 0x28700207;
 
     @NonNull
     final Transport transport;
@@ -67,13 +77,33 @@ final class EcarxMetricSpec {
     /** Decoder for SENSOR and CAR_INFO readings; unused for SIGNAL. */
     @Nullable
     final FloatDecoder decoder;
+    /**
+     * A vendor VHAL property read through {@link VhalProperties} when every sensor type comes up
+     * empty, or {@link #NO_VHAL_PROPERTY}. Read directly only: nothing pushes it.
+     */
+    final int vhalProperty;
+    /** Decoder for {@link #vhalProperty}; null when there is none. */
+    @Nullable
+    final BytesDecoder vhalDecoder;
+
+    boolean hasVhalProperty() {
+        return vhalProperty != NO_VHAL_PROPERTY;
+    }
 
     private EcarxMetricSpec(@NonNull Transport transport, @NonNull int[] ids,
                             boolean supportApiMeaningful, @Nullable FloatDecoder decoder) {
+        this(transport, ids, supportApiMeaningful, decoder, NO_VHAL_PROPERTY, null);
+    }
+
+    private EcarxMetricSpec(@NonNull Transport transport, @NonNull int[] ids,
+                            boolean supportApiMeaningful, @Nullable FloatDecoder decoder,
+                            int vhalProperty, @Nullable BytesDecoder vhalDecoder) {
         this.transport = transport;
         this.ids = ids;
         this.supportApiMeaningful = supportApiMeaningful;
         this.decoder = decoder;
+        this.vhalProperty = vhalProperty;
+        this.vhalDecoder = vhalDecoder;
     }
 
     private static final EcarxMetricSpec CABIN_TEMPERATURE = new EcarxMetricSpec(Transport.SENSOR,
@@ -84,10 +114,14 @@ final class EcarxMetricSpec {
 
     /**
      * The virtual percentage is the raw fuel-level signal as a float. {@code SENSOR_TYPE_FUEL_LEVEL}
-     * is deliberately not a fallback: despite its name the SDK scales it to milliliters.
+     * is deliberately not a fallback: despite its name the SDK scales it to milliliters. Firmwares
+     * whose sensor implementation leaves the virtual percentage empty — seen on a Tugella (AdaptAPI
+     * 1.1.18.9), and per DriveHome on Livan and Knewstar, where the fuel sensors read 0 — still
+     * carry the gauge in the VHAL property {@code REMAINING_OIL}, which DriveHome reads first.
      */
     private static final EcarxMetricSpec FUEL_PERCENT = new EcarxMetricSpec(Transport.SENSOR,
-            new int[]{IVirtualSensor.TYPE_FUEL_PERCENTAGE}, false, EcarxReadings::fuelPercent);
+            new int[]{IVirtualSensor.TYPE_FUEL_PERCENTAGE}, false, EcarxReadings::fuelPercent,
+            VHAL_REMAINING_OIL, EcarxReadings::vhalFuelPercent);
 
     /**
      * The fuel-only range first. The combined range adds the electric range of a hybrid on top,

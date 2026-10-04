@@ -134,6 +134,42 @@ public class EcarxReadingsTest {
     }
 
     @Test
+    public void vhalFuelLevelInOneByteIsWholePercent() {
+        // The DriveHome cases first: whole percent, a full tank's overfill shown as full.
+        assertEquals(60f, EcarxReadings.vhalFuelPercent(new byte[]{60}), EPS);
+        assertEquals(100f, EcarxReadings.vhalFuelPercent(new byte[]{106}), EPS);
+        assertEquals(100f, EcarxReadings.vhalFuelPercent(new byte[]{112}), EPS);
+        assertEquals(100f, EcarxReadings.vhalFuelPercent(new byte[]{120}), EPS);
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[]{121}));
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[]{(byte) 200}));
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[]{-1}));
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[]{0}));
+        assertNoData(EcarxReadings.vhalFuelPercent(null));
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[0]));
+    }
+
+    @Test
+    public void vhalFuelLevelInTwoBytesTurnsToTenthsAboveOneHundredTen() {
+        assertEquals(60f, EcarxReadings.vhalFuelPercent(new byte[]{60, 0}), EPS);
+        assertEquals(100f, EcarxReadings.vhalFuelPercent(new byte[]{110, 0}), EPS);
+        assertEquals(11.1f, EcarxReadings.vhalFuelPercent(new byte[]{111, 0}), EPS);
+        assertEquals(55f, EcarxReadings.vhalFuelPercent(new byte[]{0x26, 0x02}), EPS);       // 550
+        assertEquals(100f, EcarxReadings.vhalFuelPercent(new byte[]{0x4C, 0x04}), EPS);      // 1100
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[]{0x4D, 0x04}));                 // 1101
+        // All ones is "no data" in two bytes too — not 25.5 % read as tenths.
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[]{-1, 0}));
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[]{-1, -1}));
+        assertNoData(EcarxReadings.vhalFuelPercent(new byte[]{0, 0}));
+    }
+
+    @Test
+    public void verdictSaysWhetherAReadHadAnythingAndWhetherItWasKept() {
+        assertEquals("ok", EcarxReadings.verdict(12.6f, false));
+        assertEquals("empty", EcarxReadings.verdict(Float.NaN, true));
+        assertEquals("rejected", EcarxReadings.verdict(Float.NaN, false));
+    }
+
+    @Test
     public void fuelTableLevelConvertsMillilitersAndRejectsNoData() {
         assertEquals(31.6f, EcarxReadings.fuelTableLiters(31600f), EPS);
         assertEquals(0.2f, EcarxReadings.fuelTableLiters(200f), EPS);

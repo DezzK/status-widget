@@ -17,6 +17,7 @@
 
 package dezz.status.widget.car;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
@@ -50,6 +51,16 @@ final class EcarxReadings {
 
     /** A full tank reports up to this much above 100 %; beyond it the value is garbage. */
     private static final float MAX_OVERFILLED_PERCENT = 120f;
+
+    /**
+     * A VHAL fuel level in two or more bytes is whole percent up to this value and tenths of a
+     * percent above it, up to {@link #MAX_VHAL_FUEL_TENTHS}.
+     */
+    private static final int MAX_VHAL_FUEL_WHOLE_PERCENT = 110;
+    private static final int MAX_VHAL_FUEL_TENTHS = 1100;
+    /** One byte or two of all ones: a VHAL fuel level without data. */
+    private static final int VHAL_NO_DATA_ONE_BYTE = 0xFF;
+    private static final int VHAL_NO_DATA_TWO_BYTES = 0xFFFF;
 
     /** No passenger car carries fuel for more than this; larger values are sentinels. */
     private static final float MAX_RANGE_KM = 2000f;
@@ -91,6 +102,26 @@ final class EcarxReadings {
     static float fuelPercent(float raw) {
         if (isSentinel(raw) || raw <= 0f || raw > MAX_OVERFILLED_PERCENT) return Float.NaN;
         return Math.min(raw, 100f);
+    }
+
+    /**
+     * Fuel percentage from the VHAL vendor property {@code REMAINING_OIL}, with the rules the
+     * DriveHome project learned reading it on Geely, Livan, Belgee and Knewstar head units. One
+     * byte is whole percent, so a tank filled to the neck reads 101..120 as from the sensor — and
+     * one byte is never tenths: 100 % in tenths does not fit in it, and a full tank's 112 read as
+     * 11.2 % would show it nearly empty. Two or more bytes are whole percent up to 110 and tenths
+     * from 111 to 1100. Zero and all ones are "no data".
+     */
+    static float vhalFuelPercent(@Nullable byte[] bytes) {
+        int raw = littleEndian(bytes);
+        if (bytes == null || raw == SIGNAL_ABSENT
+                || raw == VHAL_NO_DATA_ONE_BYTE || raw == VHAL_NO_DATA_TWO_BYTES) {
+            return Float.NaN;
+        }
+        if (bytes.length > 1 && raw > MAX_VHAL_FUEL_WHOLE_PERCENT) {
+            return raw <= MAX_VHAL_FUEL_TENTHS ? fuelPercent(raw / 10f) : Float.NaN;
+        }
+        return fuelPercent(raw);
     }
 
     /**
@@ -156,5 +187,16 @@ final class EcarxReadings {
         if (isSentinel(milliliters)) return Float.NaN;
         float liters = milliliters / MILLILITERS_PER_LITER;
         return liters >= MIN_TANK_L && liters <= MAX_TANK_L ? liters : Float.NaN;
+    }
+
+    /**
+     * How a read went once decoded, as a category for a diagnosis that logs only changes: a value
+     * ({@code "ok"}), nothing read ({@code "empty"}), or something read and refused
+     * ({@code "rejected"}).
+     */
+    @NonNull
+    static String verdict(float value, boolean nothingRead) {
+        if (!Float.isNaN(value)) return "ok";
+        return nothingRead ? "empty" : "rejected";
     }
 }
