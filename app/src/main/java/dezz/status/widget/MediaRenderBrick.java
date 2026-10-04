@@ -489,10 +489,11 @@ final class MediaRenderBrick extends RenderBrick {
 
 
     /**
-     * Nothing to show — hide the brick and reset the children whose visibility is otherwise only
-     * decided on the happy path below. Leaving them at their inflate defaults (row and icon both
-     * VISIBLE, the icon drawing a play triangle because setPaused has never run) is what let a
-     * phantom indicator paint whenever something else drove the container VISIBLE.
+     * Nothing to show, or the row collapses the brick — hide it and reset the children whose
+     * visibility is otherwise only decided on the happy path below. Leaving them at their inflate
+     * defaults (row and icon both VISIBLE, the icon drawing a play triangle because setPaused has
+     * never run) is what let a phantom indicator paint whenever something else drove the
+     * container VISIBLE.
      */
     private void hideMediaBrick() {
         container.setVisibility(View.GONE);
@@ -505,12 +506,11 @@ final class MediaRenderBrick extends RenderBrick {
 
     private void updateMediaInfo() {
         if (container == null) return;
-        if (!host.currentOrder().contains(type) || host.isBrickHiddenByApp(type)) {
-            hideMediaBrick();
-            return;
-        }
         MediaController playing = pickActiveMediaController();
-        if (playing == null) {
+        // Whether a brick with something to show takes space is the row's rule: out of the order,
+        // or hidden over the foreground app, collapses it — unless the user keeps its space there,
+        // which lays the root out at alpha 0 and leaves the content below to size that space.
+        if (playing == null || !host.syncBrickVisibility(this)) {
             hideMediaBrick();
             return;
         }
@@ -605,8 +605,6 @@ final class MediaRenderBrick extends RenderBrick {
         } else if (trackChanged) {
             setProgressBarShown(false);
         }
-
-        container.setVisibility(View.VISIBLE);
 
         updateMediaProgress(playing);
     }

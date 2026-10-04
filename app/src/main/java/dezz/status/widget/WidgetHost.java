@@ -67,13 +67,15 @@ interface WidgetHost {
     @NonNull
     Handler handler();
 
-    /** The user's brick order, for callbacks that arrive without a settings pass in flight. */
-    @NonNull
-    java.util.Set<BrickType> currentOrder();
-
     /**
-     * The row's per-app hide verdict for a brick. Asked rather than computed, because the answer
-     * follows the {@code hideSource} inheritance and is snapshotted once per settings pass.
+     * Put a brick's root where the visibility phase would put it right now, and say whether it
+     * takes space: GONE when the brick is not active in the layout or the per-app rule collapses
+     * it, VISIBLE at alpha 0 when that rule keeps its space, VISIBLE otherwise.
+     *
+     * <p>For a brick whose own data decides when it has something to show — the media brick, on
+     * a player callback — so that it applies the row's rules instead of copying them. A root
+     * already in its target state is left alone, so a fade the last pass started runs on; a flip
+     * snaps, as no pass is there to animate it.
      */
-    boolean isBrickHiddenByApp(@NonNull BrickType type);
+    boolean syncBrickVisibility(@NonNull RenderBrick brick);
 }

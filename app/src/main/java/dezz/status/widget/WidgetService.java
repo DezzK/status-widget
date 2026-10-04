@@ -699,8 +699,7 @@ public class WidgetService extends Service implements WidgetHost {
         }
     }
 
-    @Override
-    public boolean isBrickHiddenByApp(@NonNull BrickType type) {
+    private boolean isBrickHiddenByApp(@NonNull BrickType type) {
         if (lastForegroundPackage == null) return false;
         Set<String> list = effectiveHideLists.get(type);
         return list != null && list.contains(lastForegroundPackage);
@@ -735,7 +734,7 @@ public class WidgetService extends Service implements WidgetHost {
         java.util.List<BrickTarget> alphaOnly = new java.util.ArrayList<>();
         boolean expanding = false;
         for (BrickTarget t : targets) {
-            if (t.view.getVisibility() != t.visibility) {
+            if (t.flips()) {
                 visibilityFlips.add(t);
                 if (t.visibility == View.VISIBLE) expanding = true;
             } else if (t.visibility == View.VISIBLE) {
@@ -781,6 +780,11 @@ public class WidgetService extends Service implements WidgetHost {
             this.visibility = visibility;
             this.visibleAlpha = visibleAlpha;
         }
+
+        /** The root changes visibility, not just alpha. */
+        boolean flips() {
+            return view.getVisibility() != visibility;
+        }
     }
 
     /**
@@ -813,30 +817,40 @@ public class WidgetService extends Service implements WidgetHost {
     }
 
     /**
-     * Applies a brick's target state. For visibility flips the heavy lifting is done by the
-     * {@code TransitionManager} scene set up by {@link #beginVisibilityTransition} — we
-     * just toggle {@code setVisibility} and the Fade transition cross-fades alpha while
-     * ChangeBounds slides siblings into place. For alpha-only changes (keep-space hide)
-     * we animate alpha explicitly.
+     * Applies a brick's target state. A visibility flip snaps the alpha: inside a pass the
+     * heavy lifting is done by the {@code TransitionManager} scene set up by
+     * {@link #beginVisibilityTransition} — we just toggle {@code setVisibility} and the Fade
+     * transition cross-fades alpha while ChangeBounds slides siblings into place — and outside
+     * one ({@link #syncBrickVisibility}) the brick simply pops in or out. For alpha-only changes
+     * (keep-space hide) we animate alpha explicitly.
      */
-    private void applyBrickTarget(BrickTarget target, boolean handledByTransition) {
+    private void applyBrickTarget(BrickTarget target, boolean flip) {
+        // Whatever is applied now owns the alpha; a fade an earlier keep-space hide left running
+        // would overwrite it.
+        target.view.animate().cancel();
         if (target.visibility == View.GONE) {
-            target.view.animate().cancel();
             target.view.setVisibility(View.GONE);
             return;
         }
         target.view.setVisibility(View.VISIBLE);
-        if (handledByTransition) {
-            // Fade transition animates the alpha for us; make sure the final value is the
-            // brick's contentAlpha pref (not 1.0 from Fade's default).
+        if (flip) {
+            // The final value is the brick's target alpha (not 1.0 from Fade's default).
             target.view.setAlpha(target.visibleAlpha);
         } else {
-            target.view.animate().cancel();
             target.view.animate()
                     .alpha(target.visibleAlpha)
                     .setDuration(BRICK_ALPHA_DURATION_MS)
                     .start();
         }
+    }
+
+    @Override
+    public boolean syncBrickVisibility(@NonNull RenderBrick brick) {
+        BrickTarget target = resolveTarget(brick, currentBrickSet());
+        if (target.flips()) {
+            applyBrickTarget(target, true);
+        }
+        return target.visibility == View.VISIBLE;
     }
 
     /**
@@ -1393,12 +1407,6 @@ public class WidgetService extends Service implements WidgetHost {
     @Override
     public Handler handler() {
         return mainHandler;
-    }
-
-    @NonNull
-    @Override
-    public Set<BrickType> currentOrder() {
-        return currentBrickSet();
     }
 
     @Override
