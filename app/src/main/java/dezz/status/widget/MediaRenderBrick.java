@@ -118,6 +118,12 @@ final class MediaRenderBrick extends RenderBrick {
         updateMediaInfo();
     }
 
+    /** Each part carries its own opacity; the container's would apply the title's twice. */
+    @Override
+    float contentAlpha() {
+        return 1f;
+    }
+
     @Override
     int minHeight() {
         return mediaBrickHeight();
@@ -238,12 +244,13 @@ final class MediaRenderBrick extends RenderBrick {
         // Title line: existing media.* font + opacity + outline (TextBrickPrefs inherited).
         Typeface titleTypeface = Fonts.resolve(host.context(), p.fontFamily.get(),
                 p.fontBold.get(), p.fontItalic.get());
+        float titleAlpha = p.look.contentAlpha.get() / 255f;
         titleText.setOutlineColor(outlineColor(host.themed(), p.look.outlineAlpha.get()));
         titleText.setOutlineWidth(p.look.outlineWidth.get());
         titleText.setTextColor(textColor);
         titleText.setTypeface(titleTypeface);
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_PX, p.fontSize.get());
-        titleText.setAlpha(p.look.contentAlpha.get() / 255f);
+        titleText.setAlpha(titleAlpha);
 
         // Source line is always static + ellipsized; only the title scrolls. Source is short
         // and a constant moving marquee on it would be more distracting than helpful.
@@ -264,8 +271,10 @@ final class MediaRenderBrick extends RenderBrick {
         applyHorizontalMargins(container, p.look.marginStart.get(), p.look.marginEnd.get());
         container.setTranslationY(p.look.adjustY.get());
         // Container alpha back to full — per-line alpha is set above so the two values don't
-        // multiply through the parent.
+        // multiply through the parent. The progress bar has no opacity of its own: it takes the
+        // title's.
         container.setAlpha(1f);
+        progressBar.setAlpha(titleAlpha);
         applyMediaMaxWidth(appText);
         applyMediaMaxWidth(titleText);
         // Alignment applies to the two ROWS — they, not the text views, are the children of the
