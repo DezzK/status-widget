@@ -103,6 +103,48 @@ public class EcarxReadingsTest {
     }
 
     @Test
+    public void littleEndianReadsTheLowByteFirst() {
+        assertEquals(0x8a, EcarxReadings.littleEndian(new byte[]{(byte) 0x8a}));
+        assertEquals(0x8a, EcarxReadings.littleEndian(new byte[]{(byte) 0x8a, 0}));
+        assertEquals(0x0564, EcarxReadings.littleEndian(new byte[]{0x64, 0x05}));
+        assertEquals(0xFFFF, EcarxReadings.littleEndian(new byte[]{-1, -1}));
+        assertEquals(EcarxReadings.SIGNAL_ABSENT, EcarxReadings.littleEndian(null));
+        assertEquals(EcarxReadings.SIGNAL_ABSENT, EcarxReadings.littleEndian(new byte[0]));
+        // Non-zero bytes: SIGNAL_ABSENT is 0, so zeros would pass whether or not five bytes
+        // are refused.
+        assertEquals(EcarxReadings.SIGNAL_ABSENT,
+                EcarxReadings.littleEndian(new byte[]{1, 2, 3, 4, 5}));
+    }
+
+    @Test
+    public void batteryVoltageFromVhalBytesMatchesTheObservedEncodings() {
+        // The encodings DriveHome saw for VPOWERINFO_BATTERY_VOL on eCarX head units.
+        assertEquals(13.8f, vhalVolts(new byte[]{(byte) 0x8a, 0}), EPS);
+        assertEquals(13.8f, vhalVolts(new byte[]{(byte) 0x8a}), EPS);
+        assertEquals(13.8f, vhalVolts(new byte[]{0x64, 0x05}), EPS);
+        assertEquals(12f, vhalVolts(new byte[]{12}), EPS);
+        assertNoData(vhalVolts(new byte[]{0, 0}));
+        assertNoData(vhalVolts(new byte[]{-1, -1}));
+        assertNoData(vhalVolts(null));
+    }
+
+    private static float vhalVolts(byte[] bytes) {
+        return EcarxReadings.batteryVoltage(EcarxReadings.littleEndian(bytes),
+                EcarxReadings.SIGNAL_ABSENT);
+    }
+
+    @Test
+    public void fuelTableLevelConvertsMillilitersAndRejectsNoData() {
+        assertEquals(31.6f, EcarxReadings.fuelTableLiters(31600f), EPS);
+        assertEquals(0.2f, EcarxReadings.fuelTableLiters(200f), EPS);
+        assertNoData(EcarxReadings.fuelTableLiters(0f));
+        assertNoData(EcarxReadings.fuelTableLiters(Float.MIN_VALUE));
+        assertNoData(EcarxReadings.fuelTableLiters(Float.NaN));
+        assertNoData(EcarxReadings.fuelTableLiters(-200f));
+        assertNoData(EcarxReadings.fuelTableLiters(250_000f));
+    }
+
+    @Test
     public void tankCapacityConvertsMilliliters() {
         assertEquals(62f, EcarxReadings.tankLiters(62000f), EPS);
         assertEquals(70f, EcarxReadings.tankLiters(70000f), EPS);

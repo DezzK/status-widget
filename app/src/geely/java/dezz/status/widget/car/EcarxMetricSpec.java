@@ -24,8 +24,6 @@ import com.ecarx.xui.adaptapi.car.base.ICarInfo;
 import com.ecarx.xui.adaptapi.car.sensor.ISensor;
 import com.ecarx.xui.adaptapi.car.sensor.IVirtualSensor;
 
-import ecarx.car.hardware.signal.CarSignalManager;
-
 /**
  * Where one {@link CarMetric} comes from on an eCarX head unit, and how far the SDK's own support
  * answer can be trusted for it. Everything here was read out of the AdaptAPI implementation
@@ -35,13 +33,15 @@ import ecarx.car.hardware.signal.CarSignalManager;
 final class EcarxMetricSpec {
 
     enum Transport {
-        /** {@code ISensor} push feed. {@link #ids} are sensor types, most preferred first. */
+        /**
+         * {@code ISensor} sensor types, most preferred first. Pushes are taken from the first
+         * type; periodic direct reads try the types in order, which is where a fallback type
+         * gets its turn.
+         */
         SENSOR,
         /**
-         * {@code CarSignalManager.getSignalValue} pull read. {@link #ids} are the value signal and
-         * its quality-flag signal. {@code CarSignalManager.registerCallback} could push them, but
-         * that is a second subscription with its own connect and reconnect handling next to the
-         * SDK's, which a slowly moving value does not justify.
+         * Pulled on a timer by {@link EcarxBatteryVoltage}, which combines a VHAL property with a
+         * CAN signal and owns both ids. {@link #ids} is empty.
          */
         SIGNAL,
         /** {@code ICarInfo} constant, read once during the probe. {@link #ids} holds the info id. */
@@ -92,21 +92,21 @@ final class EcarxMetricSpec {
     /**
      * The fuel-only range first. The combined range adds the electric range of a hybrid on top,
      * and the SDK builds it as a plain sum of two signals that skips even its own "-1 means no
-     * signal" check — so it is only a fallback for firmwares without the first. Neither source is
-     * otherwise validated by the SDK; {@link EcarxReadings#rangeKm} is the only filter.
+     * signal" check — so it is only a fallback for firmwares without the first, read directly
+     * rather than pushed. Neither source is otherwise validated by the SDK;
+     * {@link EcarxReadings#rangeKm} is the only filter.
      */
     private static final EcarxMetricSpec FUEL_RANGE = new EcarxMetricSpec(Transport.SENSOR,
             new int[]{ISensor.SENSOR_TYPE_ENDURANCE_MILEAGE_FUEL, ISensor.SENSOR_TYPE_ENDURANCE_MILEAGE},
             false, EcarxReadings::rangeKm);
 
     /**
-     * No sensor carries the 12 V system voltage; the raw signal does. Its support cannot be asked
-     * either: {@code getFunctionStatus} resolves ids as property-adapter types, so for a raw signal
-     * id it answers not available or throws.
+     * No sensor carries the 12 V system voltage; see {@link EcarxBatteryVoltage} for the two
+     * sources that do. Their support cannot be asked either: {@code getFunctionStatus} resolves
+     * ids as property-adapter types, so for a raw signal id it answers not available or throws.
      */
     private static final EcarxMetricSpec BATTERY_VOLTAGE = new EcarxMetricSpec(Transport.SIGNAL,
-            new int[]{CarSignalManager.SignalId_VehBattUSysU, CarSignalManager.SignalId_VehBattUSysUQf},
-            false, null);
+            new int[0], false, null);
 
     /**
      * Read from the car configuration. {@code isCarInfoSupported} does not list this id at all
@@ -134,13 +134,5 @@ final class EcarxMetricSpec {
             default:
                 return null;
         }
-    }
-
-    /** Whether a sensor type belongs to this metric's sources. */
-    boolean hasSource(int sensorType) {
-        for (int id : ids) {
-            if (id == sensorType) return true;
-        }
-        return false;
     }
 }

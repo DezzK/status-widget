@@ -17,6 +17,8 @@
 
 package dezz.status.widget.car;
 
+import androidx.annotation.Nullable;
+
 /**
  * Turns raw eCarX AdaptAPI readings into values in {@link CarMetric} units, or {@link Float#NaN}
  * when a reading carries no data. Pure functions with no Android or vendor types, so the rules —
@@ -55,6 +57,9 @@ final class EcarxReadings {
     /** Plausible 12 V system voltage, from a flat battery at cranking to a charging alternator. */
     private static final float MIN_VOLTAGE_V = 6f;
     private static final float MAX_VOLTAGE_V = 17f;
+
+    /** The car info and fuel-level sensors report volumes in milliliters. */
+    static final float MILLILITERS_PER_LITER = 1000f;
 
     /** Plausible passenger-car fuel tank, liters. */
     private static final float MIN_TANK_L = 20f;
@@ -121,10 +126,35 @@ final class EcarxReadings {
         return volts >= MIN_VOLTAGE_V && volts <= MAX_VOLTAGE_V ? volts : Float.NaN;
     }
 
+    /**
+     * The integer in a VHAL vendor {@code byte[]} property: eCarX sends it least significant byte
+     * first. Anything that cannot hold an int (no bytes, more than four) reads as
+     * {@link #SIGNAL_ABSENT}.
+     */
+    static int littleEndian(@Nullable byte[] bytes) {
+        if (bytes == null || bytes.length == 0 || bytes.length > 4) return SIGNAL_ABSENT;
+        int value = 0;
+        for (int i = bytes.length - 1; i >= 0; i--) {
+            value = (value << 8) | (bytes[i] & 0xFF);
+        }
+        return value;
+    }
+
+    /**
+     * The DIM fuel-table level ({@code SENSOR_TYPE_FUEL_LEVEL}, which the SDK scales to
+     * milliliters), in liters. Zero is "no data" as for the percentage: the SDK reads an absent
+     * property as 0, and swallows a failed read into its sentinel.
+     */
+    static float fuelTableLiters(float milliliters) {
+        if (isSentinel(milliliters) || milliliters <= 0f) return Float.NaN;
+        float liters = milliliters / MILLILITERS_PER_LITER;
+        return liters <= MAX_TANK_L ? liters : Float.NaN;
+    }
+
     /** Fuel tank capacity: the car info manager reports milliliters. */
     static float tankLiters(float milliliters) {
         if (isSentinel(milliliters)) return Float.NaN;
-        float liters = milliliters / 1000f;
+        float liters = milliliters / MILLILITERS_PER_LITER;
         return liters >= MIN_TANK_L && liters <= MAX_TANK_L ? liters : Float.NaN;
     }
 }

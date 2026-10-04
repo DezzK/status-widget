@@ -29,7 +29,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
-import com.ecarx.xui.adaptapi.AbsCarSignal;
 import com.ecarx.xui.adaptapi.FunctionStatus;
 import com.ecarx.xui.adaptapi.car.Car;
 import com.ecarx.xui.adaptapi.car.ICar;
@@ -44,9 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import ecarx.car.ECarXCar;
-import ecarx.car.hardware.signal.CarSignalManager;
 
 /**
  * eCarX AdaptAPI backend for car-specific bricks: cabin and ambient temperatures, fuel level and
@@ -116,9 +112,28 @@ final class GeelyCarIntegration implements CarIntegration {
     private enum InitState { IDLE, RETRY_PENDING, INITIALIZING, READY, FAILED }
 
 
-    /** How often a pulled signal is re-read while some listener needs it. The 12 V voltage
-     *  moves slowly, and each read is two uncached property reads on the platform service. */
-    private static final long SIGNAL_POLL_INTERVAL_MS = 15_000L;
+    /**
+     * How often a running feed is read directly while some listener needs it. For the 12 V
+     * voltage that is the only source. For SENSOR metrics it is the safety net under the vendor
+     * push feed, which re-delivers a cache that only the platform service's change events
+     * refresh: when those stop, the cache repeats its last value forever. A direct read asks the
+     * service each time. (On a Monjaro the fuel level froze for a whole drive, through a refill;
+     * whether the direct read kept moving is what the fuel trace below is there to show.) Every
+     * metric served this way moves slowly; a read costs up to three property reads (a fuel range
+     * whose fuel-only source has nothing falls back to a sum of two signals).
+     */
+    private static final long PULL_INTERVAL_MS = 15_000L;
+    /**
+     * Ceiling of the pause between direct reads that keep finding no data. The vendor SDK prints
+     * a stack trace for every failed read, so a feed that cannot be read is not hammered at the
+     * full rate; the first good read restores {@link #PULL_INTERVAL_MS}.
+     */
+    private static final long PULL_INTERVAL_MAX_MS = 120_000L;
+
+    /** Feeds whose pushed and directly read values are traced to the log, and how often at most. */
+    private static final Set<CarMetric> TRACED_FEEDS =
+            EnumSet.of(CarMetric.FUEL_PERCENT, CarMetric.FUEL_RANGE_KM);
+    private static final long FEED_TRACE_INTERVAL_MS = 300_000L;
 
     /** Minimum spacing of the data samples {@link #isMetricSupported} takes for metrics whose
      *  support only data can prove — it runs on every settings pass. */
@@ -138,9 +153,14 @@ final class GeelyCarIntegration implements CarIntegration {
     private int initAttempts = 0;
     @Nullable
     private ISensor sensors;
-    /** The same object as {@link #sensors}, seen as the holder of the platform connection. */
+    /**
+     * The 12 V reader; owns its own car service binding and signal subscription. Created on the
+     * first 12 V read rather than with this object, so that a vendor class it links against can
+     * only ever cost the 12 V brick — this object failing to build costs every car brick.
+     */
     @Nullable
-    private AbsCarSignal signals;
+    private EcarxBatteryVoltage batteryVoltage;
+    private boolean batteryVoltageUnavailable;
     /**
      * The car info manager the probe obtained. Kept because a probe that runs before the platform
      * service connects gets a manager not yet wired to it — every read answers 0 — and the SDK
@@ -189,6 +209,22 @@ final class GeelyCarIntegration implements CarIntegration {
             this.cancelled = cancelled;
         }
     }
+
+    /**
+     * The vendor push side of one SENSOR feed: the value it last changed to, written on the
+     * vendor's delivery thread, and what the feed trace last logged, kept on the main thread.
+     */
+    private static final class PushedFeed {
+        volatile float value = Float.NaN;
+        volatile long changedAt;
+        long tracedAt;
+        float tracedPushed = Float.NaN;
+        float tracedDirect = Float.NaN;
+        float tracedFuelTable = Float.NaN;
+    }
+
+    /** The value each running feed last delivered to its listeners. Main thread only. */
+    private final Map<CarMetric, Float> lastDispatched = new EnumMap<>(CarMetric.class);
 
     GeelyCarIntegration(@NonNull Context appContext) {
         this.appContext = appContext;
@@ -347,7 +383,6 @@ final class GeelyCarIntegration implements CarIntegration {
         ISensor s = car.getSensorManager();
         ProbeResult result = new ProbeResult(s);
         if (s == null) return result;
-        AbsCarSignal signalReader = s instanceof AbsCarSignal ? (AbsCarSignal) s : null;
         // Touch the risky per-metric APIs once here, under the canary's protection, rather than
         // later on the main thread.
         for (CarMetric metric : CarMetric.values()) {
@@ -369,7 +404,7 @@ final class GeelyCarIntegration implements CarIntegration {
             // or says nothing — and it is the only evidence available for a brick the user
             // hasn't added yet (no brick, no feed, no incoming values), which is what keeps such
             // bricks offered in the settings list.
-            if (!Float.isNaN(readLatest(metric, spec, s, signalReader))) {
+            if (!Float.isNaN(readLatest(metric, spec, s))) {
                 result.proven.put(metric, Boolean.TRUE);
                 result.sdkFunctional = true;
             }
@@ -391,7 +426,6 @@ final class GeelyCarIntegration implements CarIntegration {
 
     private void onInitFinished(boolean ok, @Nullable ProbeResult probe) {
         sensors = probe != null ? probe.sensors : null;
-        signals = sensors instanceof AbsCarSignal ? (AbsCarSignal) sensors : null;
         if (probe != null) {
             provenByData.putAll(probe.proven);
             if (probe.carInfo != null) carInfo = probe.carInfo;
@@ -431,10 +465,11 @@ final class GeelyCarIntegration implements CarIntegration {
     /**
      * The metric's current value in its {@link CarMetric} unit, or NaN when no source holds a
      * plausible one. SENSOR sources are tried in priority order. Callable from the probe thread
-     * with the managers it is probing, and from the main thread once READY.
+     * with the sensor manager it is probing, and from the main thread once READY — where the 12 V
+     * voltage is read by {@link #readBatteryVoltage} instead, which binds services of its own.
      */
     private float readLatest(@NonNull CarMetric metric, @NonNull EcarxMetricSpec spec,
-                             @Nullable ISensor s, @Nullable AbsCarSignal signalReader) {
+                             @Nullable ISensor s) {
         switch (spec.transport) {
             case SENSOR:
                 if (s == null || spec.decoder == null) return Float.NaN;
@@ -448,31 +483,7 @@ final class GeelyCarIntegration implements CarIntegration {
                 }
                 return Float.NaN;
             case SIGNAL:
-                if (signalReader == null) return Float.NaN;
-                try {
-                    // Not AbsCarSignal.getSignalValue: that goes through a cache which only the
-                    // SDK's own signal subscriptions refresh. Nothing in the SDK subscribes to
-                    // these signals, so the first value read — even the "not connected" default —
-                    // would be returned forever. The manager reads the property afresh.
-                    ECarXCar platform = signalReader.getECarXCar();   // null until connected
-                    if (platform == null) return Float.NaN;
-                    Object manager = platform.getCarManager(ECarXCar.SIGNAL_SERVICE);
-                    if (!(manager instanceof CarSignalManager)) return Float.NaN;
-                    CarSignalManager signalManager = (CarSignalManager) manager;
-                    int raw = signalManager.getSignalValue(spec.ids[0]);
-                    int quality;
-                    try {
-                        quality = signalManager.getSignalValue(spec.ids[1]);
-                    } catch (Throwable t) {
-                        // A firmware without the flag signal may throw rather than answer 0;
-                        // that must not discard a voltage the value signal did deliver.
-                        quality = EcarxReadings.SIGNAL_ABSENT;
-                    }
-                    return EcarxReadings.batteryVoltage(raw, quality);
-                } catch (Throwable t) {
-                    Log.w(TAG, "getSignalValue failed for " + metric, t);
-                    return Float.NaN;
-                }
+                return EcarxBatteryVoltage.readSignalOnce(s);
             case CAR_INFO:
                 return tankLiters;
             default:
@@ -481,7 +492,7 @@ final class GeelyCarIntegration implements CarIntegration {
     }
 
     /**
-     * {@link #readLatest(CarMetric, EcarxMetricSpec, ISensor, AbsCarSignal)} with the live managers.
+     * {@link #readLatest(CarMetric, EcarxMetricSpec, ISensor)} with the live managers.
      * Main thread only. A tank capacity the probe could not read is re-read here until it arrives.
      */
     private float readLatest(@NonNull CarMetric metric) {
@@ -500,7 +511,23 @@ final class GeelyCarIntegration implements CarIntegration {
                 postLatest(metric, waiting.cancelled);
             }
         }
-        return readLatest(metric, spec, sensors, signals);
+        if (spec.transport == EcarxMetricSpec.Transport.SIGNAL) {
+            return readBatteryVoltage();
+        }
+        return readLatest(metric, spec, sensors);
+    }
+
+    private float readBatteryVoltage() {
+        if (batteryVoltageUnavailable) return Float.NaN;
+        try {
+            if (batteryVoltage == null) batteryVoltage = new EcarxBatteryVoltage(appContext);
+            return batteryVoltage.read(sensors);
+        } catch (Throwable t) {
+            // A linkage error from vendor classes will not heal within this process.
+            Log.w(TAG, "12 V reader unavailable", t);
+            batteryVoltageUnavailable = true;
+            return Float.NaN;
+        }
     }
 
     /** The configured tank capacity in liters, or NaN when the manager cannot answer yet. */
@@ -715,6 +742,7 @@ final class GeelyCarIntegration implements CarIntegration {
 
     /** Deliver a reading to every listener that still needs the metric at delivery time. */
     private void dispatch(@NonNull CarMetric metric, float value) {
+        lastDispatched.put(metric, value);
         // Copy: a listener may redeclare its needs from inside the callback.
         for (Map.Entry<Listener, Set<CarMetric>> e : new ArrayList<>(needsByListener.entrySet())) {
             if (e.getValue().contains(metric)) {
@@ -737,7 +765,11 @@ final class GeelyCarIntegration implements CarIntegration {
     /** Post the metric's current value to one late-joining listener, if it has one. */
     private void seed(@NonNull CarMetric metric, @NonNull AtomicBoolean cancelled,
                       @NonNull Listener listener) {
-        float latest = readLatest(metric);
+        float read = readLatest(metric);
+        // A read that finds nothing right now must not leave the newcomer waiting for the next
+        // change: the feed only delivers changes, and a parked car may not produce one for hours.
+        Float delivered = lastDispatched.get(metric);
+        float latest = !Float.isNaN(read) ? read : delivered != null ? delivered : Float.NaN;
         if (Float.isNaN(latest)) return;
         mainHandler.post(() -> {
             if (cancelled.get()) return;
@@ -779,21 +811,18 @@ final class GeelyCarIntegration implements CarIntegration {
     private boolean subscribeSensor(@NonNull CarMetric metric, @NonNull EcarxMetricSpec spec) {
         ISensor s = sensors;
         if (s == null || spec.decoder == null) return false;
-        final int preferredSource = spec.ids[0];
+        // Pushes are taken from the preferred source only. A fallback source is consulted by the
+        // direct reads, which apply the priority in one place (readLatest) — two places deciding
+        // which source wins would flip the reading between them.
+        final int pushedSource = spec.ids[0];
+        final PushedFeed pushed = new PushedFeed();
 
         // The listener closes over its own cancellation flag (not a map lookup — the vendor
         // callback arrives on a binder thread and the map is main-thread-only). The gate drops
         // deliveries already queued to the main handler when the feed is dropped; a listener
         // that merely stopped needing the metric is filtered again at delivery time in dispatch.
         final AtomicBoolean cancelled = new AtomicBoolean(false);
-        Subscription subscription = new Subscription(new ISensor.ISensorListener() {
-            /**
-             * Last decoded value of the preferred source. The SDK re-delivers every registered
-             * continuous sensor's cached value on a fixed schedule (every 200 ms at the default
-             * rate), so this stays current without asking the platform service.
-             */
-            private volatile float preferredValue = Float.NaN;
-
+        ISensor.ISensorListener sensorListener = new ISensor.ISensorListener() {
             @Override
             public void onSensorEventChanged(int changedType, int value) {
             }
@@ -804,76 +833,135 @@ final class GeelyCarIntegration implements CarIntegration {
 
             @Override
             public void onSensorValueChanged(int changedType, float raw) {
-                if (!spec.hasSource(changedType)) return;
+                if (changedType != pushedSource) return;
                 float value = spec.decoder.decode(raw);
-                if (changedType == preferredSource) {
-                    preferredValue = value;
-                } else if (!Float.isNaN(preferredValue)) {
-                    // A fallback source speaks only while the preferred one has nothing; letting
-                    // both through would flip the reading between them. Decided here, on the
-                    // delivery thread, so a dropped event costs the main thread nothing.
-                    return;
-                }
                 if (Float.isNaN(value)) return;
+                // The SDK re-delivers its cached value every 200 ms whether or not it changed, so
+                // only a change is news. Re-delivering the unchanged cache would also overwrite a
+                // fresher direct read with whatever the cache held when events last arrived.
+                boolean first = Float.isNaN(pushed.value);
+                if (Float.compare(value, pushed.value) == 0) return;
+                pushed.value = value;
+                pushed.changedAt = SystemClock.elapsedRealtime();
                 // AdaptAPI delivers on a binder thread; the contract is main-thread delivery.
                 mainHandler.post(() -> {
                     if (cancelled.get()) return;
                     noteMetricProven(metric);
+                    // The first delivery is the cache as the SDK holds it, which may be stale;
+                    // once a direct read has spoken, only later changes of the cache are news.
+                    if (first && lastDispatched.containsKey(metric)) return;
                     dispatch(metric, value);
                 });
             }
-        }, null, cancelled);
+        };
 
-        // One listener object, registered on every source of this metric. A registration the
-        // vendor rejects leaves that source silent; with every source rejected the metric has no
-        // feed, and the next setNeeds call — every settings pass redeclares — retries it.
-        boolean anyRegistered = false;
-        for (int sensorType : spec.ids) {
-            try {
-                if (s.registerListener(subscription.sensorListener, sensorType)) {
-                    anyRegistered = true;
-                } else {
-                    Log.w(TAG, "registerListener rejected for " + metric + " / " + sensorType);
-                }
-            } catch (Throwable t) {
-                Log.w(TAG, "registerListener failed for " + metric + " / " + sensorType, t);
+        // A registration the vendor rejects leaves the pushes silent — some firmwares reject
+        // sensors they still serve — so the direct reads below run either way.
+        try {
+            if (!s.registerListener(sensorListener, pushedSource)) {
+                Log.w(TAG, "registerListener rejected for " + metric + " / " + pushedSource);
             }
+        } catch (Throwable t) {
+            Log.w(TAG, "registerListener failed for " + metric + " / " + pushedSource, t);
         }
-        if (!anyRegistered) return false;
-        subscriptions.put(metric, subscription);
-
-        // Seed with the latest cached value so the brick shows a reading immediately instead of
-        // a placeholder until the sensor's next change event (which for slow-moving ambient
-        // temperature can be minutes away).
-        postLatest(metric, cancelled);
+        subscriptions.put(metric,
+                new Subscription(sensorListener, startPuller(metric, cancelled, pushed), cancelled));
         return true;
     }
 
     private boolean subscribeSignal(@NonNull CarMetric metric) {
-        if (signals == null) return false;
         final AtomicBoolean cancelled = new AtomicBoolean(false);
-        Runnable poller = new Runnable() {
+        subscriptions.put(metric, new Subscription(null, startPuller(metric, cancelled, null), cancelled));
+        return true;
+    }
+
+    /**
+     * Read a running feed directly and deliver it when it differs from what the feed last
+     * delivered: every {@link #PULL_INTERVAL_MS}, backing off up to {@link #PULL_INTERVAL_MAX_MS}
+     * while the reads find nothing. The first run doubles as the seed, so a freshly shown brick
+     * does not wait for a change event; it is posted rather than run inline because reconcile
+     * may be running inside a settings pass.
+     *
+     * @param pushed the vendor push side of a SENSOR feed, traced next to the direct reads; null
+     *               for a feed that is only ever read directly
+     */
+    @NonNull
+    private Runnable startPuller(@NonNull CarMetric metric, @NonNull AtomicBoolean cancelled,
+                                 @Nullable PushedFeed pushed) {
+        Runnable puller = new Runnable() {
+            private long interval = PULL_INTERVAL_MS;
+
             @Override
             public void run() {
                 if (cancelled.get()) return;
                 float value = readLatest(metric);
-                if (!Float.isNaN(value)) {
+                if (Float.isNaN(value)) {
+                    interval = Math.min(interval * 2, PULL_INTERVAL_MAX_MS);
+                } else {
+                    interval = PULL_INTERVAL_MS;
                     noteMetricProven(metric);
-                    dispatch(metric, value);
+                    Float last = lastDispatched.get(metric);
+                    if (last == null || Float.compare(last, value) != 0) dispatch(metric, value);
                 }
-                mainHandler.postDelayed(this, SIGNAL_POLL_INTERVAL_MS);
+                if (pushed != null) traceFeed(metric, pushed, value);
+                mainHandler.postDelayed(this, interval);
             }
         };
-        subscriptions.put(metric, new Subscription(null, poller, cancelled));
-        // Posted rather than run inline: the first read doubles as the seed, and reconcile may be
-        // running inside a settings pass.
-        mainHandler.post(poller);
-        return true;
+        mainHandler.post(puller);
+        return puller;
+    }
+
+    /**
+     * Log what a fuel feed's pushes and its direct read say — and for the fuel level, also the
+     * second fuel signal (the DIM fuel-table level) — when any of them moved since the last line.
+     * Checked at most every {@link #FEED_TRACE_INTERVAL_MS}. The push drifting away from the
+     * direct read is a stuck push feed; push and direct standing still while the fuel table moves
+     * is a stuck percentage signal, which a switch to the fuel table would cure.
+     */
+    private void traceFeed(@NonNull CarMetric metric, @NonNull PushedFeed pushed, float direct) {
+        if (!TRACED_FEEDS.contains(metric)) return;
+        long now = SystemClock.elapsedRealtime();
+        if (pushed.tracedAt != 0 && now - pushed.tracedAt < FEED_TRACE_INTERVAL_MS) return;
+        pushed.tracedAt = now;
+        float pushedValue = pushed.value;
+        float fuelTable = metric == CarMetric.FUEL_PERCENT ? fuelTableLiters() : Float.NaN;
+        if (Float.compare(pushedValue, pushed.tracedPushed) == 0
+                && Float.compare(direct, pushed.tracedDirect) == 0
+                && Float.compare(fuelTable, pushed.tracedFuelTable) == 0) {
+            return;
+        }
+        pushed.tracedPushed = pushedValue;
+        pushed.tracedDirect = direct;
+        pushed.tracedFuelTable = fuelTable;
+        StringBuilder line = new StringBuilder("feed ").append(metric)
+                .append(": pushed ").append(pushedValue);
+        long changedAt = pushed.changedAt;
+        if (changedAt != 0) {
+            line.append(" (changed ").append((now - changedAt) / 1000).append(" s ago)");
+        }
+        line.append(", direct ").append(direct);
+        if (metric == CarMetric.FUEL_PERCENT) {
+            line.append(", fuel table ").append(fuelTable).append(" L");
+        }
+        Log.i(TAG, line.toString());
+    }
+
+    /** The DIM fuel-table level in liters, for the trace only; NaN when it has no data. */
+    private float fuelTableLiters() {
+        ISensor s = sensors;
+        if (s == null) return Float.NaN;
+        try {
+            return EcarxReadings.fuelTableLiters(s.getSensorLatestValue(ISensor.SENSOR_TYPE_FUEL_LEVEL));
+        } catch (Throwable t) {
+            return Float.NaN;
+        }
     }
 
     private void unsubscribeNow(@NonNull CarMetric metric) {
         Subscription subscription = subscriptions.remove(metric);
         if (subscription == null) return;
+        // A feed started again later must seed its listeners, not judge its first read unchanged.
+        lastDispatched.remove(metric);
         subscription.cancelled.set(true);
         if (subscription.poller != null) {
             mainHandler.removeCallbacks(subscription.poller);
@@ -892,6 +980,13 @@ final class GeelyCarIntegration implements CarIntegration {
         needsByListener.clear();
         for (CarMetric metric : CarMetric.values()) {
             unsubscribeNow(metric);
+        }
+        if (batteryVoltage != null) {
+            try {
+                batteryVoltage.release();
+            } catch (Throwable t) {
+                Log.w(TAG, "12 V reader release failed", t);
+            }
         }
         availabilityListeners.clear();
         // Stop the retry / poll / watchdog chain: nothing is left to notify, and a retry that
