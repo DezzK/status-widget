@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright © 2026 Dezz (https://github.com/DezzK)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+<!-- The update offer over whatever app is in front (UpdatePrompt): the release and what installing it changes,
+     closing on the right (= later); its release notes, scrolled within what the screen leaves; the download's
+     progress; the answers of the moment; and «skip this version» under them. -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="?attr/materialCardViewElevatedStyle"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardElevation="@dimen/updateCardElevation">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/updateCardPadding">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/updateMark"
+                android:layout_width="@dimen/updateStatusIconSize"
+                android:layout_height="@dimen/updateStatusIconSize"
+                android:layout_marginEnd="@dimen/optionsMarginMedium"
+                android:src="@drawable/ic_update"
+                tools:ignore="ContentDescription" />
+
+            <TextView
+                android:id="@+id/updateTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textAppearance="?attr/textAppearanceTitleLarge"
+                tools:text="Version 2.13.0 is available" />
+
+            <ImageButton
+                android:id="@+id/updateClose"
+                android:layout_width="@dimen/optionsLineHeight"
+                android:layout_height="@dimen/optionsLineHeight"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/update_action_later"
+                android:src="@drawable/ic_close" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/updateDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="2.12.0 → 2.13.0 · 7.2 MB" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/updateProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/optionsMarginMedium"
+            android:max="100"
+            android:visibility="gone" />
+
+        <dezz.status.widget.MaxHeightScrollView
+            android:id="@+id/updateNotesScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/optionsMarginMedium"
+            android:fadeScrollbars="false"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/updateNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingMultiplier="1.15"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+        </dezz.status.widget.MaxHeightScrollView>
+
+        <LinearLayout
+            android:id="@+id/updateActions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/optionsMargin"
+            android:baselineAligned="false"
+            android:divider="@drawable/gap_horizontal"
+            android:orientation="horizontal"
+            android:showDividers="middle">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/updateFirst"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:icon="@drawable/ic_update" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/updateSecond"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/updateSkip"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/update_action_skip" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -217,6 +217,7 @@
     <string name="permission_label_usage_access">usage access</string>
     <string name="permission_label_notification">notification access</string>
     <string name="permission_label_accessibility">accessibility</string>
+    <string name="permission_label_install_packages">installing updates</string>
     <string name="hide_in_apps_button">Hide widget in apps…</string>
     <string name="hide_in_apps_title">Hide widget in:</string>
     <string name="app_selection_load_failed_title">Failed to load the list of apps</string>

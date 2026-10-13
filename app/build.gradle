@@ -17,6 +17,10 @@
 
 apply plugin: 'com.android.application'
 
+// The APK's name, before its version: the build output's, and the one the app looks for in its update
+// channel (UpdateChannel: <name>-<version>.apk in a folder per release). One home for both.
+def packageFileName = 'status-widget'
+
 android {
     namespace "dezz.status.widget"
 
@@ -30,7 +34,9 @@ android {
         versionName rootProject.ext.appVersionName
 
         // Set the output APK name
-        setProperty("archivesBaseName", "status-widget-${versionName}")
+        setProperty("archivesBaseName", "${packageFileName}-${versionName}")
+
+        resValue 'string', 'update_package_name', packageFileName
     }
 
     // Car-specific builds: each flavor wires in one vendor SDK via <flavor>Implementation and
@@ -52,7 +58,7 @@ android {
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach {
             def flavorTag = variant.flavorName == "geely" ? "" : "-${variant.flavorName}"
-            outputFileName = "status-widget-${variant.versionName}${flavorTag}-${variant.buildType.name}.apk"
+            outputFileName = "${packageFileName}-${variant.versionName}${flavorTag}-${variant.buildType.name}.apk"
         }
     }
 
@@ -82,6 +88,13 @@ android {
 
     buildFeatures {
         viewBinding true
+        resValues true   // update_package_name above
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true   // the updater configures itself from the app's resources
+        }
     }
 }
 
@@ -101,4 +114,6 @@ dependencies {
 
     // Plain JVM tests for vendor decoding rules that otherwise could only be checked in a car.
     testImplementation libs.junit
+    // Real Android objects where a rule runs on them (the updater's store, the platform's org.json).
+    testImplementation libs.robolectric
 }

@@ -72,6 +72,18 @@ public class Permissions {
         }
     }
 
+    /**
+     * Whether the system's installer accepts packages from this app («install unknown apps») — asked for
+     * only when an update is installed, never at start-up.
+     */
+    public static boolean canInstallPackages(Context context) {
+        try {
+            return context.getPackageManager().canRequestPackageInstalls();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static boolean isNotificationAccessGranted(Context context) {
         try {
             String enabled = Settings.Secure.getString(context.getContentResolver(),

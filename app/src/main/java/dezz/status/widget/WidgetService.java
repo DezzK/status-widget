@@ -61,9 +61,11 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import dezz.status.widget.car.CarIntegrations;
 import dezz.status.widget.databinding.OverlayStatusWidgetBinding;
+import dezz.status.widget.update.Updater;
 
 public class WidgetService extends Service implements WidgetHost {
     private static final int WIDGET_MODE_FLOATING = 0;
@@ -93,6 +95,12 @@ public class WidgetService extends Service implements WidgetHost {
     private static final long FOREGROUND_APP_CHECK_INTERVAL_MS = 1000L;
     private static final long FOREGROUND_APP_LOOKBACK_MS = 60_000L;
     private static final String GNSSSHARE_CLIENT_PACKAGE = "dezz.gnssshare.client";
+    /**
+     * A head unit starts with the car, before its phone's hotspot is up: the first look at the update channel
+     * waits this long, so it is not spent on a network that is not there yet (a failure holds the next try
+     * back by {@code UpdatePolicy.RETRY_AFTER_FAIL_MS}).
+     */
+    private static final long FIRST_UPDATE_CHECK_DELAY_MS = TimeUnit.MINUTES.toMillis(2);
 
     private static WidgetService instance;
 
@@ -112,6 +120,11 @@ public class WidgetService extends Service implements WidgetHost {
      * location listener or a receiver behind.
      */
     private GnssProvider gnssProvider;
+
+    /** The update offer over other apps; lives with the service. */
+    @Nullable
+    private UpdatePrompt updatePrompt;
+    private final Runnable checkUpdatesIfDue = () -> Updater.get(this).checkIfDue();
 
     private WindowManager windowManager;
     private WindowManager.LayoutParams params;
@@ -261,6 +274,10 @@ public class WidgetService extends Service implements WidgetHost {
         CarIntegrations.get(this).addAvailabilityListener(carAvailabilityListener);
 
         createOverlayView();
+
+        updatePrompt = new UpdatePrompt(this, gnssProvider);
+        updatePrompt.start();
+        mainHandler.postDelayed(checkUpdatesIfDue, FIRST_UPDATE_CHECK_DELAY_MS);
     }
 
     private void createOverlayView() {
@@ -1416,6 +1433,10 @@ public class WidgetService extends Service implements WidgetHost {
         mainHandler.removeCallbacks(updateDateTimeRunnable);
         mainHandler.removeCallbacks(foregroundAppCheckRunnable);
         mainHandler.removeCallbacks(shrinkBufferSafetyClose);
+        mainHandler.removeCallbacks(checkUpdatesIfDue);
+
+        // Before the location feed goes: the card takes its own need on it back.
+        if (updatePrompt != null) updatePrompt.stop();
 
         for (RenderBrick brick : renderBricks.values()) {
             brick.onDestroy();

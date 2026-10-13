@@ -36,6 +36,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Over-the-air updates (dezz.status.widget.update): installing goes through the system's installer,
+         which asks the person; this is what lets the app open it at all. The background check is a
+         persisted job (RECEIVE_BOOT_COMPLETED above) reading the channel over the internet. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
@@ -126,6 +130,19 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- The installer's answers about a session the updater committed; reached only through the pending
+             intent the session carries. -->
+        <receiver
+            android:name=".update.SystemInstaller$StatusReceiver"
+            android:exported="false" />
+
+        <service
+            android:name=".update.UpdateCheckJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <!-- Brings the widget back when the system starts the app without it: a boot, and an update, which
+             replaces the process the widget ran in. -->
         <receiver
             android:name=".BootReceiver"
             android:directBootAware="true"
@@ -137,6 +154,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
     </application>

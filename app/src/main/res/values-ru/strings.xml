@@ -208,6 +208,7 @@
     <string name="permission_label_usage_access">доступ к статистике</string>
     <string name="permission_label_notification">доступ к уведомлениям</string>
     <string name="permission_label_accessibility">специальные возможности</string>
+    <string name="permission_label_install_packages">установка обновлений</string>
     <string name="hide_in_apps_button">Скрывать в приложениях…</string>
     <string name="hide_in_apps_title">Скрывать в:</string>
     <string name="app_selection_load_failed_title">Не удалось загрузить список приложений</string>

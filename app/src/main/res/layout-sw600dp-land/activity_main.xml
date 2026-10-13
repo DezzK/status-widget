@@ -52,6 +52,10 @@
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 tools:text="v1.0.0" />
+
+            <include
+                android:id="@+id/updateBadge"
+                layout="@layout/update_badge" />
         </LinearLayout>
 
         <LinearLayout
@@ -76,6 +80,13 @@
                 <include
                     android:id="@+id/sectionAppearance"
                     layout="@layout/section_appearance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/sectionSpacing" />
+
+                <include
+                    android:id="@+id/sectionUpdates"
+                    layout="@layout/section_updates"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
             </LinearLayout>

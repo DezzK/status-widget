@@ -55,13 +55,6 @@ final class GnssInfoRenderBrick extends TableRenderBrick implements GnssProvider
 
     /** Shown for a field with nothing to say. Not a resource — see {@link TempRenderBrick}. */
     private static final String PLACEHOLDER = "--";
-    /**
-     * A fix older than this stops backing the readout. The same silence {@link GpsRenderBrick}
-     * demotes its icon to OFF on, so the two bricks cannot disagree about the same second — a
-     * speed frozen at 58 km/h beside a grey GPS icon is the larger and more readable of the two
-     * indications being the wrong one.
-     */
-    private static final long FIX_STALE_MS = 10_000L;
     /** Satellite counts are clamped so the reserved box stays two digits wide. */
     private static final int MAX_COUNT = 99;
     /** Widest values the reserve has to survive. Beyond them the text is clamped, not clipped. */
@@ -188,10 +181,9 @@ final class GnssInfoRenderBrick extends TableRenderBrick implements GnssProvider
     protected void fillCell(@NonNull Cell cell) {
         GnssProvider gnss = host.gnss();
         boolean shareFresh = gnss.shareHasData();
-        long fixAge = gnss.fixAgeMs();
         // Null once the fix goes stale, which makes every fix-backed formatter fall back to its
         // dashed placeholder — the same policy the share-backed cells already follow.
-        Location location = (fixAge >= 0 && fixAge <= FIX_STALE_MS) ? gnss.location() : null;
+        Location location = gnss.freshLocation();
         switch (Field.valueOf(cell.spec.key)) {
             case SATELLITES:
                 setLit(cell, true);

@@ -155,6 +155,19 @@ final class GnssProvider {
 
     private static final long SHARE_TIMEOUT_MS = 30_000L;
 
+    /**
+     * A fix older than this no longer says where the car is or how fast it goes. The GPS icon demotes
+     * to OFF on this silence and the readout drops its fix-backed values on it — one value, so the two
+     * bricks cannot disagree about the same second: a speed frozen at 58 km/h beside a grey GPS icon
+     * is the larger and more readable of the two indications being the wrong one.
+     */
+    static final long FIX_STALE_MS = 10_000L;
+    /**
+     * At or above this speed (m/s, ~5 km/h) a fresh fix means the car is moving. Above the speed a
+     * receiver reports for a car standing still, which jitters around zero.
+     */
+    private static final float MOVING_SPEED_MPS = 1.4f;
+
     private final Context context;
     private final Handler handler;
 
@@ -310,6 +323,22 @@ final class GnssProvider {
     @Nullable
     Location location() {
         return lastLocation;
+    }
+
+    /** The last fix while it is fresh ({@link #FIX_STALE_MS}), or {@code null}. */
+    @Nullable
+    Location freshLocation() {
+        long age = fixAgeMs();
+        return age >= 0 && age <= FIX_STALE_MS ? lastLocation : null;
+    }
+
+    /**
+     * Whether a fresh fix says the car is moving. No fix, or a stale one, is not «moving»: the head unit
+     * may have no receiver at all, and nothing then may wait on a fix that never comes.
+     */
+    boolean moving() {
+        Location fix = freshLocation();
+        return fix != null && fix.getSpeed() >= MOVING_SPEED_MPS;
     }
 
     /**

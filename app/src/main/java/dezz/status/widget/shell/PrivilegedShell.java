@@ -141,6 +141,7 @@ public class PrivilegedShell {
         USAGE_ACCESS,
         NOTIFICATION,
         ACCESSIBILITY,
+        INSTALL_PACKAGES,
     }
 
     /** Result of an {@link #ensurePrivileges} call. */
@@ -193,6 +194,7 @@ public class PrivilegedShell {
         @Nullable final String notificationListenerComponent;
         final boolean accessibility;
         @Nullable final String accessibilityComponent;
+        final boolean installPackages;
 
         private Request(Builder b) {
             this.packageName = b.packageName;
@@ -204,11 +206,12 @@ public class PrivilegedShell {
             this.notificationListenerComponent = b.notificationListenerComponent;
             this.accessibility = b.accessibility;
             this.accessibilityComponent = b.accessibilityComponent;
+            this.installPackages = b.installPackages;
         }
 
         boolean nothingToDo() {
             return !overlay && !foregroundLocation && !backgroundLocation
-                    && !usageAccess && !notificationListener && !accessibility;
+                    && !usageAccess && !notificationListener && !accessibility && !installPackages;
         }
 
         public static Builder forPackage(String packageName) { return new Builder(packageName); }
@@ -223,6 +226,7 @@ public class PrivilegedShell {
             @Nullable private String notificationListenerComponent = null;
             private boolean accessibility = false;
             @Nullable private String accessibilityComponent = null;
+            private boolean installPackages = false;
 
             Builder(String packageName) { this.packageName = packageName; }
 
@@ -240,6 +244,7 @@ public class PrivilegedShell {
                 this.accessibilityComponent = component;
                 return this;
             }
+            public Builder withInstallPackages() { this.installPackages = true; return this; }
             public Request build() { return new Request(this); }
         }
     }
@@ -559,6 +564,13 @@ public class PrivilegedShell {
             if (request.accessibility && request.accessibilityComponent != null) {
                 applyAccessibilityGrant(transport,
                         request.accessibilityComponent,
+                        granted, failed);
+            }
+            if (request.installPackages) {
+                applyPermission(transport,
+                        new String[]{"appops set " + pkg + " REQUEST_INSTALL_PACKAGES allow"},
+                        () -> Permissions.canInstallPackages(appContext),
+                        PermissionKind.INSTALL_PACKAGES,
                         granted, failed);
             }
         } catch (Exception e) {

@@ -22,6 +22,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+/**
+ * Starts the widget's service when the system brings the app up without it: at boot, and after an update
+ * (ours or anyone's), which kills the process the service ran in and starts nothing in its place.
+ */
 public class BootReceiver extends BroadcastReceiver {
     private static final String TAG = "BootReceiver";
 
@@ -31,8 +35,9 @@ public class BootReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())
                 || Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(intent.getAction())
-                || ACTION_QUICKBOOT_POWERON.equals(intent.getAction())) {
-            Log.d(TAG, "Device boot completed, checking if widget service should auto-start");
+                || ACTION_QUICKBOOT_POWERON.equals(intent.getAction())
+                || Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) {
+            Log.d(TAG, intent.getAction() + ", checking if widget service should auto-start");
 
             final Preferences prefs = new Preferences(context);
             if (!prefs.widgetEnabled.get()) {

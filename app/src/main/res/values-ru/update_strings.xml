@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright © 2026 Dezz (https://github.com/DezzK)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="update_section_title">Обновления</string>
+    <string name="update_unavailable">Обновления недоступны</string>
+    <string name="update_unavailable_sub">В этой сборке не указан канал обновлений</string>
+    <string name="update_checking">Проверка обновлений…</string>
+    <string name="update_downloading_fmt">Загрузка версии %1$s</string>
+    <string name="update_installing_fmt">Установка версии %1$s</string>
+    <string name="update_problem_check">Не удалось проверить обновления</string>
+    <string name="update_problem_download">Не удалось загрузить обновление</string>
+    <string name="update_problem_corrupt">Загрузка повреждена</string>
+    <string name="update_problem_corrupt_sub">Файл не совпал с опубликованным — попробуйте ещё раз</string>
+    <string name="update_problem_wrong_package">В канале обновлений не тот пакет</string>
+    <string name="update_problem_network_sub">Канал обновлений недоступен — проверьте интернет и попробуйте ещё раз</string>
+    <string name="update_problem_wrong_package_sub">Файл в канале — не эта версия этого приложения. Сообщите разработчику</string>
+    <string name="update_problem_install">Обновление не установлено</string>
+    <string name="update_up_to_date">Установлена последняя версия</string>
+    <string name="update_never_checked">Обновления ещё не проверялись</string>
+    <string name="update_skipped_fmt">Версия %1$s пропущена</string>
+    <string name="update_available_fmt">Доступна версия %1$s</string>
+    <string name="update_progress_fmt">%1$d %% из %2$s</string>
+    <string name="update_confirm_in_installer">Подтвердите установку в окне системы</string>
+    <string name="update_handing_to_installer">Передаю установщику системы…</string>
+    <string name="update_installed_size_fmt">Установлена %1$s · загрузка %2$s</string>
+    <string name="update_current_checked_fmt">Версия %1$s · проверено %2$s</string>
+    <string name="update_installed_checked_fmt">Установлена %1$s · проверено %2$s</string>
+    <string name="update_installed_fmt">Установлена %1$s</string>
+    <string name="update_change_fmt">%1$s → %2$s · %3$s</string>
+    <string name="update_notes_title">Что нового</string>
+    <string name="update_action_install">Установить</string>
+    <string name="update_action_later">Позже</string>
+    <string name="update_action_skip">Пропустить версию</string>
+    <string name="update_action_cancel">Отмена</string>
+    <string name="update_action_retry">Повторить</string>
+    <string name="update_action_check">Проверить сейчас</string>
+    <string name="update_action_confirm">Открыть установщик</string>
+    <string name="update_action_unskip">Предлагать снова</string>
+    <string name="update_auto_title">Проверять обновления автоматически</string>
+    <string name="update_auto_summary">Раз в несколько часов, когда есть интернет</string>
+    <string name="update_skipped_row_fmt">Версия %1$s пропущена</string>
+    <string name="update_section_checking">Проверка</string>
+</resources>

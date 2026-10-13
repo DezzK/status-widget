@@ -20,4 +20,14 @@
     <dimen name="sectionPadding">16sp</dimen>
     <dimen name="sectionSpacing">12sp</dimen>
     <dimen name="sectionHeaderIconSize">24sp</dimen>
+
+    <!-- Updates: the state's mark in the settings section, and the card over other apps (UpdatePrompt). -->
+    <dimen name="updateStatusIconSize">32sp</dimen>
+    <dimen name="updateCardWidth">560dp</dimen>
+    <!-- Kept clear between the card and the screen's edges. -->
+    <dimen name="updateCardMargin">24dp</dimen>
+    <!-- Room around the card inside its window for the card's shadow, which the window would clip. -->
+    <dimen name="updateCardShadowRoom">16dp</dimen>
+    <dimen name="updateCardElevation">8dp</dimen>
+    <dimen name="updateCardPadding">20dp</dimen>
 </resources>

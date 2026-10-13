@@ -25,6 +25,8 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.Date;
 
+import dezz.status.widget.update.UpdateCheckJob;
+
 /**
  * Installs a process-wide uncaught-exception handler that dumps the stacktrace to the cache
  * directory before letting the default handler (which kills the process) take over. On the next
@@ -38,6 +40,9 @@ public class StatusWidgetApplication extends Application {
     public void onCreate() {
         super.onCreate();
         installCrashHandler();
+        // Every start of the process — the settings, the boot, the widget's service — arms the background
+        // update check unless it is armed already.
+        UpdateCheckJob.schedule(this);
     }
 
     private void installCrashHandler() {

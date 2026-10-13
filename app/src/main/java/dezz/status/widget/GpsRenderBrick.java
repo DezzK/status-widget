@@ -203,7 +203,7 @@ final class GpsRenderBrick extends IconRenderBrick implements GnssProvider.Liste
     @Override
     public void onGnssTick() {
         long silentFor = System.currentTimeMillis() - lastLocationUpdateTime;
-        if (silentFor > 10000) {
+        if (silentFor > GnssProvider.FIX_STALE_MS) {
             setState(State.OFF);
         } else if (silentFor > 5000) {
             setState(State.BAD);

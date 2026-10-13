@@ -20,6 +20,7 @@ package dezz.status.widget;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -69,6 +70,7 @@ import dezz.status.widget.car.CarIntegration;
 import dezz.status.widget.car.CarIntegrations;
 import dezz.status.widget.databinding.ActivityMainBinding;
 import dezz.status.widget.shell.PrivilegedShell;
+import dezz.status.widget.update.Updater;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -86,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     ActivityMainBinding binding;
+
+    private UpdateSection updateSection;
 
     /** Rebuilds the "add brick" chips when the car integration's availability answer changes. */
     private final Runnable carAvailabilityListener = () -> {
@@ -145,6 +149,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         initializeViews();
+
+        updateSection = new UpdateSection(this, binding.sectionUpdates, binding.updateBadge.getRoot(),
+                () -> scrollTo(binding.sectionUpdates.getRoot()));
+        updateSection.attach();
 
         if (prefs.widgetEnabled.get() && Permissions.allPermissionsGranted(this)) {
             startWidgetService();
@@ -254,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
             case USAGE_ACCESS:        return R.string.permission_label_usage_access;
             case NOTIFICATION:        return R.string.permission_label_notification;
             case ACCESSIBILITY:       return R.string.permission_label_accessibility;
+            case INSTALL_PACKAGES:    return R.string.permission_label_install_packages;
             default: throw new IllegalArgumentException("Unknown kind " + kind);
         }
     }
@@ -312,6 +321,14 @@ public class MainActivity extends AppCompatActivity {
         } catch (Throwable t) {
             Log.w(TAG, "Failed to share crash report", t);
         }
+    }
+
+    /** Bring {@code section} to the top of the screen, however deep the layout of the moment nests it. */
+    private void scrollTo(View section) {
+        Rect r = new Rect();
+        section.getDrawingRect(r);
+        binding.scrollView.offsetDescendantRectToMyCoords(section, r);
+        binding.scrollView.smoothScrollTo(0, r.top);
     }
 
     private void applyWindowInsets() {
@@ -570,6 +587,7 @@ public class MainActivity extends AppCompatActivity {
         // probe usually finishes while this screen is already open.
         refreshAddBrickChips();
         CarIntegrations.get(this).addAvailabilityListener(carAvailabilityListener);
+        Updater.get(this).checkIfDue();
     }
 
     @Override
@@ -580,6 +598,12 @@ public class MainActivity extends AppCompatActivity {
         if (WidgetService.isRunning()) {
             WidgetService.getInstance().setOverlayStateListener(null);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        updateSection.detach();
     }
 
     private void registerOverlayListener() {
