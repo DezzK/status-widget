@@ -1,0 +1,66 @@
+# Publishes a release to the over-the-air update channel — the public Yandex.Disk folder the app reads — with
+# tools/release/publish.py. It runs when a GitHub release gets its description (the release workflow creates
+# the release empty, and `gh release edit --notes-file` fills it in), and on demand. The app's «what's new»
+# comes from that description: its Russian block for a Russian device, its English block for every other. A
+# release the channel holds already only gets its notes brought up to date; its APK is never replaced.
+#
+# Needs the repository secret YANDEX_DISK_TOKEN: an OAuth token of the Yandex account that owns the channel
+# folder, with disk.info, disk.read and disk.write (publish.py says how to get one).
+
+name: Publish update
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v2.13.0)"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-update-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish to the update channel
+    # Drafts and pre-releases are not offered; a description still empty has no notes to publish yet.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (!github.event.release.draft && !github.event.release.prerelease && github.event.release.body != '')
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+    steps:
+    - name: Checkout the release
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ env.TAG }}
+
+    # apksigner, which checks the APK's signature, is a Java tool.
+    - name: Set up JDK 21
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Set up Android build tools
+      uses: android-actions/setup-android@v4
+      with:
+        # aapt2 and apksigner; the action's default also requests the legacy "tools" package, which Google no
+        # longer serves (android-actions/setup-android#537).
+        packages: 'build-tools;36.0.0'
+
+    - name: Test the publisher
+      run: python3 -m unittest discover -s tools/release -p 'test_*.py'
+
+    - name: Publish
+      env:
+        GH_TOKEN: ${{ github.token }}
+        YANDEX_DISK_TOKEN: ${{ secrets.YANDEX_DISK_TOKEN }}
+      run: python3 tools/release/publish.py publish "$TAG" --notes-from-github --yes

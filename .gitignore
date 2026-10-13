@@ -6,3 +6,4 @@ local.properties
 .DS_Store
 **/.DS_Store
 /docs/README.md
+__pycache__/
