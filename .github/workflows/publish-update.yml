@@ -37,10 +37,12 @@ jobs:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
 
     steps:
-    - name: Checkout the release
+    # The publisher — and the sources it checks the APK against — from the default branch, not from the tag:
+    # a fix to it then reaches a release tagged before the fix. (The release itself comes from GitHub, by TAG.)
+    - name: Checkout the publisher
       uses: actions/checkout@v4
       with:
-        ref: ${{ env.TAG }}
+        ref: ${{ github.event.repository.default_branch }}
 
     # apksigner, which checks the APK's signature, is a Java tool.
     - name: Set up JDK 21

@@ -21,7 +21,9 @@ reads from UpdateChannel are the ones the app looks for. From the repository roo
 from __future__ import annotations
 
 import hashlib
+import io
 import tempfile
+import urllib.error
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -75,52 +77,142 @@ class LayoutTest(unittest.TestCase):
         self.assertEqual("status-widget-v2.13.0.apk", publish.Layout().package_file("v2.13.0"))
 
 
-class SyncNotesTest(unittest.TestCase):
-    """A release the channel holds already: its notes follow the description, its package is never replaced."""
+class BringUpToDateTest(unittest.TestCase):
+    """The channel's folder of a release ends up holding these notes and this package: a new release notes
+    first, a publish cut short finished, a published one's notes synced — and its package never replaced."""
 
     APK = "status-widget-v2.13.0.apk"
+    FOLDER = "disk:/updates/v2.13.0"
 
     def setUp(self):
         self.layout = publish.Layout()
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
+        self.apk = self.dir / self.APK
+        self.apk.write_bytes(b"0123456789")
+        self.sha = hashlib.sha256(b"0123456789").hexdigest()
         self.disk = mock.Mock(spec=publish.Disk)
+        self.disk.info.return_value = {"total_space": 10 ** 9, "used_space": 0}
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def sync(self, listed, notes, apk_sha="a" * 64):
+    def bring(self, listed, notes):
         for name, data in notes.items():
             (self.dir / name).write_bytes(data)
-        with mock.patch.object(publish.Disk, "public_list", return_value=listed):
-            publish.sync_notes(self.disk, self.layout, "disk:/updates/v2.13.0", "v2.13.0", self.APK, 10, apk_sha,
-                               notes, self.dir, yes=True)
+        held = None if listed is None else {i["name"].lower(): i for i in listed}
+        publish.bring_up_to_date(self.disk, self.layout, self.FOLDER, held, self.apk, self.sha, notes, self.dir,
+                                 yes=True)
 
     @staticmethod
-    def file(name, data=b"", size=None, sha=None):
-        return {"name": name, "type": "file", "size": len(data) if size is None else size,
-                "sha256": sha or hashlib.sha256(data).hexdigest()}
+    def file(name, data=b""):
+        return {"name": name, "type": "file", "size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+
+    def uploaded(self):
+        return [c.args[1].rsplit("/", 1)[-1] for c in self.disk.upload.call_args_list]
+
+    def test_a_new_release_gets_its_folder_its_notes_and_then_its_package(self):
+        self.bring(None, {"release-notes.txt": b"en", "release-notes-ru.txt": b"ru"})
+        self.disk.mkdir.assert_called_once_with(self.FOLDER)
+        self.assertEqual(["release-notes-ru.txt", "release-notes.txt", self.APK], self.uploaded())
+
+    def test_a_publish_cut_short_is_finished(self):
+        self.bring([self.file("release-notes-ru.txt", b"ru")], {"release-notes.txt": b"en", "release-notes-ru.txt": b"ru"})
+        self.disk.mkdir.assert_not_called()
+        self.assertEqual(["release-notes.txt", self.APK], self.uploaded())
 
     def test_changed_notes_are_uploaded_and_stale_ones_removed(self):
-        listed = [self.file(self.APK, size=10, sha="a" * 64), self.file("release-notes.txt", b"old"),
-                  self.file("Release-Notes-DE.txt", b"alt")]
-        self.sync(listed, {"release-notes.txt": b"new", "release-notes-ru.txt": b"\xd0\xbd"})
-        uploaded = sorted(c.args[1] for c in self.disk.upload.call_args_list)
-        self.assertEqual(["disk:/updates/v2.13.0/release-notes-ru.txt", "disk:/updates/v2.13.0/release-notes.txt"],
-                         uploaded)
+        self.bring([self.file(self.APK, b"0123456789"), self.file("release-notes.txt", b"old"),
+                    self.file("Release-Notes-DE.txt", b"alt")],
+                   {"release-notes.txt": b"new", "release-notes-ru.txt": b"ru"})
+        self.assertEqual(["release-notes-ru.txt", "release-notes.txt"], self.uploaded())
         self.assertTrue(all(c.kwargs.get("overwrite") for c in self.disk.upload.call_args_list))
-        self.disk.delete.assert_called_once_with("disk:/updates/v2.13.0/Release-Notes-DE.txt")
+        self.disk.delete.assert_called_once_with(self.FOLDER + "/Release-Notes-DE.txt")
 
-    def test_notes_as_published_change_nothing(self):
-        self.sync([self.file(self.APK, size=10, sha="a" * 64), self.file("release-notes.txt", b"same")],
-                  {"release-notes.txt": b"same"})
+    def test_a_release_as_published_changes_nothing(self):
+        self.bring([self.file(self.APK, b"0123456789"), self.file("release-notes.txt", b"same")],
+                   {"release-notes.txt": b"same"})
         self.disk.upload.assert_not_called()
         self.disk.delete.assert_not_called()
 
     def test_another_package_is_never_replaced(self):
         with self.assertRaises(publish.Fail):
-            self.sync([self.file(self.APK, size=10, sha="b" * 64)], {"release-notes.txt": b"new"})
+            self.bring([self.file(self.APK, b"another one")], {"release-notes.txt": b"new"})
         self.disk.upload.assert_not_called()
+
+
+class UploadRetryTest(unittest.TestCase):
+    """The uploader's transient failures are tried again with a fresh link; a lasting one stops the run."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.file = Path(self.tmp.name) / "release-notes.txt"
+        self.file.write_bytes(b"notes")
+        sha = hashlib.sha256(b"notes").hexdigest()
+        self.disk = publish.Disk("token")
+        self.disk.meta = mock.Mock(return_value={"size": 5, "sha256": sha})
+        self.links = []
+        self.puts = 0
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def answer(self, *failures):
+        """request() that hands out upload links and fails the PUTs with `failures`, in order, then succeeds."""
+        failures = list(failures)
+
+        def request(method, url, **kwargs):
+            if method == "GET":
+                self.links.append(url)
+                return 200, {"href": f"https://uploader/{len(self.links)}", "method": "PUT"}
+            self.puts += 1
+            if failures:
+                raise failures.pop(0)
+            return 201, {}
+        self.disk.request = request
+
+    def test_a_transient_failure_is_tried_again_with_a_fresh_link_that_overwrites(self):
+        self.answer(publish.Transient("HTTP 502"))
+        with mock.patch.object(publish.time, "sleep"):
+            self.disk.upload(self.file, "disk:/updates/v2.13.0/release-notes.txt")
+        self.assertEqual(2, self.puts)
+        self.assertIn("overwrite=false", self.links[0])
+        self.assertIn("overwrite=true", self.links[1])
+
+    def test_a_lasting_failure_stops_the_run(self):
+        self.answer(*[publish.Transient("HTTP 502")] * publish.UPLOAD_TRIES)
+        with mock.patch.object(publish.time, "sleep"), self.assertRaises(publish.Transient):
+            self.disk.upload(self.file, "disk:/updates/v2.13.0/release-notes.txt")
+        self.assertEqual(publish.UPLOAD_TRIES, self.puts)
+
+    def test_a_refusal_is_not_tried_again(self):
+        self.answer(publish.Fail("HTTP 409"))
+        with self.assertRaises(publish.Fail):
+            self.disk.upload(self.file, "disk:/updates/v2.13.0/release-notes.txt")
+        self.assertEqual(1, self.puts)
+
+
+class TransientTest(unittest.TestCase):
+    """What is worth trying again: the server's 5xx and a lost connection — not a refusal."""
+
+    def fails_with(self, error):
+        with mock.patch.object(publish.urllib.request, "urlopen", side_effect=error):
+            with self.assertRaises(publish.Fail) as caught:
+                publish.Disk().request("PUT", "https://uploader/x")
+        return caught.exception
+
+    @staticmethod
+    def http(code):
+        return urllib.error.HTTPError("https://uploader/x", code, "", {}, io.BytesIO(b""))
+
+    def test_a_server_error_is_transient(self):
+        self.assertIsInstance(self.fails_with(self.http(502)), publish.Transient)
+
+    def test_a_lost_connection_is_transient(self):
+        self.assertIsInstance(self.fails_with(urllib.error.URLError("reset")), publish.Transient)
+
+    def test_a_refusal_is_not(self):
+        self.assertNotIsInstance(self.fails_with(self.http(409)), publish.Transient)
 
 
 if __name__ == "__main__":

@@ -25,7 +25,8 @@ CI runs `publish VERSION --notes-from-github --yes` when a GitHub release gets i
 (.github/workflows/publish-update.yml), with the token in the YANDEX_DISK_TOKEN secret; locally the token comes
 from the keychain. A release the channel does not hold yet is uploaded notes first, then the APK. One it holds
 already gets its notes brought up to date, and its package must be the very one on GitHub — a published APK is
-never replaced.
+never replaced; a release folder left without its APK by a publish cut short is finished. A transient failure
+of the disk (a 5xx, a dropped connection) is tried again.
 
 The APK is the one CI built and attached to the GitHub release of VERSION (`gh release download`), unless --apk
 names a local file. It is checked before anything is uploaded: named as the app looks for it, this app's package
@@ -84,6 +85,11 @@ HTTP_TIMEOUT_S = 60
 #: Entries per listing page (the API's ceiling is far above it).
 PAGE = 200
 UPLOAD_TIMEOUT_S = 600
+#: Tries at one upload: the disk's uploader now and then answers a 5xx or drops the connection (the first CI
+#: publish, v2.13.0, got HTTP 502 on its first file).
+UPLOAD_TRIES = 3
+#: The pause before trying again.
+UPLOAD_RETRY_S = 15
 #: How long the disk may take to report a fresh upload's digest.
 DIGEST_WAIT_S = 180
 #: The subject of the SDK's debug signing key — an APK signed with it cannot update a release install.
@@ -92,6 +98,10 @@ DEBUG_CERT_CN = "CN=Android Debug"
 
 class Fail(Exception):
     """A problem that stops the run, with what to do about it."""
+
+
+class Transient(Fail):
+    """A failure worth trying again: the server's 5xx, a connection dropped or timed out."""
 
 
 # ── Facts read from the sources ──────────────────────────────────────────────────────────────────────────────
@@ -321,12 +331,15 @@ class Disk:
                 body, status = resp.read(), resp.status
         except urllib.error.HTTPError as e:
             body, status = e.read(), e.code
+        except OSError as e:   # URLError, a timeout, a reset connection
+            raise Transient(f"Yandex.Disk: {method} {url.split('?')[0]} → {e}")
         if status not in ok:
             try:
                 detail = json.loads(body.decode("utf-8")).get("message", "")
             except (ValueError, UnicodeDecodeError):
                 detail = ""
-            raise Fail(f"Yandex.Disk: {method} {url.split('?')[0]} → HTTP {status} {detail}".rstrip())
+            failure = Transient if status >= HTTPStatus.INTERNAL_SERVER_ERROR else Fail
+            raise failure(f"Yandex.Disk: {method} {url.split('?')[0]} → HTTP {status} {detail}".rstrip())
         return status, (json.loads(body.decode("utf-8")) if body.strip() else {})
 
     @staticmethod
@@ -375,13 +388,25 @@ class Disk:
                      ok=(HTTPStatus.NO_CONTENT, HTTPStatus.ACCEPTED))
 
     def upload(self, local: Path, path: str, overwrite: bool = False) -> None:
-        _, d = self.request("GET", f"{API}/resources/upload?" + self._q(path=path,
-                                                                        overwrite=str(overwrite).lower()))
+        """`local` to `path`, tried again on a transient failure with a fresh upload link, then checked against
+        the disk's own size and SHA-256 of it."""
         size = local.stat().st_size
-        with open(local, "rb") as f:
-            self.request(d.get("method", "PUT"), d["href"], ok=(HTTPStatus.CREATED, HTTPStatus.ACCEPTED), data=f,
-                         headers={"Content-Length": str(size), "Content-Type": "application/octet-stream"},
-                         timeout=UPLOAD_TIMEOUT_S)
+        for attempt in range(1, UPLOAD_TRIES + 1):
+            try:
+                # A try after a failed one overwrites: what the failed one may have left there is this very file.
+                again = str(overwrite or attempt > 1).lower()
+                _, d = self.request("GET", f"{API}/resources/upload?" + self._q(path=path, overwrite=again))
+                with open(local, "rb") as f:
+                    self.request(d.get("method", "PUT"), d["href"], ok=(HTTPStatus.CREATED, HTTPStatus.ACCEPTED),
+                                 data=f, headers={"Content-Length": str(size),
+                                                  "Content-Type": "application/octet-stream"},
+                                 timeout=UPLOAD_TIMEOUT_S)
+                break
+            except Transient as e:
+                if attempt == UPLOAD_TRIES:
+                    raise
+                print(f"   {e}; trying again in {UPLOAD_RETRY_S} s")
+                time.sleep(UPLOAD_RETRY_S)
         deadline = time.time() + DIGEST_WAIT_S
         while True:
             m = self.meta(path)
@@ -475,13 +500,11 @@ def cmd_publish(args) -> int:
         for name, data in notes.items():
             (Path(tmp) / name).write_bytes(data)
         disk = Disk(disk_token())
-        root = disk.owned_path(layout.link)
-        if held is None:
-            publish_release(disk, layout, f"{root}/{version}", apk, notes, Path(tmp), args.yes)
-            folder_name = version
-        else:
-            sync_notes(disk, layout, f"{root}/{held}", held, apk.name, size, sha, notes, Path(tmp), args.yes)
-            folder_name = held
+        folder_name = held or version
+        listed = None if held is None else {i["name"].lower(): i for i in
+                                            Disk().public_list(layout.link, "/" + held) if i.get("type") == "file"}
+        bring_up_to_date(disk, layout, f"{disk.owned_path(layout.link)}/{folder_name}", listed, apk, sha, notes,
+                         Path(tmp), args.yes)
 
     # What the app will see: the public side, read as it reads it.
     listed = {i["name"].lower(): i for i in Disk().public_list(layout.link, "/" + folder_name)}
@@ -502,49 +525,45 @@ def confirm(yes: bool) -> None:
         raise Fail("not published")
 
 
-def publish_release(disk: Disk, layout: Layout, folder: str, apk: Path, notes: dict, tmp: Path, yes: bool) -> None:
-    """A release the channel does not hold: its folder, the notes, then the package."""
-    info = disk.info()
-    free = info["total_space"] - info["used_space"]
-    need = apk.stat().st_size + sum(len(d) for d in notes.values())
-    if free < need:
-        raise Fail(f"the disk has {free / 1e6:.0f} MB free; this release needs {need / 1e6:.0f} MB")
-    print(f"Publishing to {folder}/: " + ", ".join(sorted(notes) + [apk.name]))
-    confirm(yes)
-    disk.mkdir(folder)
-    # The notes first: the app takes a release the moment its package appears.
-    for name in sorted(notes):
-        print(f"uploading {name}")
-        disk.upload(tmp / name, f"{folder}/{name}")
-    print(f"uploading {apk.name} ({apk.stat().st_size / 1e6:.1f} MB)")
-    disk.upload(apk, f"{folder}/{apk.name}")
-
-
-def sync_notes(disk: Disk, layout: Layout, folder: str, held: str, apk_name: str, size: int, sha: str,
-               notes: dict, tmp: Path, yes: bool) -> None:
-    """A release the channel holds already: its package must be this one; its notes become these."""
-    listed = {i["name"].lower(): i for i in Disk().public_list(layout.link, "/" + held) if i.get("type") == "file"}
-    item = listed.get(apk_name.lower())
-    if item is None:
-        raise Fail(f"the channel's {held} holds no {apk_name} — finish or remove that release by hand")
-    if item.get("size") != size or (item.get("sha256") or "").lower() != sha:
-        raise Fail(f"the channel's {held} holds another {apk_name} than the GitHub release — a published "
-                   "package is never replaced")
-    upload = [n for n, d in notes.items()
-              if (listed.get(n, {}).get("sha256") or "").lower() != hashlib.sha256(d).hexdigest()]
-    stale = [i["name"] for n, i in listed.items() if layout.is_notes_file(n) and n not in notes]
-    if not upload and not stale:
-        print(f"The channel holds {held} with these notes already.")
+def bring_up_to_date(disk: Disk, layout: Layout, folder: str, listed: dict | None, apk: Path, sha: str,
+                     notes: dict, tmp: Path, yes: bool) -> None:
+    """Make the channel's folder of this release hold these notes and this package. `listed` is what the folder
+    holds ({lowercased name: item}), None when there is no folder yet. The notes go before the package: the app
+    takes a release the moment its package appears. A package already there must be this one — a published
+    package is never replaced; a folder without one is a publish cut short, and is finished."""
+    size = apk.stat().st_size
+    held = listed or {}
+    item = held.get(apk.name.lower())
+    if item is not None and (item.get("size") != size or (item.get("sha256") or "").lower() != sha):
+        raise Fail(f"the channel's {folder.rsplit('/', 1)[-1]} holds another {apk.name} than the GitHub release — "
+                   "a published package is never replaced")
+    upload = sorted(n for n, d in notes.items()
+                    if (held.get(n, {}).get("sha256") or "").lower() != hashlib.sha256(d).hexdigest())
+    stale = sorted(i["name"] for n, i in held.items() if layout.is_notes_file(n) and n not in notes)
+    if not upload and not stale and item is not None:
+        print(f"The channel's {folder} holds this package and these notes already.")
         return
-    print(f"Updating the notes of {folder}/: " + ", ".join(
-        [f"upload {n}" for n in sorted(upload)] + [f"remove {n}" for n in sorted(stale)]))
+    if item is None:
+        info = disk.info()
+        free = info["total_space"] - info["used_space"]
+        need = size + sum(len(notes[n]) for n in upload)
+        if free < need:
+            raise Fail(f"the disk has {free / 1e6:.0f} MB free; this release needs {need / 1e6:.0f} MB")
+    print(f"{'Publishing to' if item is None else 'Updating'} {folder}/: " + ", ".join(
+        [f"upload {n}" for n in upload] + [f"remove {n}" for n in stale]
+        + ([f"upload {apk.name}"] if item is None else [])))
     confirm(yes)
-    for name in sorted(upload):
+    if listed is None:
+        disk.mkdir(folder)
+    for name in upload:
         print(f"uploading {name}")
-        disk.upload(tmp / name, f"{folder}/{name}", overwrite=True)
+        disk.upload(tmp / name, f"{folder}/{name}", overwrite=listed is not None)
     for name in stale:
         print(f"removing {name}")
         disk.delete(f"{folder}/{name}")
+    if item is None:
+        print(f"uploading {apk.name} ({size / 1e6:.1f} MB)")
+        disk.upload(apk, f"{folder}/{apk.name}")
 
 
 def main(argv=None) -> int:
