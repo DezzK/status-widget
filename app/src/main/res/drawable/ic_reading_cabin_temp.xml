@@ -16,7 +16,8 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 <!-- Cabin temperature, classic: an outlined thermometer with its column beside an outlined car
-     seat (headrest, reclined backrest, cushion) — the seat is what says "inside". -->
+     seen from the front, where the outside temperature has its sun — the car is what says
+     "inside". (A car seat was tried first and read as the seat's own temperature.) -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -41,7 +42,7 @@
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:antialias="true"
-        android:pathData="M13.63,9.29 A1.60,1.60 0 0 1 14.91,7.43 A1.60,1.60 0 0 1 16.77,8.71 L18.32,15.20 L20.00,15.20 A1.80,1.80 0 0 1 21.80,17.00 A1.80,1.80 0 0 1 20.00,18.80 L16.43,18.80 Q14.63,18.80 14.63,16.96 Z" />
+        android:pathData="M15.1,2.6 H20.5 L22.38,6.6 Q23,6.6 23,7.85 V9.35 Q23,10.6 21.75,10.6 H13.85 Q12.6,10.6 12.6,9.35 V7.85 Q12.6,6.6 13.22,6.6 Z" />
     <path
         android:strokeColor="@android:color/white"
         android:strokeWidth="1.6"
@@ -49,5 +50,13 @@
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:antialias="true"
-        android:pathData="M16.42,5.12 L16.45,5.31 A1.00,1.00 0 0 1 15.65,6.48 L13.88,6.80 A1.00,1.00 0 0 1 12.72,6.00 L12.68,5.80 A1.00,1.00 0 0 1 13.48,4.64 L15.25,4.31 A1.00,1.00 0 0 1 16.42,5.12 Z" />
+        android:pathData="M13.22,6.6 H22.38" />
+    <path
+        android:fillColor="@android:color/white"
+        android:antialias="true"
+        android:pathData="M13.8,8.6 A0.88,0.88 0 1 1 15.56,8.6 A0.88,0.88 0 1 1 13.8,8.6 Z M20.04,8.6 A0.88,0.88 0 1 1 21.8,8.6 A0.88,0.88 0 1 1 20.04,8.6 Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:antialias="true"
+        android:pathData="M13.43,10.6 H15.51 V12.6 H13.43 Z M20.09,10.6 H22.17 V12.6 H20.09 Z" />
 </vector>

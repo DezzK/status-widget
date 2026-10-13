@@ -15,8 +15,8 @@
   ~ You should have received a copy of the GNU General Public License
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
-<!-- Cabin temperature, solid: a solid thermometer beside a solid car seat, the headrest
-     marked by a notch so it does not read as a dot over the backrest. -->
+<!-- Cabin temperature, solid: a solid thermometer beside a solid car, windshield and headlights
+     cut out. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -28,6 +28,11 @@
         android:pathData="M5.75,14.50 V5.25 A2.25,2.25 0 0 1 10.25,5.25 V14.50 A3.75,3.75 0 1 1 5.75,14.50 Z" />
     <path
         android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
         android:antialias="true"
-        android:pathData="M14.58,3.36 L15.72,3.14 Q17.00,2.90 17.17,4.19 L17.30,5.21 Q17.40,6.00 16.74,6.45 L16.21,6.82 Q15.80,7.10 15.94,7.58 L17.71,13.73 Q17.90,14.40 18.60,14.40 L20.10,14.40 Q21.80,14.40 21.80,16.10 L21.80,16.90 Q21.80,18.60 20.10,18.60 L17.20,18.60 Q15.00,18.60 14.75,16.41 L13.45,4.89 Q13.30,3.60 14.58,3.36 Z" />
+        android:pathData="M15.1,2.6 H20.5 L22.38,6.6 Q23,6.6 23,7.85 V9.35 Q23,10.6 21.75,10.6 H13.85 Q12.6,10.6 12.6,9.35 V7.85 Q12.6,6.6 13.22,6.6 Z M15.66,3.5 H19.94 L21.07,5.9 H14.53 Z M13.8,8.6 A0.88,0.88 0 1 1 15.56,8.6 A0.88,0.88 0 1 1 13.8,8.6 Z M20.04,8.6 A0.88,0.88 0 1 1 21.8,8.6 A0.88,0.88 0 1 1 20.04,8.6 Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:antialias="true"
+        android:pathData="M13.43,10.6 H15.51 V12.6 H13.43 Z M20.09,10.6 H22.17 V12.6 H20.09 Z" />
 </vector>
