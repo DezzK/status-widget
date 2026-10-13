@@ -28,6 +28,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -445,6 +446,15 @@ final class GnssProvider {
         @Override
         public void onProviderDisabled(@NonNull String provider) {
             Log.d(TAG, "Provider disabled: " + provider);
+        }
+
+        // Deprecated, but abstract before API 30: without this override the framework's call
+        // throws AbstractMethodError on the head units' Android 9 whenever the GPS provider
+        // reports a status change.
+        @Override
+        @SuppressWarnings("deprecation")
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            Log.d(TAG, "Provider " + provider + " status: " + status);
         }
     };
 }
